@@ -1,3 +1,15 @@
+---
+layout: post
+title: "Claudony — The Name That Fits"
+date: 2026-04-13
+type: phase-update
+entry_type: note
+subtype: diary
+projects: [claudony]
+tags: [branding, design, visual-identity]
+excerpt: "RemoteCC was always a placeholder — Claudony emerged from the colony metaphor and brought a bioluminescent visual language that makes the architecture literal."
+---
+
 # Claudony — The Name That Fits
 
 **Date:** 2026-04-13

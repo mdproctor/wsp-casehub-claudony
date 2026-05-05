@@ -7,6 +7,7 @@ entry_type: note
 subtype: diary
 projects: [claudony]
 tags: [fleet, security, architecture]
+excerpt: "Fleet Phase 1 extends Claudony to manage sessions across multiple instances — and clears three deferred embarrassments: a hardcoded encryption key committed to the repo, a 30-minute session timeout, and three undocumented ADRs."
 ---
 
 ## The fleet was inevitable

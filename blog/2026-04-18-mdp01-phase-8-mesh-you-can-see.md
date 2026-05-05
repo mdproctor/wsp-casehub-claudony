@@ -7,6 +7,7 @@ entry_type: note
 subtype: diary
 projects: [claudony]
 tags: [qhorus, mcp, mesh, quarkus, dashboard]
+excerpt: "Qhorus embeds into Claudony after a major Quarkus upgrade rewrites the WebAuthn layer and exposes that old credential files stored aaguid without dashes, silently locking users out."
 ---
 
 ## Fourteen weeks of foundation, three hours to embed

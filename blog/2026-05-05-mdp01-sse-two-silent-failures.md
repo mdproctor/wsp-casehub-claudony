@@ -6,6 +6,8 @@ type: phase-update
 entry_type: note
 subtype: diary
 projects: [claudony]
+tags: [sse, quarkus, json, jackson, debugging, cdi]
+excerpt: "Both SSE failures return HTTP 200 with valid-looking data — one because Quarkus adds the data: prefix Claudony was also adding, and one because a static ObjectMapper has no JavaTimeModule and silently returns an empty array."
 ---
 
 The 3-second worker list poll is gone. The case worker panel now runs on

@@ -7,6 +7,7 @@ entry_type: note
 subtype: diary
 projects: [claudony]
 tags: [architecture, casehub, quarkus, cdi, jpa, config-mapping, dependency-management]
+excerpt: "The four CaseHub SPIs wire up cleanly, but @ConfigMapping strict validation fires before library roots register and CaseLedgerEntryRepository turns out not to be a CDI bean despite looking exactly like one."
 ---
 
 ## The config mapping trap

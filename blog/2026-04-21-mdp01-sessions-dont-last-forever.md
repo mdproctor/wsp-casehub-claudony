@@ -7,6 +7,7 @@ entry_type: note
 subtype: diary
 projects: [claudony]
 tags: [expiry, cdi, tmux, session-management]
+excerpt: "Three CDI-pluggable expiry policies distinguish an idle shell from an autonomously working agent, collected at startup via @Any Instance so new policies are just new beans."
 ---
 
 ## Idle is not one thing

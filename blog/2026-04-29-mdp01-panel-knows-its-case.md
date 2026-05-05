@@ -7,6 +7,7 @@ entry_type: note
 subtype: diary
 projects: [claudony]
 tags: [casehub, session-model, playwright, e2e, frontend, three-panel]
+excerpt: "Adding caseId and roleName to the immutable Session record touches 20+ construction sites, and the left panel auto-expands with clickable worker rows that reconnect the WebSocket without reloading the page."
 ---
 
 #76 was called "Left panel — CaseHub case graph and worker assignment list." I narrowed it immediately. The full case graph from the ecosystem spec — multiple cases, transition arrows, the orchestration view — is aspirational. What we needed was specific: when a terminal page opens for a CaseHub worker, show the other workers in the same case and let you click between them. Everything else could wait.

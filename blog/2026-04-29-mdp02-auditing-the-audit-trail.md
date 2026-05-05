@@ -7,6 +7,7 @@ entry_type: note
 subtype: diary
 projects: [claudony]
 tags: [casehub, ledger, concurrency, debugging, testing]
+excerpt: "An external audit finds two production bugs in ClaudonyLedgerEventCapture: a swallowed persistence exception that silently drops ledger entries, and a MAX() sequence query with no UNIQUE constraint that allows duplicate sequence numbers under concurrent writes."
 ---
 
 The inevitable question when you're building in this space: there are dedicated CLI wrapper UIs already, so why does Claudony exist? My answer is that Claudony isn't a terminal emulator. The terminal is one panel out of three. The value is watching multiple Claude workers coordinate on a shared case, seeing their Qhorus channel conversations in real time, and injecting a human directive that gets recorded in the lineage. A CLI wrapper doesn't do any of that because it isn't built on CaseHub and Qhorus — it's just plumbing.

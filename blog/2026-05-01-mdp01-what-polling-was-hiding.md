@@ -6,6 +6,8 @@ type: phase-update
 entry_type: note
 subtype: diary
 projects: [claudony]
+tags: [push, sse, polling, architecture, identity]
+excerpt: "Switching from polling to server-initiated push exposes three guarantees polling provided for free — restart resilience, catch-up, and identity — that each require deliberate design in a push model."
 ---
 
 The Qhorus gateway will replace the channel panel's 3-second polling loop with server-initiated push. Lower latency, cleaner architecture, messages from any backend automatically flowing to the panel. The design is right.
