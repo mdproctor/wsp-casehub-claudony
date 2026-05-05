@@ -1,0 +1,23 @@
+---
+layout: default
+title: Development Diary
+---
+<div class="blog-listing">
+  <div class="container">
+    <div class="blog-listing-header">
+      <div class="section-label">Development diary</div>
+      <h1 class="section-h2">How Claudony was built</h1>
+    </div>
+    <div class="post-list">
+      {% for post in site.posts %}
+      <div class="post-list-item">
+        <a href="{{ post.url | prepend: site.baseurl }}">
+          <div class="post-list-date">{{ post.date | date: "%Y-%m-%d" }}</div>
+          <div class="post-list-title">{{ post.title }}</div>
+          <div class="post-list-excerpt">{{ post.excerpt | strip_html | truncatewords: 35 }}</div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,4 @@
+{"type":"server-started","port":63081,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:63081","screen_dir":"/Users/mdproctor/claude/claudony/.superpowers/brainstorm/45158-1776415326/content","state_dir":"/Users/mdproctor/claude/claudony/.superpowers/brainstorm/45158-1776415326/state"}
+{"type":"screen-added","file":"/Users/mdproctor/claude/claudony/.superpowers/brainstorm/45158-1776415326/content/panel-content.html"}
+{"type":"screen-added","file":"/Users/mdproctor/claude/claudony/.superpowers/brainstorm/45158-1776415326/content/view-switcher.html"}
+{"type":"server-stopped","reason":"idle timeout"}

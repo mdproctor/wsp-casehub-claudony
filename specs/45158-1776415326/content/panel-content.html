@@ -1,0 +1,112 @@
+<h2>What does the Mesh panel show?</h2>
+<p class="subtitle">Three approaches to panel content — same data, different organisation</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:12px;background:#1a1a1a;border-radius:6px;font-size:10px;color:#888;height:200px;overflow:hidden">
+      <!-- Presence strip -->
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #3e3e42">
+        <span style="color:#4ec9b0;font-size:8px;font-weight:600">ONLINE</span>
+        <span style="background:#4ec9b0;color:#000;border-radius:10px;padding:1px 6px;font-size:8px">alice</span>
+        <span style="background:#4ec9b0;color:#000;border-radius:10px;padding:1px 6px;font-size:8px">bob</span>
+      </div>
+      <!-- Channel list -->
+      <div style="margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;background:#1e3a2f;padding:5px 6px;border-radius:4px;border-left:2px solid #4ec9b0">
+        <span style="color:#4ec9b0;font-size:9px">#auth-refactor</span>
+        <span style="background:#4ec9b0;color:#000;border-radius:8px;padding:0 4px;font-size:7px">3</span>
+      </div>
+      <div style="margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;background:#252526;padding:5px 6px;border-radius:4px">
+        <span style="font-size:9px">#general</span>
+        <span style="color:#666;font-size:7px">2m ago</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:#252526;padding:5px 6px;border-radius:4px">
+        <span style="font-size:9px">#review-queue</span>
+        <span style="color:#666;font-size:7px">idle</span>
+      </div>
+      <!-- Expanded channel messages below -->
+      <div style="margin-top:8px;border-top:1px solid #3e3e42;padding-top:6px">
+        <div style="font-size:7px;margin-bottom:3px"><span style="color:#4ec9b0">alice</span> <span style="color:#666">2s</span>  Starting analysis, need DB schema</div>
+        <div style="font-size:7px;margin-bottom:3px"><span style="color:#dcdcaa">bob</span> <span style="color:#666">1s</span>  Schema in shared-data: 'db-schema-v3'</div>
+        <div style="font-size:7px"><span style="color:#4ec9b0">alice</span> <span style="color:#666">0s</span>  Got it, thanks</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Presence strip + channel list + inline messages</h3>
+      <p>Who's online at top. Channel list with activity indicators. Active channel expands inline showing last N messages. One panel, everything visible.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:12px;background:#1a1a1a;border-radius:6px;font-size:10px;color:#888;height:200px;overflow:hidden">
+      <!-- Single channel focus -->
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <select style="background:#252526;color:#ccc;border:1px solid #3e3e42;border-radius:4px;font-size:9px;padding:2px 4px;flex:1">
+          <option>#auth-refactor ●</option>
+        </select>
+      </div>
+      <!-- Full message thread -->
+      <div style="background:#252526;border-radius:4px;padding:6px;height:140px;overflow:hidden">
+        <div style="font-size:7px;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid #3e3e42">
+          <div style="display:flex;justify-content:space-between"><span style="color:#4ec9b0;font-weight:600">alice</span><span style="color:#666">09:14</span></div>
+          <div style="color:#ccc;margin-top:1px">Starting analysis, need DB schema</div>
+        </div>
+        <div style="font-size:7px;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid #3e3e42">
+          <div style="display:flex;justify-content:space-between"><span style="color:#dcdcaa;font-weight:600">bob</span><span style="color:#666">09:14</span></div>
+          <div style="color:#ccc;margin-top:1px">Schema in shared-data: 'db-schema-v3'</div>
+        </div>
+        <div style="font-size:7px">
+          <div style="display:flex;justify-content:space-between"><span style="color:#4ec9b0;font-weight:600">alice</span><span style="color:#666">09:15</span></div>
+          <div style="color:#ccc;margin-top:1px">Got it, analysing now...</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Single channel focus with dropdown</h3>
+      <p>Channel selector at top. Full message thread below, scrollable. Clean reading experience. One channel at a time — switch via dropdown.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:12px;background:#1a1a1a;border-radius:6px;font-size:10px;color:#888;height:200px;overflow:hidden">
+      <!-- Activity feed -->
+      <div style="margin-bottom:4px;font-size:8px;font-weight:600;color:#4ec9b0">ACTIVITY</div>
+      <div style="font-size:7px;margin-bottom:4px;display:flex;gap:4px">
+        <span style="color:#666">09:15</span>
+        <span style="background:#1e3a2f;color:#4ec9b0;padding:0 3px;border-radius:2px">#auth</span>
+        <span style="color:#4ec9b0">alice</span>
+        <span style="color:#ccc">Starting analysis...</span>
+      </div>
+      <div style="font-size:7px;margin-bottom:4px;display:flex;gap:4px">
+        <span style="color:#666">09:14</span>
+        <span style="background:#1e3a2f;color:#4ec9b0;padding:0 3px;border-radius:2px">#auth</span>
+        <span style="color:#dcdcaa">bob</span>
+        <span style="color:#ccc">Schema in shared-data</span>
+      </div>
+      <div style="font-size:7px;margin-bottom:4px;display:flex;gap:4px">
+        <span style="color:#666">09:12</span>
+        <span style="background:#252526;color:#888;padding:0 3px;border-radius:2px">#gen</span>
+        <span style="color:#888">carol</span>
+        <span style="color:#999">Registering as reviewer</span>
+      </div>
+      <div style="font-size:7px;margin-bottom:4px;display:flex;gap:4px">
+        <span style="color:#666">09:10</span>
+        <span style="background:#1e3a2f;color:#4ec9b0;padding:0 3px;border-radius:2px">#auth</span>
+        <span style="color:#4ec9b0">alice</span>
+        <span style="color:#999">Registered. Starting work...</span>
+      </div>
+      <!-- Presence -->
+      <div style="margin-top:8px;padding-top:6px;border-top:1px solid #3e3e42;display:flex;gap:4px;flex-wrap:wrap">
+        <span style="font-size:7px;color:#666">Online:</span>
+        <span style="font-size:7px;color:#4ec9b0">● alice</span>
+        <span style="font-size:7px;color:#dcdcaa">● bob</span>
+        <span style="font-size:7px;color:#888">● carol</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Unified activity feed across all channels</h3>
+      <p>All messages from all channels in one chronological stream, tagged with channel. Presence at bottom. No channel switching needed — everything flows through.</p>
+    </div>
+  </div>
+
+</div>

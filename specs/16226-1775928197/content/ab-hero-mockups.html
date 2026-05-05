@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claudony — A vs B Hero Mockups</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a0f;
+    color: #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 24px;
+  }
+  h1 { font-size: 18px; color: #fff; margin-bottom: 6px; }
+  .intro { font-size: 13px; color: #666; margin-bottom: 28px; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+
+  .mockup-wrap {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .mockup-wrap:hover { box-shadow: 0 0 0 1px rgba(255,255,255,0.15); }
+  .mockup-wrap.selected-a { border-color: #00c8ff; box-shadow: 0 0 30px rgba(0,200,255,0.2); }
+  .mockup-wrap.selected-b { border-color: #a060ff; box-shadow: 0 0 30px rgba(160,96,255,0.2); }
+
+  /* ── DIRECTION A: DEEP SPACE COLONY ── */
+  .hero-a {
+    background: #040812;
+    min-height: 480px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .a-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at 80% 20%, rgba(0,150,255,0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 10% 80%, rgba(0,80,180,0.08) 0%, transparent 40%);
+  }
+
+  .a-hex-bg {
+    position: absolute; inset: 0; opacity: 1;
+  }
+
+  /* Nav */
+  .a-nav {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid rgba(0,200,255,0.1);
+    background: rgba(4,8,18,0.8);
+    backdrop-filter: blur(8px);
+  }
+  .a-nav-logo {
+    font-family: 'Courier New', monospace;
+    font-size: 15px; font-weight: 700; letter-spacing: 3px;
+    color: #fff; text-transform: uppercase;
+  }
+  .a-nav-logo span { color: #00c8ff; }
+  .a-nav-links { display: flex; gap: 24px; }
+  .a-nav-links a {
+    font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: rgba(255,255,255,0.5); text-decoration: none;
+    transition: color 0.15s;
+  }
+  .a-nav-links a:hover { color: #00c8ff; }
+
+  /* Hero content */
+  .a-hero-body {
+    position: relative; z-index: 5;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 40px 32px 20px;
+    gap: 40px;
+  }
+  .a-hero-text { flex: 1; max-width: 460px; }
+
+  .a-eyebrow {
+    font-family: 'Courier New', monospace;
+    font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+    color: #00c8ff; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .a-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 24px; height: 1px;
+    background: #00c8ff;
+  }
+
+  .a-headline {
+    font-size: 38px; font-weight: 700; line-height: 1.15;
+    color: #ffffff; margin-bottom: 18px;
+    letter-spacing: -0.5px;
+  }
+  .a-headline em { font-style: normal; color: #00c8ff; }
+
+  .a-sub {
+    font-size: 15px; line-height: 1.7;
+    color: rgba(255,255,255,0.55); margin-bottom: 32px;
+  }
+
+  .a-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+  .a-btn-primary {
+    display: inline-block;
+    padding: 11px 24px;
+    background: #00c8ff;
+    color: #040812;
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    border: none; border-radius: 4px; cursor: pointer;
+    font-family: 'Courier New', monospace;
+    transition: box-shadow 0.2s;
+    box-shadow: 0 0 20px rgba(0,200,255,0.3);
+  }
+  .a-btn-secondary {
+    display: inline-block;
+    padding: 11px 24px;
+    background: transparent;
+    color: rgba(255,255,255,0.6);
+    font-size: 13px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+    border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  /* Colony map illustration */
+  .a-illustration {
+    flex: 0 0 220px;
+    height: 280px;
+    position: relative;
+  }
+
+  /* Status bar */
+  .a-status {
+    position: relative; z-index: 5;
+    padding: 10px 32px;
+    border-top: 1px solid rgba(0,200,255,0.08);
+    background: rgba(0,200,255,0.03);
+    display: flex; gap: 24px;
+  }
+  .a-stat {
+    font-family: 'Courier New', monospace;
+    font-size: 11px; color: rgba(0,200,255,0.5);
+    letter-spacing: 1px;
+  }
+  .a-stat span { color: #00c8ff; }
+
+
+  /* ── DIRECTION B: BIOLUMINESCENT COLONY ── */
+  .hero-b {
+    background: #05050f;
+    min-height: 480px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .b-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at 75% 15%, rgba(160,60,255,0.15) 0%, transparent 45%),
+      radial-gradient(ellipse at 20% 70%, rgba(0,255,140,0.08) 0%, transparent 40%),
+      radial-gradient(ellipse at 50% 50%, rgba(100,0,200,0.06) 0%, transparent 60%);
+  }
+
+  /* Nav */
+  .b-nav {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid rgba(160,96,255,0.12);
+    background: rgba(5,5,15,0.7);
+    backdrop-filter: blur(10px);
+  }
+  .b-nav-logo {
+    font-size: 17px; font-weight: 300; letter-spacing: 5px;
+    color: #fff; text-transform: uppercase;
+  }
+  .b-nav-logo span { color: #00ffaa; font-weight: 700; }
+  .b-nav-links { display: flex; gap: 24px; }
+  .b-nav-links a {
+    font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
+    color: rgba(255,255,255,0.4); text-decoration: none;
+  }
+
+  /* Hero content */
+  .b-hero-body {
+    position: relative; z-index: 5;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 40px 32px 20px;
+    gap: 40px;
+  }
+  .b-hero-text { flex: 1; max-width: 460px; }
+
+  .b-eyebrow {
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    color: #a060ff; margin-bottom: 18px;
+    font-weight: 500;
+  }
+
+  .b-headline {
+    font-size: 40px; font-weight: 200; line-height: 1.15;
+    color: #ffffff; margin-bottom: 18px;
+    letter-spacing: 1px;
+  }
+  .b-headline strong { font-weight: 700; }
+  .b-headline em { font-style: normal; color: #00ffaa; }
+
+  .b-sub {
+    font-size: 15px; line-height: 1.75;
+    color: rgba(255,255,255,0.45); margin-bottom: 32px;
+  }
+
+  .b-cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .b-btn-primary {
+    display: inline-block;
+    padding: 12px 28px;
+    background: linear-gradient(135deg, #7a30ff, #00ffaa 200%);
+    color: #fff;
+    font-size: 14px; font-weight: 600;
+    border: none; border-radius: 50px; cursor: pointer;
+    box-shadow: 0 0 30px rgba(120,0,255,0.3), 0 0 60px rgba(0,255,140,0.1);
+    letter-spacing: 0.5px;
+    transition: box-shadow 0.2s;
+  }
+  .b-btn-secondary {
+    font-size: 13px; color: rgba(255,255,255,0.4);
+    background: none; border: none; cursor: pointer;
+    letter-spacing: 0.5px; text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: rgba(255,255,255,0.2);
+  }
+
+  /* Bio illustration */
+  .b-illustration {
+    flex: 0 0 220px;
+    height: 280px;
+    position: relative;
+  }
+
+  /* Colony organism lines */
+  .b-status {
+    position: relative; z-index: 5;
+    padding: 10px 32px;
+    border-top: 1px solid rgba(160,96,255,0.08);
+    display: flex; gap: 24px; align-items: center;
+  }
+  .b-stat {
+    font-size: 12px; color: rgba(255,255,255,0.3);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .b-dot-live {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #00ffaa;
+    box-shadow: 0 0 6px #00ffaa;
+    animation: bpulse 2s ease-in-out infinite;
+  }
+  @keyframes bpulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .b-stat span { color: #a060ff; }
+
+  /* Label tabs */
+  .mockup-label {
+    padding: 10px 20px;
+    font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer;
+  }
+  .label-a { background: rgba(0,200,255,0.08); color: #00c8ff; }
+  .label-b { background: rgba(160,96,255,0.08); color: #a060ff; }
+
+  .select-indicator {
+    font-size: 11px; padding: 3px 10px;
+    border-radius: 20px; border: 1px solid currentColor;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .mockup-wrap.selected-a .select-indicator,
+  .mockup-wrap.selected-b .select-indicator { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>Direction A vs B — Hero Section Mockup</h1>
+<p class="intro">Full hero section preview for each direction. Click a mockup to select it.</p>
+
+<div class="split">
+
+  <!-- DIRECTION A -->
+  <div class="mockup-wrap" id="wrap-a" onclick="select('a')">
+    <div class="mockup-label label-a">
+      A — Deep Space Colony
+      <span class="select-indicator">✓ Selected</span>
+    </div>
+    <div class="hero-a">
+      <div class="a-bg"></div>
+
+      <!-- Hex grid SVG -->
+      <svg class="a-hex-bg" viewBox="0 0 500 480" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <pattern id="hexA" x="0" y="0" width="52" height="60" patternUnits="userSpaceOnUse">
+            <polygon points="26,2 50,15 50,45 26,58 2,45 2,15" fill="none" stroke="rgba(0,200,255,0.12)" stroke-width="0.8"/>
+          </pattern>
+        </defs>
+        <rect width="500" height="480" fill="url(#hexA)"/>
+        <!-- Active session nodes -->
+        <polygon points="26,2 50,15 50,45 26,58 2,45 2,15" transform="translate(364,90)" fill="rgba(0,200,255,0.12)" stroke="#00c8ff" stroke-width="1"/>
+        <polygon points="26,2 50,15 50,45 26,58 2,45 2,15" transform="translate(416,150)" fill="rgba(0,200,255,0.08)" stroke="#00c8ff" stroke-width="0.8"/>
+        <polygon points="26,2 50,15 50,45 26,58 2,45 2,15" transform="translate(364,210)" fill="rgba(78,201,176,0.1)" stroke="#4ec9b0" stroke-width="0.8"/>
+        <polygon points="26,2 50,15 50,45 26,58 2,45 2,15" transform="translate(312,150)" fill="rgba(0,122,204,0.1)" stroke="#007acc" stroke-width="0.8"/>
+        <!-- Node centers -->
+        <circle cx="390" cy="120" r="5" fill="#00c8ff" opacity="0.9">
+          <animate attributeName="opacity" values="0.9;0.4;0.9" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="442" cy="180" r="4" fill="#00c8ff" opacity="0.7">
+          <animate attributeName="opacity" values="0.7;0.3;0.7" dur="2.5s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="390" cy="240" r="4" fill="#4ec9b0" opacity="0.6">
+          <animate attributeName="opacity" values="0.6;0.2;0.6" dur="3s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="338" cy="180" r="3.5" fill="#007acc" opacity="0.5">
+          <animate attributeName="opacity" values="0.5;0.2;0.5" dur="3.5s" repeatCount="indefinite"/>
+        </circle>
+        <!-- Connection lines -->
+        <line x1="390" y1="120" x2="442" y2="180" stroke="#00c8ff" stroke-width="0.6" opacity="0.3"/>
+        <line x1="442" y1="180" x2="390" y2="240" stroke="#00c8ff" stroke-width="0.6" opacity="0.2"/>
+        <line x1="390" y1="120" x2="338" y2="180" stroke="#007acc" stroke-width="0.5" opacity="0.2"/>
+      </svg>
+
+      <nav class="a-nav">
+        <div class="a-nav-logo">CLAUD<span>ONY</span></div>
+        <div class="a-nav-links">
+          <a href="#">Docs</a>
+          <a href="#">Blog</a>
+          <a href="#">GitHub</a>
+        </div>
+      </nav>
+
+      <div class="a-hero-body">
+        <div class="a-hero-text">
+          <div class="a-eyebrow">Remote Colony Intelligence</div>
+          <h2 class="a-headline">Your Claude sessions,<br><em>wherever you are</em></h2>
+          <p class="a-sub">Run Claude Code on one machine. Access every session from any device — browser, iPad, phone. Sessions persist, the colony lives on. One controller instance to manage them all.</p>
+          <div class="a-cta">
+            <button class="a-btn-primary">Deploy Colony</button>
+            <button class="a-btn-secondary">How it works →</button>
+          </div>
+        </div>
+
+        <!-- Colony map mini-illustration -->
+        <div class="a-illustration">
+          <svg viewBox="0 0 220 280" width="220" height="280">
+            <defs>
+              <radialGradient id="gA" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#00c8ff" stop-opacity="0.15"/>
+                <stop offset="100%" stop-color="#00c8ff" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <!-- Central hub (controller) -->
+            <circle cx="110" cy="140" r="30" fill="url(#gA)" stroke="rgba(0,200,255,0.3)" stroke-width="1"/>
+            <circle cx="110" cy="140" r="18" fill="rgba(0,200,255,0.15)" stroke="#00c8ff" stroke-width="1.5"/>
+            <circle cx="110" cy="140" r="8" fill="#00c8ff" opacity="0.9"/>
+            <text x="110" y="185" text-anchor="middle" font-family="Courier New" font-size="9" fill="rgba(0,200,255,0.6)" letter-spacing="1">CONTROLLER</text>
+
+            <!-- Session nodes orbiting -->
+            <!-- Node 1 - top -->
+            <line x1="110" y1="140" x2="110" y2="40" stroke="rgba(0,200,255,0.2)" stroke-width="1" stroke-dasharray="3,4"/>
+            <circle cx="110" cy="40" r="10" fill="rgba(0,200,255,0.1)" stroke="#00c8ff" stroke-width="1.2"/>
+            <circle cx="110" cy="40" r="4" fill="#00c8ff" opacity="0.8"/>
+            <text x="110" y="25" text-anchor="middle" font-family="Courier New" font-size="8" fill="rgba(0,200,255,0.5)">api-dev</text>
+
+            <!-- Node 2 - right -->
+            <line x1="110" y1="140" x2="200" y2="90" stroke="rgba(0,200,255,0.2)" stroke-width="1" stroke-dasharray="3,4"/>
+            <circle cx="200" cy="90" r="10" fill="rgba(78,201,176,0.1)" stroke="#4ec9b0" stroke-width="1.2"/>
+            <circle cx="200" cy="90" r="4" fill="#4ec9b0" opacity="0.8"/>
+            <text x="205" y="78" text-anchor="start" font-family="Courier New" font-size="8" fill="rgba(78,201,176,0.5)">ui</text>
+
+            <!-- Node 3 - right-bottom -->
+            <line x1="110" y1="140" x2="195" y2="195" stroke="rgba(0,122,204,0.2)" stroke-width="1" stroke-dasharray="3,4"/>
+            <circle cx="195" cy="195" r="10" fill="rgba(0,122,204,0.1)" stroke="#007acc" stroke-width="1.2"/>
+            <circle cx="195" cy="195" r="4" fill="#007acc" opacity="0.8"/>
+            <text x="205" y="205" text-anchor="start" font-family="Courier New" font-size="8" fill="rgba(0,122,204,0.5)">docs</text>
+
+            <!-- Node 4 - bottom-left -->
+            <line x1="110" y1="140" x2="30" y2="210" stroke="rgba(0,200,255,0.15)" stroke-width="1" stroke-dasharray="3,4"/>
+            <circle cx="30" cy="210" r="8" fill="rgba(0,200,255,0.05)" stroke="rgba(0,200,255,0.4)" stroke-width="1"/>
+            <circle cx="30" cy="210" r="3" fill="rgba(0,200,255,0.4)"/>
+            <text x="30" y="228" text-anchor="middle" font-family="Courier New" font-size="8" fill="rgba(0,200,255,0.35)">idle</text>
+
+            <!-- Node 5 - left -->
+            <line x1="110" y1="140" x2="20" y2="100" stroke="rgba(0,200,255,0.15)" stroke-width="1" stroke-dasharray="3,4"/>
+            <circle cx="20" cy="100" r="8" fill="rgba(0,200,255,0.05)" stroke="rgba(0,200,255,0.3)" stroke-width="1"/>
+            <circle cx="20" cy="100" r="3" fill="rgba(0,200,255,0.3)"/>
+            <text x="20" y="88" text-anchor="middle" font-family="Courier New" font-size="8" fill="rgba(0,200,255,0.3)">idle</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="a-status">
+        <div class="a-stat">COLONY/<span>ACTIVE</span></div>
+        <div class="a-stat">SESSIONS/<span>3 RUNNING</span></div>
+        <div class="a-stat">CONTROLLER/<span>ONLINE</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIRECTION B -->
+  <div class="mockup-wrap" id="wrap-b" onclick="select('b')">
+    <div class="mockup-label label-b">
+      B — Bioluminescent Colony
+      <span class="select-indicator">✓ Selected</span>
+    </div>
+    <div class="hero-b">
+      <div class="b-bg"></div>
+
+      <!-- Ambient orbs -->
+      <div style="position:absolute;inset:0;pointer-events:none">
+        <div style="position:absolute;width:300px;height:300px;top:-80px;right:-50px;background:radial-gradient(circle,rgba(140,0,255,0.18),transparent 70%);border-radius:50%"></div>
+        <div style="position:absolute;width:200px;height:200px;bottom:40px;left:60px;background:radial-gradient(circle,rgba(0,255,140,0.1),transparent 70%);border-radius:50%"></div>
+        <div style="position:absolute;width:150px;height:150px;top:120px;right:30%;background:radial-gradient(circle,rgba(200,80,255,0.08),transparent 70%);border-radius:50%"></div>
+      </div>
+
+      <nav class="b-nav">
+        <div class="b-nav-logo">CLAUDONY<span>.</span></div>
+        <div class="b-nav-links">
+          <a href="#">Docs</a>
+          <a href="#">Blog</a>
+          <a href="#">GitHub</a>
+        </div>
+      </nav>
+
+      <div class="b-hero-body">
+        <div class="b-hero-text">
+          <div class="b-eyebrow">A living colony of intelligence</div>
+          <h2 class="b-headline"><strong>Your Claude sessions</strong><br>persist, <em>everywhere</em></h2>
+          <p class="b-sub">Run Claude Code on any machine. Access every session from any device. Sessions are organisms in your colony — they live, breathe, and wait for you, wherever you connect from.</p>
+          <div class="b-cta">
+            <button class="b-btn-primary">Grow your colony</button>
+            <button class="b-btn-secondary">How it works</button>
+          </div>
+        </div>
+
+        <!-- Bioluminescent network illustration -->
+        <div class="b-illustration">
+          <svg viewBox="0 0 220 280" width="220" height="280">
+            <defs>
+              <radialGradient id="gB1" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#a060ff" stop-opacity="0.5"/>
+                <stop offset="100%" stop-color="#a060ff" stop-opacity="0"/>
+              </radialGradient>
+              <radialGradient id="gB2" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#00ffaa" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="#00ffaa" stop-opacity="0"/>
+              </radialGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="3" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+
+            <!-- Glow halos -->
+            <circle cx="110" cy="140" r="45" fill="url(#gB1)" opacity="0.6"/>
+            <circle cx="165" cy="70" r="25" fill="url(#gB2)" opacity="0.5"/>
+            <circle cx="55" cy="200" r="20" fill="url(#gB2)" opacity="0.4"/>
+
+            <!-- Organic connection curves -->
+            <path d="M110,140 Q130,90 165,70" fill="none" stroke="rgba(160,96,255,0.35)" stroke-width="1.5"/>
+            <path d="M110,140 Q60,170 55,200" fill="none" stroke="rgba(0,255,140,0.3)" stroke-width="1.5"/>
+            <path d="M110,140 Q175,155 185,190" fill="none" stroke="rgba(160,96,255,0.25)" stroke-width="1.2"/>
+            <path d="M110,140 Q70,95 45,85" fill="none" stroke="rgba(200,80,255,0.25)" stroke-width="1"/>
+            <path d="M110,140 Q135,220 130,250" fill="none" stroke="rgba(0,255,140,0.2)" stroke-width="1"/>
+
+            <!-- Controller nucleus (center) -->
+            <circle cx="110" cy="140" r="24" fill="rgba(120,0,255,0.2)" filter="url(#glow)"/>
+            <circle cx="110" cy="140" r="16" fill="rgba(140,0,255,0.3)" stroke="rgba(160,96,255,0.8)" stroke-width="1.5"/>
+            <circle cx="110" cy="140" r="7" fill="#a060ff" filter="url(#glow)">
+              <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <text x="110" y="175" text-anchor="middle" font-family="sans-serif" font-size="9" fill="rgba(160,96,255,0.7)" letter-spacing="1">controller</text>
+
+            <!-- Organism nodes -->
+            <circle cx="165" cy="70" r="12" fill="rgba(0,255,140,0.2)" stroke="rgba(0,255,140,0.7)" stroke-width="1.2" filter="url(#glow)"/>
+            <circle cx="165" cy="70" r="5" fill="#00ffaa">
+              <animate attributeName="opacity" values="1;0.4;1" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+            <text x="178" y="62" font-family="sans-serif" font-size="9" fill="rgba(0,255,140,0.6)">api-dev</text>
+
+            <circle cx="55" cy="200" r="11" fill="rgba(0,255,140,0.15)" stroke="rgba(0,255,140,0.5)" stroke-width="1.2" filter="url(#glow)"/>
+            <circle cx="55" cy="200" r="4" fill="#00ffaa" opacity="0.7">
+              <animate attributeName="opacity" values="0.7;0.3;0.7" dur="3s" repeatCount="indefinite"/>
+            </circle>
+            <text x="55" y="220" text-anchor="middle" font-family="sans-serif" font-size="9" fill="rgba(0,255,140,0.5)">ui</text>
+
+            <circle cx="185" cy="190" r="10" fill="rgba(160,96,255,0.15)" stroke="rgba(160,96,255,0.5)" stroke-width="1" filter="url(#glow)"/>
+            <circle cx="185" cy="190" r="4" fill="#a060ff" opacity="0.6"/>
+            <text x="195" y="195" font-family="sans-serif" font-size="9" fill="rgba(160,96,255,0.5)">docs</text>
+
+            <!-- Dormant nodes -->
+            <circle cx="45" cy="85" r="7" fill="rgba(200,80,255,0.08)" stroke="rgba(200,80,255,0.25)" stroke-width="1"/>
+            <circle cx="45" cy="85" r="2.5" fill="rgba(200,80,255,0.3)"/>
+
+            <circle cx="130" cy="250" r="7" fill="rgba(0,255,140,0.06)" stroke="rgba(0,255,140,0.2)" stroke-width="1"/>
+            <circle cx="130" cy="250" r="2.5" fill="rgba(0,255,140,0.2)"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="b-status">
+        <div class="b-stat">
+          <div class="b-dot-live"></div>
+          Colony active · <span>3 organisms running</span>
+        </div>
+        <div class="b-stat">2 dormant · <span>Controller online</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function select(choice) {
+  document.getElementById('wrap-a').classList.remove('selected-a');
+  document.getElementById('wrap-b').classList.remove('selected-b');
+  document.getElementById('wrap-' + choice).classList.add('selected-' + choice);
+  if (window.__companion) window.__companion.select(choice, 'Direction ' + choice.toUpperCase());
+}
+</script>
+
+</body>
+</html>

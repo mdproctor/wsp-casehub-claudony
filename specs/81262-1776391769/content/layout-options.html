@@ -1,0 +1,93 @@
+<h2>Where should the Qhorus panel live?</h2>
+<p class="subtitle">Three layout options — pick the one that fits best</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#1a1a1a;border-radius:6px;font-family:monospace;font-size:11px;line-height:1.4;color:#888">
+      <div style="display:flex;gap:4px;height:160px">
+        <div style="width:18%;background:#252526;border-radius:4px;padding:6px;border:1px solid #3e3e42">
+          <div style="color:#4ec9b0;font-size:9px;margin-bottom:4px">FLEET</div>
+          <div style="color:#666;font-size:8px">● peer-1</div>
+          <div style="color:#666;font-size:8px">● peer-2</div>
+        </div>
+        <div style="flex:1;background:#252526;border-radius:4px;padding:6px;border:1px solid #3e3e42">
+          <div style="color:#dcdcaa;font-size:9px;margin-bottom:6px">SESSIONS</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px">
+            <div style="background:#1e1e1e;border-radius:3px;padding:4px;font-size:8px;border:1px solid #3e3e42">session-a</div>
+            <div style="background:#1e1e1e;border-radius:3px;padding:4px;font-size:8px;border:1px solid #3e3e42">session-b</div>
+          </div>
+        </div>
+        <div style="width:26%;background:#1e3a2f;border-radius:4px;padding:6px;border:1px solid #4ec9b0">
+          <div style="color:#4ec9b0;font-size:9px;margin-bottom:4px">MESH ✦ NEW</div>
+          <div style="color:#888;font-size:8px;margin-bottom:2px">#auth-refactor</div>
+          <div style="color:#666;font-size:7px">alice: Starting...</div>
+          <div style="color:#666;font-size:7px">bob: Schema in...</div>
+          <div style="margin-top:4px;color:#888;font-size:8px">● alice · ● bob</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Right panel on the dashboard</h3>
+      <p>Qhorus observation sits alongside the session grid. Fleet | Sessions | Mesh in one page. Persistent, always visible when agents are active.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#1a1a1a;border-radius:6px;font-family:monospace;font-size:11px;line-height:1.4;color:#888">
+      <div style="display:flex;flex-direction:column;gap:4px;height:160px">
+        <div style="display:flex;gap:4px;height:28px;align-items:center;background:#252526;border-radius:4px;padding:0 8px;border:1px solid #3e3e42">
+          <div style="color:#007acc;font-size:9px;border-bottom:2px solid #007acc;padding-bottom:2px">Sessions</div>
+          <div style="color:#888;font-size:9px;padding-bottom:2px;margin-left:8px">Mesh ✦</div>
+        </div>
+        <div style="flex:1;display:flex;gap:4px">
+          <div style="width:22%;background:#252526;border-radius:4px;padding:6px;border:1px solid #3e3e42">
+            <div style="color:#4ec9b0;font-size:9px;margin-bottom:4px">FLEET</div>
+            <div style="color:#666;font-size:8px">● peer-1</div>
+          </div>
+          <div style="flex:1;background:#252526;border-radius:4px;padding:6px;border:1px solid #3e3e42">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px">
+              <div style="background:#1e1e1e;border-radius:3px;padding:4px;font-size:8px;border:1px solid #3e3e42">session-a</div>
+              <div style="background:#1e1e1e;border-radius:3px;padding:4px;font-size:8px;border:1px solid #3e3e42">session-b</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Separate tab / view</h3>
+      <p>"Sessions" tab and "Mesh" tab in the header. Sessions view unchanged. Mesh view is full-width when active. Clean separation, no layout constraints.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#1a1a1a;border-radius:6px;font-family:monospace;font-size:11px;line-height:1.4;color:#888">
+      <div style="display:flex;gap:4px;height:160px">
+        <div style="width:18%;background:#252526;border-radius:4px;padding:6px;border:1px solid #3e3e42">
+          <div style="color:#4ec9b0;font-size:9px;margin-bottom:4px">FLEET</div>
+          <div style="color:#666;font-size:8px">● peer-1</div>
+        </div>
+        <div style="flex:1;background:#252526;border-radius:4px;padding:6px;border:1px solid #3e3e42">
+          <div style="color:#dcdcaa;font-size:9px;margin-bottom:6px">SESSIONS</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:8px">
+            <div style="background:#1e1e1e;border-radius:3px;padding:4px;font-size:8px;border:1px solid #3e3e42">session-a</div>
+            <div style="background:#1e1e1e;border-radius:3px;padding:4px;font-size:8px;border:1px solid #3e3e42">session-b</div>
+          </div>
+          <div style="border-top:1px solid #3e3e42;padding-top:6px">
+            <div style="color:#4ec9b0;font-size:9px;margin-bottom:3px">MESH ✦</div>
+            <div style="display:flex;gap:3px;flex-wrap:wrap">
+              <div style="background:#1e3a2f;border-radius:3px;padding:2px 5px;font-size:7px;border:1px solid #4ec9b0;color:#4ec9b0">#auth-refactor</div>
+              <div style="background:#1e1e1e;border-radius:3px;padding:2px 5px;font-size:7px;border:1px solid #3e3e42">#general</div>
+            </div>
+            <div style="margin-top:4px;color:#666;font-size:7px">2 instances online</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Mesh section below sessions</h3>
+      <p>Sessions grid stays as-is. Qhorus summary collapses below it — channel list, instance count. Click a channel to expand or open detail. Compact, no layout change.</p>
+    </div>
+  </div>
+
+</div>

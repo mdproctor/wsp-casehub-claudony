@@ -1,0 +1,78 @@
+<h2>Panel view switcher</h2>
+<p class="subtitle">How do you switch between views in the panel header?</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:12px;background:#1a1a1a;border-radius:6px;font-size:10px;color:#888">
+      <!-- Panel header with icon tabs -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:#252526;border-radius:4px;margin-bottom:8px;border:1px solid #3e3e42">
+        <span style="color:#4ec9b0;font-size:9px;font-weight:600">MESH</span>
+        <div style="display:flex;gap:2px">
+          <div style="background:#4ec9b0;color:#000;border-radius:3px;padding:3px 6px;font-size:9px;cursor:pointer" title="Overview">⊞</div>
+          <div style="background:#252526;color:#888;border-radius:3px;padding:3px 6px;font-size:9px;border:1px solid #3e3e42;cursor:pointer" title="Channel focus">#</div>
+          <div style="background:#252526;color:#888;border-radius:3px;padding:3px 6px;font-size:9px;border:1px solid #3e3e42;cursor:pointer" title="Activity feed">≡</div>
+          <div style="background:#252526;color:#555;border-radius:3px;padding:3px 6px;font-size:9px;border:1px solid #2e2e2e;cursor:pointer" title="Add view">+</div>
+        </div>
+        <div style="color:#666;font-size:9px;cursor:pointer">⟵</div>
+      </div>
+      <!-- Panel body hint -->
+      <div style="background:#252526;border-radius:4px;padding:8px;border:1px solid #1e3a2f;height:100px;display:flex;align-items:center;justify-content:center">
+        <span style="color:#4ec9b0;font-size:9px">Overview view active</span>
+      </div>
+      <div style="margin-top:6px;font-size:8px;color:#555;text-align:center">Active view highlighted in teal · ⟵ collapses panel</div>
+    </div>
+    <div class="card-body">
+      <h3>A — Icon buttons in panel header</h3>
+      <p>Small icon buttons (⊞ # ≡) switch views. Active view highlighted. Collapse arrow on the right. Room for a + button to add future views.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:12px;background:#1a1a1a;border-radius:6px;font-size:10px;color:#888">
+      <!-- Panel header with text tabs -->
+      <div style="background:#252526;border-radius:4px;margin-bottom:8px;border:1px solid #3e3e42;overflow:hidden">
+        <div style="display:flex;align-items:center;padding:4px 8px;border-bottom:1px solid #3e3e42">
+          <span style="color:#4ec9b0;font-size:9px;font-weight:600;flex:1">MESH</span>
+          <div style="color:#666;font-size:9px;cursor:pointer">⟵</div>
+        </div>
+        <div style="display:flex">
+          <div style="flex:1;text-align:center;padding:5px;font-size:8px;color:#4ec9b0;border-bottom:2px solid #4ec9b0;background:#1e3a2f">Overview</div>
+          <div style="flex:1;text-align:center;padding:5px;font-size:8px;color:#888;border-bottom:2px solid transparent">Channel</div>
+          <div style="flex:1;text-align:center;padding:5px;font-size:8px;color:#888;border-bottom:2px solid transparent">Feed</div>
+        </div>
+      </div>
+      <div style="background:#252526;border-radius:4px;padding:8px;border:1px solid #1e3a2f;height:90px;display:flex;align-items:center;justify-content:center">
+        <span style="color:#4ec9b0;font-size:9px">Overview view active</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Named tabs below the header</h3>
+      <p>Text tabs (Overview / Channel / Feed) with active underline. Clear labels, more readable. Grows wider with each new view added.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:12px;background:#1a1a1a;border-radius:6px;font-size:10px;color:#888">
+      <!-- Panel header with dropdown -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:#252526;border-radius:4px;margin-bottom:8px;border:1px solid #3e3e42">
+        <span style="color:#4ec9b0;font-size:9px;font-weight:600">MESH</span>
+        <select style="background:#1e3a2f;color:#4ec9b0;border:1px solid #4ec9b0;border-radius:3px;font-size:8px;padding:2px 4px">
+          <option>⊞ Overview</option>
+          <option># Channel</option>
+          <option>≡ Feed</option>
+        </select>
+        <div style="color:#666;font-size:9px;cursor:pointer">⟵</div>
+      </div>
+      <div style="background:#252526;border-radius:4px;padding:8px;border:1px solid #1e3a2f;height:100px;display:flex;align-items:center;justify-content:center">
+        <span style="color:#4ec9b0;font-size:9px">Overview view active</span>
+      </div>
+      <div style="margin-top:6px;font-size:8px;color:#555;text-align:center">Dropdown scales to any number of views</div>
+    </div>
+    <div class="card-body">
+      <h3>C — Dropdown selector</h3>
+      <p>Single dropdown in the header. Most compact — no space cost per view. Scales to any number of views without layout changes. Less discoverable.</p>
+    </div>
+  </div>
+
+</div>

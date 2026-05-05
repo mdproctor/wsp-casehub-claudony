@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claudony — Visual Direction</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0f0f13;
+    color: #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 32px 24px 64px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 6px; color: #fff; }
+  .subtitle { font-size: 14px; color: #888; margin-bottom: 36px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+
+  .card {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    background: #18181f;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+  .card.selected { border-color: #6ee7f7 !important; box-shadow: 0 0 0 1px #6ee7f7, 0 12px 40px rgba(110,231,247,0.15); }
+
+  /* Direction A: Deep Space Colony */
+  .card-a { border-color: #1a2a3a; }
+  .card-a .preview {
+    height: 220px;
+    background: linear-gradient(160deg, #040812 0%, #071428 50%, #0a1e3a 100%);
+    position: relative;
+    overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .card-a .preview::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 70% 30%, rgba(0,200,255,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 20% 80%, rgba(0,120,255,0.06) 0%, transparent 50%);
+  }
+  /* Hex grid */
+  .hex-grid { position: absolute; inset: 0; opacity: 0.15; }
+  .hex-grid svg { width: 100%; height: 100%; }
+
+  .a-logo {
+    font-family: 'Courier New', monospace;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: #fff;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 0 20px rgba(0,200,255,0.5);
+  }
+  .a-tagline {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: #00c8ff;
+    text-transform: uppercase;
+    margin-top: 8px;
+    position: relative;
+    z-index: 1;
+  }
+  .a-nodes {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  /* Direction B: Bioluminescent Colony */
+  .card-b { border-color: #1a1a2e; }
+  .card-b .preview {
+    height: 220px;
+    background: linear-gradient(160deg, #050510 0%, #0d0d24 50%, #0a0a1e 100%);
+    position: relative;
+    overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .card-b .preview::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(120,0,255,0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 75% 65%, rgba(0,255,160,0.08) 0%, transparent 45%),
+      radial-gradient(ellipse at 60% 20%, rgba(200,0,255,0.06) 0%, transparent 40%);
+  }
+  .b-logo {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 30px;
+    font-weight: 300;
+    letter-spacing: 6px;
+    color: #fff;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+  }
+  .b-dot { color: #00ffaa; font-weight: 700; }
+  .b-tagline {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #a060ff;
+    text-transform: uppercase;
+    margin-top: 8px;
+    position: relative;
+    z-index: 1;
+  }
+  /* Organism nodes */
+  .bio-orbs { position: absolute; inset: 0; z-index: 0; }
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    animation: pulse 3s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.1); }
+  }
+
+  /* Direction C: Command Grid */
+  .card-c { border-color: #1a1f1a; }
+  .card-c .preview {
+    height: 220px;
+    background: linear-gradient(160deg, #080c08 0%, #0d130d 50%, #101810 100%);
+    position: relative;
+    overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .card-c .preview::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at 50% 50%, rgba(0,255,80,0.06) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 30px, rgba(0,255,80,0.03) 30px, rgba(0,255,80,0.03) 31px),
+      repeating-linear-gradient(90deg, transparent, transparent 30px, rgba(0,255,80,0.03) 30px, rgba(0,255,80,0.03) 31px);
+  }
+  .c-logo {
+    font-family: 'Courier New', monospace;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #00ff50;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 0 10px rgba(0,255,80,0.4), 0 0 30px rgba(0,255,80,0.2);
+  }
+  .c-tagline {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgba(0,255,80,0.6);
+    text-transform: uppercase;
+    margin-top: 8px;
+    position: relative;
+    z-index: 1;
+    font-family: 'Courier New', monospace;
+  }
+  .c-scan {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0,255,80,0.4), transparent);
+    animation: scan 4s linear infinite;
+    z-index: 1;
+  }
+  @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+  /* Card body */
+  .card-body { padding: 20px; }
+  .card-label {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .card-a .card-label { color: #00c8ff; }
+  .card-b .card-label { color: #a060ff; }
+  .card-c .card-label { color: #00ff50; }
+
+  .card-desc { font-size: 13px; color: #999; line-height: 1.6; margin-bottom: 16px; }
+
+  .palette { display: flex; gap: 6px; margin-bottom: 14px; }
+  .swatch {
+    width: 28px; height: 28px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+    position: relative;
+  }
+  .swatch[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 110%;
+    left: 50%; transform: translateX(-50%);
+    background: #222; color: #fff;
+    font-size: 10px; padding: 2px 6px;
+    border-radius: 3px; white-space: nowrap;
+  }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag {
+    font-size: 11px; padding: 3px 8px;
+    border-radius: 4px; border: 1px solid;
+  }
+  .card-a .tag { border-color: rgba(0,200,255,0.3); color: rgba(0,200,255,0.8); background: rgba(0,200,255,0.05); }
+  .card-b .tag { border-color: rgba(160,96,255,0.3); color: rgba(160,96,255,0.8); background: rgba(160,96,255,0.05); }
+  .card-c .tag { border-color: rgba(0,255,80,0.3); color: rgba(0,255,80,0.8); background: rgba(0,255,80,0.05); }
+
+  .select-btn {
+    width: 100%; margin-top: 16px;
+    padding: 10px;
+    border-radius: 6px; border: 1px solid;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    background: transparent;
+    letter-spacing: 0.5px;
+  }
+  .card-a .select-btn { border-color: rgba(0,200,255,0.4); color: #00c8ff; }
+  .card-a .select-btn:hover { background: rgba(0,200,255,0.1); }
+  .card-b .select-btn { border-color: rgba(160,96,255,0.4); color: #a060ff; }
+  .card-b .select-btn:hover { background: rgba(160,96,255,0.1); }
+  .card-c .select-btn { border-color: rgba(0,255,80,0.4); color: #00ff50; }
+  .card-c .select-btn:hover { background: rgba(0,255,80,0.1); }
+
+  .recommendation {
+    margin-top: 28px;
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    font-size: 13px;
+    color: #aaa;
+    line-height: 1.6;
+  }
+  .recommendation strong { color: #fff; }
+</style>
+</head>
+<body>
+
+<h1>Claudony — Visual Direction</h1>
+<p class="subtitle">Three sci-fi colony aesthetics. Click a card to select your direction.</p>
+
+<div class="cards">
+
+  <!-- A: Deep Space Colony -->
+  <div class="card card-a" id="card-a" onclick="select('a')">
+    <div class="preview">
+      <svg class="hex-grid" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <pattern id="hex" x="0" y="0" width="52" height="60" patternUnits="userSpaceOnUse">
+            <polygon points="26,2 50,15 50,45 26,58 2,45 2,15" fill="none" stroke="rgba(0,200,255,0.5)" stroke-width="0.8"/>
+          </pattern>
+        </defs>
+        <rect width="400" height="220" fill="url(#hex)"/>
+        <!-- Active nodes -->
+        <circle cx="104" cy="60" r="4" fill="#00c8ff" opacity="0.8"/>
+        <circle cx="260" cy="120" r="4" fill="#00c8ff" opacity="0.6"/>
+        <circle cx="182" cy="150" r="3" fill="#007acc" opacity="0.7"/>
+        <circle cx="338" cy="45" r="3" fill="#00c8ff" opacity="0.5"/>
+        <!-- Connections -->
+        <line x1="104" y1="60" x2="260" y2="120" stroke="#00c8ff" stroke-width="0.6" opacity="0.3"/>
+        <line x1="260" y1="120" x2="182" y2="150" stroke="#00c8ff" stroke-width="0.6" opacity="0.3"/>
+        <line x1="104" y1="60" x2="338" y2="45" stroke="#007acc" stroke-width="0.5" opacity="0.2"/>
+      </svg>
+      <div class="a-logo">CLAUDONY</div>
+      <div class="a-tagline">Colony · Remote · Intelligence</div>
+    </div>
+    <div class="card-body">
+      <div class="card-label">A — Deep Space Colony</div>
+      <div class="card-desc">Electric blues and cyans on near-black. Hex-cell grid maps the colony. Nodes pulse as active sessions. Feels like a space station management console — precise, technical, alive.</div>
+      <div class="palette">
+        <div class="swatch" style="background:#040812" title="Void Black"></div>
+        <div class="swatch" style="background:#071428" title="Deep Navy"></div>
+        <div class="swatch" style="background:#00c8ff" title="Electric Cyan"></div>
+        <div class="swatch" style="background:#007acc" title="Signal Blue"></div>
+        <div class="swatch" style="background:#4ec9b0" title="Active Teal"></div>
+        <div class="swatch" style="background:#e0e0e0" title="Text White"></div>
+      </div>
+      <div class="tags">
+        <span class="tag">Hex grid</span>
+        <span class="tag">Node map</span>
+        <span class="tag">Monospace type</span>
+        <span class="tag">Geometric</span>
+      </div>
+      <button class="select-btn" onclick="event.stopPropagation(); select('a')">Select Direction A</button>
+    </div>
+  </div>
+
+  <!-- B: Bioluminescent Colony -->
+  <div class="card card-b" id="card-b" onclick="select('b')">
+    <div class="preview">
+      <div class="bio-orbs">
+        <div class="orb" style="width:80px;height:80px;background:radial-gradient(circle,rgba(120,0,255,0.4),transparent);top:20%;left:10%;animation-delay:0s"></div>
+        <div class="orb" style="width:60px;height:60px;background:radial-gradient(circle,rgba(0,255,160,0.3),transparent);top:55%;left:65%;animation-delay:1s"></div>
+        <div class="orb" style="width:100px;height:100px;background:radial-gradient(circle,rgba(200,0,255,0.2),transparent);top:10%;left:55%;animation-delay:0.5s"></div>
+        <div class="orb" style="width:40px;height:40px;background:radial-gradient(circle,rgba(0,200,255,0.3),transparent);top:65%;left:25%;animation-delay:1.5s"></div>
+        <div class="orb" style="width:50px;height:50px;background:radial-gradient(circle,rgba(255,100,200,0.2),transparent);top:30%;right:10%;animation-delay:2s"></div>
+      </div>
+      <!-- Organic network lines -->
+      <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:0.25">
+        <line x1="15%" y1="35%" x2="50%" y2="55%" stroke="#a060ff" stroke-width="0.8"/>
+        <line x1="50%" y1="55%" x2="78%" y2="70%" stroke="#00ffaa" stroke-width="0.8"/>
+        <line x1="50%" y1="55%" x2="65%" y2="25%" stroke="#cc44ff" stroke-width="0.6"/>
+        <line x1="30%" y1="70%" x2="50%" y2="55%" stroke="#a060ff" stroke-width="0.6"/>
+        <circle cx="50%" cy="55%" r="4" fill="#a060ff" opacity="0.8"/>
+        <circle cx="15%" cy="35%" r="3" fill="#00ffaa" opacity="0.6"/>
+        <circle cx="78%" cy="70%" r="3" fill="#00ffaa" opacity="0.6"/>
+        <circle cx="65%" cy="25%" r="3" fill="#cc44ff" opacity="0.5"/>
+        <circle cx="30%" cy="70%" r="2.5" fill="#a060ff" opacity="0.5"/>
+      </svg>
+      <div class="b-logo">CLAUDONY<span class="b-dot">.</span></div>
+      <div class="b-tagline">Living Colony Intelligence</div>
+    </div>
+    <div class="card-body">
+      <div class="card-label">B — Bioluminescent Colony</div>
+      <div class="card-desc">Deep violet-black with glowing purples, greens, and magentas. Organic network of pulsing nodes — the colony feels alive and growing. Sessions are organisms, the controller is the nucleus.</div>
+      <div class="palette">
+        <div class="swatch" style="background:#050510" title="Void"></div>
+        <div class="swatch" style="background:#0d0d24" title="Deep Space"></div>
+        <div class="swatch" style="background:#a060ff" title="Bio Violet"></div>
+        <div class="swatch" style="background:#00ffaa" title="Bioluminescent Green"></div>
+        <div class="swatch" style="background:#cc44ff" title="Neural Magenta"></div>
+        <div class="swatch" style="background:#f0f0ff" title="Text White"></div>
+      </div>
+      <div class="tags">
+        <span class="tag">Organic nodes</span>
+        <span class="tag">Pulsing glows</span>
+        <span class="tag">Light sans-serif</span>
+        <span class="tag">Living feel</span>
+      </div>
+      <button class="select-btn" onclick="event.stopPropagation(); select('b')">Select Direction B</button>
+    </div>
+  </div>
+
+  <!-- C: Command Grid -->
+  <div class="card card-c" id="card-c" onclick="select('c')">
+    <div class="preview">
+      <div class="c-scan"></div>
+      <!-- Radar sweep -->
+      <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:0.2">
+        <!-- Grid lines -->
+        <line x1="0" y1="110" x2="400" y2="110" stroke="#00ff50" stroke-width="0.5"/>
+        <line x1="200" y1="0" x2="200" y2="220" stroke="#00ff50" stroke-width="0.5"/>
+        <!-- Concentric rings -->
+        <circle cx="200" cy="110" r="40" fill="none" stroke="#00ff50" stroke-width="0.5"/>
+        <circle cx="200" cy="110" r="80" fill="none" stroke="#00ff50" stroke-width="0.5"/>
+        <!-- Blip points -->
+        <circle cx="240" cy="75" r="3" fill="#00ff50" opacity="0.9"/>
+        <circle cx="155" cy="130" r="3" fill="#00ff50" opacity="0.7"/>
+        <circle cx="280" cy="145" r="2.5" fill="#00ff50" opacity="0.6"/>
+        <circle cx="120" cy="80" r="2" fill="#00ff50" opacity="0.5"/>
+        <!-- Lines to center -->
+        <line x1="200" y1="110" x2="240" y2="75" stroke="#00ff50" stroke-width="0.5" opacity="0.5"/>
+        <line x1="200" y1="110" x2="155" y2="130" stroke="#00ff50" stroke-width="0.5" opacity="0.4"/>
+      </svg>
+      <div class="c-logo">CLAUDONY</div>
+      <div class="c-tagline">&gt; colony.connect --remote --all</div>
+    </div>
+    <div class="card-body">
+      <div class="card-label">C — Command Grid</div>
+      <div class="card-desc">Terminal green on near-black. Radar overlay maps your session colony. Scanline animation, monospace throughout, tactical-display feel. Every session is a tracked blip on the grid.</div>
+      <div class="palette">
+        <div class="swatch" style="background:#080c08" title="Void Black"></div>
+        <div class="swatch" style="background:#0d130d" title="Dark Green"></div>
+        <div class="swatch" style="background:#00ff50" title="Terminal Green"></div>
+        <div class="swatch" style="background:#00cc40" title="Active Green"></div>
+        <div class="swatch" style="background:#005518" title="Dim Green"></div>
+        <div class="swatch" style="background:#c0ffc0" title="Text"></div>
+      </div>
+      <div class="tags">
+        <span class="tag">Radar/Scanline</span>
+        <span class="tag">Full monospace</span>
+        <span class="tag">Tactical display</span>
+        <span class="tag">CRT feel</span>
+      </div>
+      <button class="select-btn" onclick="event.stopPropagation(); select('c')">Select Direction C</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="recommendation">
+  <strong>My recommendation: A — Deep Space Colony.</strong> The hex grid is the colony metaphor made visual — each cell is a session slot, lit nodes are active sessions. Electric cyan on void-black reads as premium and technical without being retro (C) or abstract (B). It gives the most flexibility for illustrations: you can draw actual colony organisms inside the hex structure, show a session map as a star chart, depict the controller Claude as the hub node. Direction B is beautiful but harder to make readable at small sizes. Direction C is distinctive but niche — the CRT aesthetic limits the audience.
+</div>
+
+<script>
+function select(choice) {
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('card-' + choice).classList.add('selected');
+  if (window.__companion) window.__companion.select(choice, 'Direction ' + choice.toUpperCase());
+}
+</script>
+
+</body>
+</html>
