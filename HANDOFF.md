@@ -1,62 +1,51 @@
-# Handover — 2026-05-05
+# Handover — 2026-05-13
 
-**Head commit:** `275a274` — blog entry (SSE panel and two silent failures)  
-**Branch:** `main`, all tests passing (474, zero failures)
+**Head commit:** `8b1cde8` — @TestSecurity removal noted in CLAUDE.md  
+**Branch:** `main`, all tests passing (479, zero failures)
 
 ---
 
 ## What happened this session
 
-*Previous session context — `git show HEAD~1:HANDOFF.md` (3 days old)*
+**Issues closed:** #109 (package rename — verified + stale comment cleanup), #91 (already done — closed), #108 (SSE strategy integration tests), #110 (register non-trigger test + @TestSecurity removal from HybridDefaultConfigTest), #111 (@TestSecurity removal from RegistryHooksStrategyIntegrationTest)
 
-**Issues closed this session:** #82 (engine NPE, upstream fix), #93 (concurrent same-role workers — `WorkResult.caseId()` + precise lookup), #103 (user identity in interjections — sender `"human:<principal>"`), #106 (messaging conventions tests — EVENT rendering, COMMAND default, allowedTypes filtering), #107 (InstanceActorIdProvider — `claudony-worker-{uuid}` → `claude:{roleName}@v1`)
+**#108 SSE integration tests landed:**
+- `RegistryHooksStrategyIntegrationTest` (4 tests) — strategy type, updateStatus push, remove push, register does NOT push
+- `HybridDefaultConfigTest` (1 test) — strategy type is hybrid when config=hybrid; no @TestSecurity
+- Both use `@QuarkusTestProfile` inner classes to override `claudony.case-worker-update`
+- AtomicInteger snapshotFn distinguishes initial snapshot from registry-triggered push by content, not just count
 
-**#104 SSE case worker panel — complete, not yet pushed to casehubio/claudony:**
+**Key discovery:** `@TestSecurity` is silently ignored on `@QuarkusTest` classes that never touch an HTTP endpoint. Cargo-culted into two new CDI-only test classes from the HTTP-exercising tests around them. Caught by code review. Removed from both; added platform protocol PP-20260513-7c227e and garden entry GE-20260513-3c1a03.
 
-Replaces `setInterval(pollWorkers, 3000)` in `terminal.js` with `EventSource('/api/sessions/{id}/case-events')`.
-- `WorkerCaseLifecycleEvent` CDI bridge in `claudony-core` (avoids casehub→app circular dep)
-- `CaseWorkerUpdateStrategy` SPI: `EventsOnlyStrategy`, `HybridStrategy` (30s heartbeat, default), `RegistryHooksStrategy`
-- `CaseEventBroadcaster` — `@ApplicationScoped`, `@Observes WorkerCaseLifecycleEvent`
-- `GET /api/sessions/{id}/case-events` SSE endpoint, 7 Playwright E2E tests
-- Config: `claudony.case-worker-update=hybrid`, `claudony.case-worker-heartbeat-ms=30000`
-- Test profile forces `events-only` (no background tick noise)
-
-Two bugs found during E2E: Quarkus auto-wraps `Multi<String>` with `data:` SSE prefix (return plain JSON, not pre-formatted frames); `static new ObjectMapper()` silently fails on `Instant` fields (use `@Inject ObjectMapper`).
-
-**Also fixed:** McpServerIntegrationTest tool count 57→59; GitStatusTest uses `endsWith("/claudony")` to accept any fork remote.
-
-**Engine changes landed:** `ProvisionContext` gained `triggerChannelId` + `triggerCorrelationId` (engine#229 — needed for #94); two Claudony test constructors pass `null, null` for new fields.
+**Garden:** GE-20260513-3c1a03 (@TestSecurity silent no-op), GE-20260513-4c4205 (AtomicInteger snapshotFn technique)  
+**Protocol:** PP-20260513-7c227e (quarkus-test-security-http-only) → parent repo
 
 ---
 
 ## Test count
 
-**474 passing, 0 failures.** All modules.
+**479 passing, 0 failures.** 4 in `claudony-core` + 134 in `claudony-casehub` + 341 in `claudony-app`.
 
 ---
 
 ## Open issues
 
-*Unchanged from prior handover — `git show HEAD~1:HANDOFF.md`*
+- `#111` — closed this session
+- `#108` — closed this session
+- Remaining open: #86 (agent mesh epic), #94 (causal chain, blocked on engine), #99 epic (#98, #100, #101, #102 — blocked on Qhorus #131), #105 (MCP endpoint separation)
 
-**New:** `casehubio/claudony#108` — registry-hooks + hybrid-is-default integration test gap (identified in code review of #104)
+*Full list: `gh issue list --repo casehubio/claudony --state open`*
 
 ---
 
 ## Immediate next
 
-Push #104 to fork and open PR targeting `casehubio/claudony`:
-```bash
-git push origin main
-gh pr create --repo casehubio/claudony --title "feat: SSE push for case worker panel (#104)"
-```
-
-After that: `#86` (agent mesh epic, self-contained) or wait for engine#221 / engine#229 to unblock `#94`.
+Pick up #86 (agent mesh infrastructure epic — self-contained, no upstream blockers) or wait for engine/Qhorus unblocking on #94/#98.
 
 ---
 
 ## Key files
 
-- Spec: `docs/superpowers/specs/2026-05-05-case-worker-sse-design.md`
-- Plan: `docs/superpowers/plans/2026-05-05-sse-case-worker-panel.md`
-- Blog: `docs/blog/2026-05-05-mdp01-sse-two-silent-failures.md`
+- Blog: `wksp/blog/2026-05-13-mdp01-silent-annotation-and-sse-causality.md`
+- Protocol: `~/claude/casehub/parent/docs/protocols/quarkus-test-security-http-only.md`
+- Garden: `~/.hortora/garden/jvm/GE-20260513-3c1a03.md`, `GE-20260513-4c4205.md`
