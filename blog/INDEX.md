@@ -2,6 +2,7 @@
 
 | Entry | Date | Summary |
 |---|---|---|
+| [2026-05-13-mdp01-silent-annotation-and-sse-causality.md](2026-05-13-mdp01-silent-annotation-and-sse-causality.md) | 2026-05-13 | @TestSecurity silently ignored on CDI-only QuarkusTest classes; AtomicInteger snapshotFn to prove SSE causality not just count |
 | [2026-05-05-mdp01-sse-two-silent-failures.md](2026-05-05-mdp01-sse-two-silent-failures.md) | 2026-05-05 | Replacing the 3-second poll with SSE: the CDI bridge for circular module deps, and two silent failures that only E2E caught |
 | [2026-04-13-mdp01-going-public.md](2026-04-13-mdp01-going-public.md) | 2026-04-13 | The name, the colony concept, and the visual identity behind Claudony |
 | [2026-04-24-mdp01-four-spis-two-traps.md](2026-04-24-mdp01-four-spis-two-traps.md) | 2026-04-24 | Implementing the CaseHub SPIs — config mapping timing gotcha, non-bean JPA repositories, and javap as a pre-flight check |
