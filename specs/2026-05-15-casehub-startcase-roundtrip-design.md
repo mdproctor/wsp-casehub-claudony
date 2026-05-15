@@ -100,8 +100,8 @@ class CaseEngineRoundTripTest
 
 4. eventBus.publish(WORKER_EXECUTION_FINISHED,
        new WorkflowExecutionCompleted(instance, worker, idempotency, output))
-   where worker = Worker.builder().name("researcher").capabilities(...).build()
-   (Worker API changed from lambda to io.serverlessworkflow.api.types.Workflow — use builder)
+   where worker = new Worker("researcher", List.of(cap), ctx -> Map.of())
+   (Worker has three constructors: lambda, Serverless Workflow, File — lambda is fine here)
    → WorkflowExecutionCompletedHandler fires CaseLifecycleEvent("WorkerExecutionCompleted", ...)
    → ClaudonyLedgerEventCapture (@ObservesAsync) writes CaseLedgerEntry row
 
