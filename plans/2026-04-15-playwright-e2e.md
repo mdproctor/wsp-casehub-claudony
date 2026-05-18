@@ -53,7 +53,7 @@ In `pom.xml`, add inside the `<dependencies>` block (alongside the other test de
 Create `src/test/java/dev/claudony/e2e/PlaywrightBase.java`:
 
 ```java
-package dev.claudony.e2e;
+package config.claudony.e2e;
 
 import com.microsoft.playwright.*;
 import org.junit.jupiter.api.AfterAll;
@@ -78,10 +78,10 @@ import java.util.Map;
  */
 public abstract class PlaywrightBase {
 
-    protected static Playwright playwright;
-    protected static Browser browser;
-    protected BrowserContext context;
-    protected Page page;
+    protected static Playwright     playwright;
+    protected static Browser        browser;
+    protected        BrowserContext context;
+    protected        Page           page;
 
     /** Base URL for the Quarkus test server. */
     protected static final String BASE_URL = "http://localhost:8081";
@@ -106,7 +106,7 @@ public abstract class PlaywrightBase {
     @BeforeEach
     void createContextAndPage() {
         context = browser.newContext();
-        page = context.newPage();
+        page    = context.newPage();
         // Inject API key into every HTTP request the page makes
         page.setExtraHTTPHeaders(Map.of("X-Api-Key", API_KEY));
     }
@@ -165,7 +165,7 @@ These 4 tests verify the test infrastructure itself before any functional tests 
 Create `src/test/java/dev/claudony/e2e/PlaywrightSetupE2ETest.java`:
 
 ```java
-package dev.claudony.e2e;
+package config.claudony.e2e;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
@@ -258,7 +258,7 @@ Note: The `sessionCard_appearsAfterApiCreate` test creates a real tmux session v
 Create `src/test/java/dev/claudony/e2e/DashboardE2ETest.java`:
 
 ```java
-package dev.claudony.e2e;
+package config.claudony.e2e;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.options.RequestOptions;
@@ -345,12 +345,12 @@ class DashboardE2ETest extends PlaywrightBase {
     void sessionCard_appearsAfterApiCreate() {
         // Create a session via REST API using the page's request context (inherits API key)
         var response = page.request().post(BASE_URL + "/api/sessions",
-                RequestOptions.create()
-                        .setHeader("Content-Type", "application/json")
-                        .setData("{\"name\":\"playwright-test-session\"}"));
+                                           RequestOptions.create()
+                                                         .setHeader("Content-Type", "application/json")
+                                                         .setData("{\"name\":\"playwright-test-session\"}"));
         assertThat(response.status()).isEqualTo(201);
         createdSessionId = response.json()
-                .getAsJsonObject().get("id").getAsString();
+                                   .getAsJsonObject().get("id").getAsString();
 
         // Navigate to dashboard and wait for card (dashboard polls every 5s — allow 10s)
         page.navigate(BASE_URL + "/app/");
@@ -372,7 +372,7 @@ class DashboardE2ETest extends PlaywrightBase {
             unauthPage.navigate(BASE_URL + "/app/");
             // Auth overlay appears (dashboard.js showAuthDialog) or redirect to login
             var redirectedToLogin = unauthPage.url().contains("/auth/login");
-            var authOverlayShown = unauthPage.locator("#auth-overlay").count() > 0;
+            var authOverlayShown  = unauthPage.locator("#auth-overlay").count() > 0;
             assertThat(redirectedToLogin || authOverlayShown)
                     .withFailMessage("Expected auth redirect or overlay, but URL was: " + unauthPage.url())
                     .isTrue();
@@ -444,7 +444,7 @@ This test navigates to the terminal page with a fake session ID. The WebSocket c
 Create `src/test/java/dev/claudony/e2e/TerminalPageE2ETest.java`:
 
 ```java
-package dev.claudony.e2e;
+package config.claudony.e2e;
 
 import com.microsoft.playwright.Locator;
 import io.quarkus.test.junit.QuarkusTest;

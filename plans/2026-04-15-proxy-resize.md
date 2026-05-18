@@ -80,9 +80,9 @@ Expected: compilation succeeds (tests use only existing types) but tests FAIL wi
 In `src/main/java/dev/claudony/server/fleet/PeerClient.java`, add the import and method. The full updated file:
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
-import dev.claudony.server.model.SessionResponse;
+import config.claudony.server.model.SessionResponse;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;

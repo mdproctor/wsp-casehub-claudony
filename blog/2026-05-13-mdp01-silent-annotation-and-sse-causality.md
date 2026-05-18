@@ -7,6 +7,7 @@ entry_type: note
 subtype: diary
 projects: [claudony]
 tags: [quarkus, testing, sse, cdi, annotation]
+excerpt: "Two Quarkus findings from SSE test coverage: @TestSecurity that silently does nothing without an HTTP call, and why SSE causality in Claudony can't be tested through Event.fireAsync()."
 ---
 
 Two Quarkus-specific findings from closing out the SSE test coverage.

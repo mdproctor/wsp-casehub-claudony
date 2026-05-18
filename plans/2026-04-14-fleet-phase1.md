@@ -67,26 +67,30 @@ Test files:
 
 ```java
 // DiscoverySource.java
-package dev.claudony.server.fleet;
-public enum DiscoverySource { CONFIG, MANUAL, MDNS }
+package config.claudony.server.fleet;
+
+public enum DiscoverySource {CONFIG, MANUAL, MDNS}
 
 // TerminalMode.java
-package dev.claudony.server.fleet;
-public enum TerminalMode { DIRECT, PROXY }
+package config.claudony.server.fleet;
+
+public enum TerminalMode {DIRECT, PROXY}
 
 // PeerHealth.java
-package dev.claudony.server.fleet;
-public enum PeerHealth { UP, DOWN, UNKNOWN }
+package config.claudony.server.fleet;
+
+public enum PeerHealth {UP, DOWN, UNKNOWN}
 
 // CircuitState.java
-package dev.claudony.server.fleet;
-public enum CircuitState { CLOSED, OPEN, HALF_OPEN }
+package config.claudony.server.fleet;
+
+public enum CircuitState {CLOSED, OPEN, HALF_OPEN}
 ```
 
 - [ ] **Step 2: Create PeerRecord (the external-facing API view)**
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
 import java.time.Instant;
 
@@ -106,51 +110,52 @@ public record PeerRecord(
 - [ ] **Step 3: Create PeerEntry (mutable internal state, package-private)**
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
-import dev.claudony.server.model.SessionResponse;
+import config.claudony.server.model.SessionResponse;
+
 import java.time.Instant;
 import java.util.List;
 
 final class PeerEntry {
 
     static final long INITIAL_BACKOFF_MS = 30_000L;
-    static final long MAX_BACKOFF_MS = 300_000L; // 5 minutes
-    static final int FAILURE_THRESHOLD = 3;
+    static final long MAX_BACKOFF_MS     = 300_000L; // 5 minutes
+    static final int  FAILURE_THRESHOLD  = 3;
 
-    final String id;
-    final String url;
-    volatile String name;
-    final DiscoverySource source;
-    volatile TerminalMode terminalMode;
-    volatile PeerHealth health = PeerHealth.UNKNOWN;
-    volatile CircuitState circuitState = CircuitState.CLOSED;
-    volatile int consecutiveFailures = 0;
-    volatile Instant lastSeen = null;
-    volatile Instant circuitOpenedAt = null;
-    volatile long currentBackoffMs = INITIAL_BACKOFF_MS;
-    volatile List<SessionResponse> cachedSessions = List.of();
+    final    String                id;
+    final    String                url;
+    volatile String                name;
+    final    DiscoverySource       source;
+    volatile TerminalMode          terminalMode;
+    volatile PeerHealth            health              = PeerHealth.UNKNOWN;
+    volatile CircuitState          circuitState        = CircuitState.CLOSED;
+    volatile int                   consecutiveFailures = 0;
+    volatile Instant               lastSeen            = null;
+    volatile Instant               circuitOpenedAt     = null;
+    volatile long                  currentBackoffMs    = INITIAL_BACKOFF_MS;
+    volatile List<SessionResponse> cachedSessions      = List.of();
 
     PeerEntry(String id, String url, String name, DiscoverySource source, TerminalMode terminalMode) {
-        this.id = id;
-        this.url = url;
-        this.name = name;
-        this.source = source;
+        this.id           = id;
+        this.url          = url;
+        this.name         = name;
+        this.source       = source;
         this.terminalMode = terminalMode;
     }
 
     PeerRecord toRecord() {
         return new PeerRecord(id, url, name, source, terminalMode, health, circuitState,
-                lastSeen, health == PeerHealth.DOWN && !cachedSessions.isEmpty(), cachedSessions.size());
+                              lastSeen, health == PeerHealth.DOWN && !cachedSessions.isEmpty(), cachedSessions.size());
     }
 
     /** Record a successful peer call — resets circuit to CLOSED. */
     void recordSuccess() {
         consecutiveFailures = 0;
-        currentBackoffMs = INITIAL_BACKOFF_MS;
-        circuitState = CircuitState.CLOSED;
-        health = PeerHealth.UP;
-        lastSeen = Instant.now();
+        currentBackoffMs    = INITIAL_BACKOFF_MS;
+        circuitState        = CircuitState.CLOSED;
+        health              = PeerHealth.UP;
+        lastSeen            = Instant.now();
     }
 
     /** Record a failed peer call — may open circuit after threshold. */
@@ -158,7 +163,7 @@ final class PeerEntry {
         consecutiveFailures++;
         health = PeerHealth.DOWN;
         if (consecutiveFailures >= FAILURE_THRESHOLD && circuitState == CircuitState.CLOSED) {
-            circuitState = CircuitState.OPEN;
+            circuitState    = CircuitState.OPEN;
             circuitOpenedAt = Instant.now();
         }
     }
@@ -174,7 +179,7 @@ final class PeerEntry {
             case OPEN -> {
                 var elapsed = Instant.now().toEpochMilli() - circuitOpenedAt.toEpochMilli();
                 if (elapsed >= currentBackoffMs) {
-                    circuitState = CircuitState.HALF_OPEN;
+                    circuitState     = CircuitState.HALF_OPEN;
                     currentBackoffMs = Math.min(currentBackoffMs * 2, MAX_BACKOFF_MS);
                     yield true;
                 }
@@ -252,9 +257,10 @@ Add after the existing `claudony.*` properties block:
 Replace `src/main/java/dev/claudony/server/model/SessionResponse.java` entirely:
 
 ```java
-package dev.claudony.server.model;
+package config.claudony.server.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.time.Instant;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -323,9 +329,9 @@ git commit -m "feat: fleet config properties + SessionResponse fleet fields (ins
 Create `src/test/java/dev/claudony/server/auth/FleetKeyServiceTest.java`:
 
 ```java
-package dev.claudony.server.auth;
+package config.claudony.server.auth;
 
-import dev.claudony.config.ClaudonyConfig;
+import config.claudony.config.ClaudonyConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -415,9 +421,9 @@ Expected: compilation error — `cannot find symbol: class FleetKeyService`
 Create `src/main/java/dev/claudony/server/auth/FleetKeyService.java`:
 
 ```java
-package dev.claudony.server.auth;
+package config.claudony.server.auth;
 
-import dev.claudony.config.ClaudonyConfig;
+import config.claudony.config.ClaudonyConfig;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -439,7 +445,7 @@ public class FleetKeyService {
     @Inject
     ClaudonyConfig config;
 
-    private final Path keyFile;
+    private final    Path             keyFile;
     private volatile Optional<String> key = Optional.empty();
 
     /** CDI no-arg constructor. */
@@ -449,7 +455,7 @@ public class FleetKeyService {
 
     /** Package-private constructor for unit tests — injects temp key file path. */
     FleetKeyService(ClaudonyConfig config, Path keyFile) {
-        this.config = config;
+        this.config  = config;
         this.keyFile = keyFile;
     }
 
@@ -461,7 +467,7 @@ public class FleetKeyService {
         key = loadFromFile();
         if (key.isEmpty()) {
             LOG.warn("claudony.fleet-key not configured — peer-to-peer calls will be" +
-                    " rejected by authenticated peers. Generate with POST /api/peers/generate-fleet-key");
+                     " rejected by authenticated peers. Generate with POST /api/peers/generate-fleet-key");
         }
     }
 
@@ -533,7 +539,7 @@ git commit -m "feat: FleetKeyService — fleet key load from config/file, genera
 Create `src/test/java/dev/claudony/server/auth/FleetKeyAuthTest.java`:
 
 ```java
-package dev.claudony.server.auth;
+package config.claudony.server.auth;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -552,25 +558,25 @@ class FleetKeyAuthTest {
     @Test
     void agentApiKeyStillAccepted() {
         given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .when().get("/api/sessions")
-            .then().statusCode(200);
+                .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                .when().get("/api/sessions")
+                .then().statusCode(200);
     }
 
     @Test
     void fleetKeyAccepted() {
         given()
-            .header("X-Api-Key", "test-fleet-key-do-not-use-in-prod")
-            .when().get("/api/sessions")
-            .then().statusCode(200);
+                .header("X-Api-Key", "test-fleet-key-do-not-use-in-prod")
+                .when().get("/api/sessions")
+                .then().statusCode(200);
     }
 
     @Test
     void unknownKeyRejected() {
         given()
-            .header("X-Api-Key", "not-a-valid-key")
-            .when().get("/api/sessions")
-            .then().statusCode(401);
+                .header("X-Api-Key", "not-a-valid-key")
+                .when().get("/api/sessions")
+                .then().statusCode(401);
     }
 }
 ```
@@ -686,14 +692,13 @@ git commit -m "feat: fleet key auth — ApiKeyAuthMechanism accepts fleet key al
 Create `src/test/java/dev/claudony/server/fleet/PeerRegistryTest.java`:
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -847,11 +852,11 @@ Expected: compilation error — `cannot find symbol: class PeerRegistry`
 Create `src/main/java/dev/claudony/server/fleet/PeerRegistry.java`:
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import dev.claudony.server.model.SessionResponse;
+import config.claudony.server.model.SessionResponse;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -867,33 +872,33 @@ import java.util.concurrent.ConcurrentHashMap;
 @ApplicationScoped
 public class PeerRegistry {
 
-    private static final Logger LOG = Logger.getLogger(PeerRegistry.class);
-    private static final int SOURCE_PRIORITY_CONFIG = 0;
-    private static final int SOURCE_PRIORITY_MANUAL = 1;
-    private static final int SOURCE_PRIORITY_MDNS = 2;
+    private static final Logger LOG                    = Logger.getLogger(PeerRegistry.class);
+    private static final int    SOURCE_PRIORITY_CONFIG = 0;
+    private static final int    SOURCE_PRIORITY_MANUAL = 1;
+    private static final int    SOURCE_PRIORITY_MDNS   = 2;
 
     private final ConcurrentHashMap<String, PeerEntry> peers = new ConcurrentHashMap<>();
-    private final Path peersFile;
-    private final ObjectMapper mapper;
+    private final Path                                 peersFile;
+    private final ObjectMapper                         mapper;
 
     /** CDI constructor. */
     @Inject
     PeerRegistry() {
         this.peersFile = Path.of(System.getProperty("user.home"), ".claudony", "peers.json");
-        this.mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        this.mapper    = new ObjectMapper().registerModule(new JavaTimeModule());
     }
 
     /** Package-private constructor for unit tests. */
     PeerRegistry(Path configDir) {
         this.peersFile = configDir.resolve("peers.json");
-        this.mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        this.mapper    = new ObjectMapper().registerModule(new JavaTimeModule());
     }
 
     @PostConstruct
     void loadPersistedPeers() {
         if (!Files.exists(peersFile)) return;
         try {
-            var json = Files.readString(peersFile);
+            var json    = Files.readString(peersFile);
             var records = mapper.readValue(json, PeerRecord[].class);
             for (var record : records) {
                 if (record.source() == DiscoverySource.CONFIG) continue; // re-loaded from config
@@ -915,8 +920,8 @@ public class PeerRegistry {
     public synchronized void addPeer(String id, String url, String name, DiscoverySource source, TerminalMode terminalMode) {
         // Check for existing peer with same URL
         var existing = peers.values().stream()
-                .filter(e -> e.url.equals(url))
-                .findFirst();
+                            .filter(e -> e.url.equals(url))
+                            .findFirst();
 
         if (existing.isPresent()) {
             if (sourcePriority(source) < sourcePriority(existing.get().source)) {
@@ -960,9 +965,9 @@ public class PeerRegistry {
      */
     public List<PeerRecord> getHealthyPeers() {
         return peers.values().stream()
-                .filter(e -> e.circuitState != CircuitState.OPEN)
-                .map(PeerEntry::toRecord)
-                .toList();
+                    .filter(e -> e.circuitState != CircuitState.OPEN)
+                    .map(PeerEntry::toRecord)
+                    .toList();
     }
 
     /** Returns all entries (package-private — for health check loop inside this package). */
@@ -1008,9 +1013,9 @@ public class PeerRegistry {
     void persist() {
         try {
             var toSave = peers.values().stream()
-                    .filter(e -> e.source != DiscoverySource.CONFIG)
-                    .map(PeerEntry::toRecord)
-                    .toList();
+                              .filter(e -> e.source != DiscoverySource.CONFIG)
+                              .map(PeerEntry::toRecord)
+                              .toList();
             var json = mapper.writeValueAsString(toSave);
             Files.createDirectories(peersFile.getParent());
             var tmp = peersFile.resolveSibling("peers.json.tmp");
@@ -1061,10 +1066,11 @@ git commit -m "feat: PeerRegistry — in-memory peer list with circuit breaker a
 - [ ] **Step 1: Create PeerDiscoverySource interface**
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
 public interface PeerDiscoverySource {
     String name();
+
     void discover(PeerRegistry registry);
 }
 ```
@@ -1074,9 +1080,9 @@ public interface PeerDiscoverySource {
 Create `src/test/java/dev/claudony/server/fleet/StaticConfigDiscoveryTest.java`:
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
-import dev.claudony.config.ClaudonyConfig;
+import config.claudony.config.ClaudonyConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -1089,9 +1095,10 @@ import static org.mockito.Mockito.when;
 
 class StaticConfigDiscoveryTest {
 
-    @TempDir Path tempDir;
+    @TempDir
+    Path tempDir;
 
-    private PeerRegistry registry() { return new PeerRegistry(tempDir); }
+    private PeerRegistry registry() {return new PeerRegistry(tempDir);}
 
     private ClaudonyConfig config(String peers) {
         var c = mock(ClaudonyConfig.class);
@@ -1145,9 +1152,9 @@ Expected: compilation error — `cannot find symbol: class StaticConfigDiscovery
 Create `src/main/java/dev/claudony/server/fleet/StaticConfigDiscovery.java`:
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
-import dev.claudony.config.ClaudonyConfig;
+import config.claudony.config.ClaudonyConfig;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -1160,12 +1167,14 @@ public class StaticConfigDiscovery implements PeerDiscoverySource {
 
     private static final Logger LOG = Logger.getLogger(StaticConfigDiscovery.class);
 
-    @Inject ClaudonyConfig config;
-    @Inject PeerRegistry registry;
+    @Inject
+    ClaudonyConfig config;
+    @Inject
+    PeerRegistry   registry;
 
     /** Package-private constructor for unit tests. */
     StaticConfigDiscovery(ClaudonyConfig config, PeerRegistry registry) {
-        this.config = config;
+        this.config   = config;
         this.registry = registry;
     }
 
@@ -1178,7 +1187,7 @@ public class StaticConfigDiscovery implements PeerDiscoverySource {
     }
 
     @Override
-    public String name() { return "static-config"; }
+    public String name() {return "static-config";}
 
     @Override
     public void discover(PeerRegistry registry) {
@@ -1223,9 +1232,9 @@ git commit -m "feat: StaticConfigDiscovery — loads claudony.peers into PeerReg
 - [ ] **Step 1: Create FleetKeyClientFilter**
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
-import dev.claudony.server.auth.FleetKeyService;
+import config.claudony.server.auth.FleetKeyService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
@@ -1240,7 +1249,7 @@ public class FleetKeyClientFilter implements ClientRequestFilter {
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
         fleetKeyService.getKey().ifPresent(key ->
-                requestContext.getHeaders().putSingle("X-Api-Key", key));
+                                                   requestContext.getHeaders().putSingle("X-Api-Key", key));
     }
 }
 ```
@@ -1248,9 +1257,9 @@ public class FleetKeyClientFilter implements ClientRequestFilter {
 - [ ] **Step 2: Create PeerClient**
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
-import dev.claudony.server.model.SessionResponse;
+import config.claudony.server.model.SessionResponse;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
@@ -1316,7 +1325,7 @@ git commit -m "feat: FleetKeyClientFilter + PeerClient REST client for peer-to-p
 - [ ] **Step 1: Create ManualRegistrationDiscovery**
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -1326,10 +1335,11 @@ import java.util.UUID;
 @ApplicationScoped
 public class ManualRegistrationDiscovery implements PeerDiscoverySource {
 
-    @Inject PeerRegistry registry;
+    @Inject
+    PeerRegistry registry;
 
     @Override
-    public String name() { return "manual"; }
+    public String name() {return "manual";}
 
     @Override
     public void discover(PeerRegistry registry) {
@@ -1340,7 +1350,7 @@ public class ManualRegistrationDiscovery implements PeerDiscoverySource {
     public PeerRecord addPeer(String url, String name, TerminalMode terminalMode) {
         var id = UUID.randomUUID().toString();
         registry.addPeer(id, url, name == null ? url : name,
-                DiscoverySource.MANUAL, terminalMode == null ? TerminalMode.DIRECT : terminalMode);
+                         DiscoverySource.MANUAL, terminalMode == null ? TerminalMode.DIRECT : terminalMode);
         return registry.findById(id).orElseThrow();
     }
 }
@@ -1351,7 +1361,7 @@ public class ManualRegistrationDiscovery implements PeerDiscoverySource {
 Create `src/test/java/dev/claudony/server/fleet/PeerResourceTest.java`:
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
@@ -1366,7 +1376,8 @@ import static org.hamcrest.Matchers.*;
 @QuarkusTest
 class PeerResourceTest {
 
-    @Inject PeerRegistry registry;
+    @Inject
+    PeerRegistry registry;
 
     @AfterEach
     void cleanup() {
@@ -1379,89 +1390,89 @@ class PeerResourceTest {
     @Test
     void listPeers_emptyInitially() {
         given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .when().get("/api/peers")
-            .then().statusCode(200).body("$", hasSize(0));
+                .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                .when().get("/api/peers")
+                .then().statusCode(200).body("$", hasSize(0));
     }
 
     @Test
     void addPeer_appearsInList() {
         given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .contentType(ContentType.JSON)
-            .body("{\"url\":\"http://test-peer:7777\",\"name\":\"Test Peer\",\"terminalMode\":\"DIRECT\"}")
-            .when().post("/api/peers")
-            .then().statusCode(201)
-            .body("url", equalTo("http://test-peer:7777"))
-            .body("name", equalTo("Test Peer"))
-            .body("source", equalTo("MANUAL"));
+                .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                .contentType(ContentType.JSON)
+                .body("{\"url\":\"http://test-peer:7777\",\"name\":\"Test Peer\",\"terminalMode\":\"DIRECT\"}")
+                .when().post("/api/peers")
+                .then().statusCode(201)
+                .body("url", equalTo("http://test-peer:7777"))
+                .body("name", equalTo("Test Peer"))
+                .body("source", equalTo("MANUAL"));
 
         given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .when().get("/api/peers")
-            .then().statusCode(200).body("$", hasSize(1));
+                .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                .when().get("/api/peers")
+                .then().statusCode(200).body("$", hasSize(1));
     }
 
     @Test
     void deletePeer_removesFromList() {
         var id = given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .contentType(ContentType.JSON)
-            .body("{\"url\":\"http://delete-peer:7777\",\"name\":\"Delete Me\"}")
-            .when().post("/api/peers")
-            .then().statusCode(201).extract().path("id");
+                         .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                         .contentType(ContentType.JSON)
+                         .body("{\"url\":\"http://delete-peer:7777\",\"name\":\"Delete Me\"}")
+                         .when().post("/api/peers")
+                         .then().statusCode(201).extract().path("id");
 
         given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .when().delete("/api/peers/" + id)
-            .then().statusCode(204);
+                .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                .when().delete("/api/peers/" + id)
+                .then().statusCode(204);
 
         given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .when().get("/api/peers")
-            .then().statusCode(200).body("$", hasSize(0));
+                .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                .when().get("/api/peers")
+                .then().statusCode(200).body("$", hasSize(0));
     }
 
     @Test
     void patchPeer_updatesName() {
         var id = given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .contentType(ContentType.JSON)
-            .body("{\"url\":\"http://patch-peer:7777\",\"name\":\"Old Name\"}")
-            .when().post("/api/peers")
-            .then().statusCode(201).extract().path("id");
+                         .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                         .contentType(ContentType.JSON)
+                         .body("{\"url\":\"http://patch-peer:7777\",\"name\":\"Old Name\"}")
+                         .when().post("/api/peers")
+                         .then().statusCode(201).extract().path("id");
 
         given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .contentType(ContentType.JSON)
-            .body("{\"name\":\"New Name\"}")
-            .when().patch("/api/peers/" + id)
-            .then().statusCode(200)
-            .body("name", equalTo("New Name"));
+                .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                .contentType(ContentType.JSON)
+                .body("{\"name\":\"New Name\"}")
+                .when().patch("/api/peers/" + id)
+                .then().statusCode(200)
+                .body("name", equalTo("New Name"));
     }
 
     @Test
     void deleteUnknownPeer_returns404() {
         given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .when().delete("/api/peers/does-not-exist")
-            .then().statusCode(404);
+                .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                .when().delete("/api/peers/does-not-exist")
+                .then().statusCode(404);
     }
 
     @Test
     void unauthenticated_returns401() {
         given()
-            .when().get("/api/peers")
-            .then().statusCode(401);
+                .when().get("/api/peers")
+                .then().statusCode(401);
     }
 
     @Test
     void generateFleetKey_returnsKey() {
         var key = given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .when().post("/api/peers/generate-fleet-key")
-            .then().statusCode(200)
-            .extract().asString();
+                          .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                          .when().post("/api/peers/generate-fleet-key")
+                          .then().statusCode(200)
+                          .extract().asString();
 
         assertThat(key).isNotBlank();
     }
@@ -1476,7 +1487,7 @@ class PeerResourceTest {
 - [ ] **Step 3: Create AddPeerRequest record**
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
 public record AddPeerRequest(String url, String name, TerminalMode terminalMode) {}
 ```
@@ -1488,7 +1499,7 @@ Create `src/main/java/dev/claudony/server/fleet/AddPeerRequest.java` with the ab
 Create `src/main/java/dev/claudony/server/fleet/UpdatePeerRequest.java`:
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
 public record UpdatePeerRequest(String name, TerminalMode terminalMode) {}
 ```
@@ -1498,9 +1509,9 @@ public record UpdatePeerRequest(String name, TerminalMode terminalMode) {}
 Create `src/main/java/dev/claudony/server/fleet/PeerResource.java`:
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
-import dev.claudony.server.auth.FleetKeyService;
+import config.claudony.server.auth.FleetKeyService;
 import io.quarkus.security.Authenticated;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -1519,9 +1530,12 @@ public class PeerResource {
 
     private static final Logger LOG = Logger.getLogger(PeerResource.class);
 
-    @Inject PeerRegistry registry;
-    @Inject ManualRegistrationDiscovery manual;
-    @Inject FleetKeyService fleetKeyService;
+    @Inject
+    PeerRegistry                registry;
+    @Inject
+    ManualRegistrationDiscovery manual;
+    @Inject
+    FleetKeyService             fleetKeyService;
 
     @GET
     public List<PeerRecord> list() {
@@ -1546,8 +1560,8 @@ public class PeerResource {
         var removed = registry.removePeer(id);
         if (!removed) {
             return Response.status(405)
-                    .entity("{\"error\":\"Cannot remove a peer registered via static config\"}")
-                    .build();
+                           .entity("{\"error\":\"Cannot remove a peer registered via static config\"}")
+                           .build();
         }
         return Response.noContent().build();
     }
@@ -1566,8 +1580,8 @@ public class PeerResource {
     @Path("/{id}/sessions")
     public Response peerSessions(@PathParam("id") String id) {
         return registry.findById(id)
-                .map(peer -> Response.ok(registry.getCachedSessions(id)).build())
-                .orElse(Response.status(404).build());
+                       .map(peer -> Response.ok(registry.getCachedSessions(id)).build())
+                       .orElse(Response.status(404).build());
     }
 
     @POST
@@ -1579,14 +1593,14 @@ public class PeerResource {
         // Health check runs asynchronously — returns immediately
         Thread.ofVirtual().start(() -> {
             var entry = registry.getAllEntries().stream()
-                    .filter(e -> e.id.equals(id)).findFirst();
+                                .filter(e -> e.id.equals(id)).findFirst();
             entry.ifPresent(e -> {
                 try {
                     var client = org.eclipse.microprofile.rest.client.RestClientBuilder.newBuilder()
-                            .baseUri(java.net.URI.create(e.url))
-                            .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
-                            .readTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
-                            .build(dev.claudony.server.fleet.PeerClient.class);
+                                                                                       .baseUri(java.net.URI.create(e.url))
+                                                                                       .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                                                                                       .readTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                                                                                       .build(config.claudony.server.fleet.PeerClient.class);
                     var sessions = client.getSessions(true);
                     registry.recordSuccess(id);
                     registry.updateCachedSessions(id, sessions);
@@ -1608,8 +1622,8 @@ public class PeerResource {
             return Response.ok(key).build();
         } catch (IOException e) {
             return Response.serverError()
-                    .entity("{\"error\":\"" + e.getMessage() + "\"}")
-                    .build();
+                           .entity("{\"error\":\"" + e.getMessage() + "\"}")
+                           .build();
         }
     }
 }
@@ -1693,7 +1707,7 @@ private void checkPeerHealth(PeerEntry entry) {
 Create `src/test/java/dev/claudony/server/fleet/SessionFederationTest.java`:
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -1708,7 +1722,8 @@ import static org.hamcrest.Matchers.*;
 @QuarkusTest
 class SessionFederationTest {
 
-    @Inject PeerRegistry registry;
+    @Inject
+    PeerRegistry registry;
 
     @AfterEach
     void cleanup() {
@@ -1720,29 +1735,29 @@ class SessionFederationTest {
     @Test
     void localOnly_returnsOnlyLocalSessions() {
         given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .queryParam("local", "true")
-            .when().get("/api/sessions")
-            .then().statusCode(200);
+                .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                .queryParam("local", "true")
+                .when().get("/api/sessions")
+                .then().statusCode(200);
         // All sessions have null instanceUrl (local sessions)
         given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .queryParam("local", "true")
-            .when().get("/api/sessions")
-            .then().statusCode(200)
-            .body("instanceUrl", everyItem(nullValue()));
+                .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                .queryParam("local", "true")
+                .when().get("/api/sessions")
+                .then().statusCode(200)
+                .body("instanceUrl", everyItem(nullValue()));
     }
 
     @Test
     void federated_includesDownPeerCachedSessions() {
         // Add a peer that will be unreachable
         registry.addPeer("test-dead-peer", "http://nonexistent-peer:7777",
-                "Dead Peer", DiscoverySource.MANUAL, TerminalMode.DIRECT);
+                         "Dead Peer", DiscoverySource.MANUAL, TerminalMode.DIRECT);
 
         // Pre-populate its cache with a fake session to simulate stale data
-        var fakeSessions = List.of(new dev.claudony.server.model.SessionResponse(
+        var fakeSessions = List.of(new config.claudony.server.model.SessionResponse(
                 "fake-id", "claudony-fake", "/tmp", "claude",
-                dev.claudony.server.model.SessionStatus.IDLE,
+                config.claudony.server.model.SessionStatus.IDLE,
                 java.time.Instant.now(), java.time.Instant.now(),
                 "ws://nonexistent-peer:7777/ws/fake-id",
                 "http://nonexistent-peer:7777/app/session/fake-id",
@@ -1756,11 +1771,11 @@ class SessionFederationTest {
 
         // Federated call should include stale cached sessions
         given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .when().get("/api/sessions")
-            .then().statusCode(200)
-            .body("find { it.id == 'fake-id' }.stale", equalTo(true))
-            .body("find { it.id == 'fake-id' }.instanceName", equalTo("Dead Peer"));
+                .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                .when().get("/api/sessions")
+                .then().statusCode(200)
+                .body("find { it.id == 'fake-id' }.stale", equalTo(true))
+                .body("find { it.id == 'fake-id' }.instanceName", equalTo("Dead Peer"));
     }
 
     @Test
@@ -1768,11 +1783,11 @@ class SessionFederationTest {
         // Calling /api/sessions?local=true must not fan out to peers
         // Verified by the endpoint returning only local sessions (no instanceUrl)
         given()
-            .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
-            .queryParam("local", "true")
-            .when().get("/api/sessions")
-            .then().statusCode(200)
-            .body("instanceUrl", everyItem(nullValue()));
+                .header("X-Api-Key", "test-api-key-do-not-use-in-prod")
+                .queryParam("local", "true")
+                .when().get("/api/sessions")
+                .then().statusCode(200)
+                .body("instanceUrl", everyItem(nullValue()));
     }
 }
 ```
@@ -1790,12 +1805,10 @@ Add these fields:
 Add imports:
 
 ```java
-import dev.claudony.server.fleet.PeerRegistry;
-import dev.claudony.server.fleet.PeerClient;
+import config.claudony.server.fleet.PeerRegistry;
+import config.claudony.server.fleet.PeerClient;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
+
 ```
 
 Replace the existing `list()` method:
@@ -1890,9 +1903,9 @@ git commit -m "feat: health check loop + session federation with stale cache fal
 Create `src/test/java/dev/claudony/server/fleet/MdnsDiscoveryTest.java`:
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
-import dev.claudony.config.ClaudonyConfig;
+import config.claudony.config.ClaudonyConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -1905,7 +1918,8 @@ import static org.mockito.Mockito.when;
 
 class MdnsDiscoveryTest {
 
-    @TempDir Path tempDir;
+    @TempDir
+    Path tempDir;
 
     @Test
     void disabledByDefault_doesNothing() {
@@ -1942,9 +1956,9 @@ class MdnsDiscoveryTest {
 Create `src/main/java/dev/claudony/server/fleet/MdnsDiscovery.java`:
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
-import dev.claudony.config.ClaudonyConfig;
+import config.claudony.config.ClaudonyConfig;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -1962,15 +1976,17 @@ import org.jboss.logging.Logger;
 @ApplicationScoped
 public class MdnsDiscovery implements PeerDiscoverySource {
 
-    private static final Logger LOG = Logger.getLogger(MdnsDiscovery.class);
+    private static final Logger LOG          = Logger.getLogger(MdnsDiscovery.class);
     private static final String SERVICE_TYPE = "_claudony._tcp.local.";
 
-    @Inject ClaudonyConfig config;
-    @Inject PeerRegistry registry;
+    @Inject
+    ClaudonyConfig config;
+    @Inject
+    PeerRegistry   registry;
 
     /** Package-private constructor for unit tests. */
     MdnsDiscovery(ClaudonyConfig config, PeerRegistry registry) {
-        this.config = config;
+        this.config   = config;
         this.registry = registry;
     }
 
@@ -1988,13 +2004,13 @@ public class MdnsDiscovery implements PeerDiscoverySource {
             startDiscovering();
         } catch (Exception e) {
             LOG.warnf("mDNS discovery unavailable — %s. " +
-                    "This is normal on VPNs, Docker networks without multicast, or some cloud environments. " +
-                    "Static config and manual peer registration still work.", e.getMessage());
+                      "This is normal on VPNs, Docker networks without multicast, or some cloud environments. " +
+                      "Static config and manual peer registration still work.", e.getMessage());
         }
     }
 
     @Override
-    public String name() { return "mdns"; }
+    public String name() {return "mdns";}
 
     @Override
     public void discover(PeerRegistry registry) {

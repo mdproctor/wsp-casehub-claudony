@@ -94,7 +94,7 @@ MESSAGE DISCIPLINE:
 - [ ] **Step 1: Create the test file**
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.model.WorkerSummary;
 import io.quarkiverse.qhorus.runtime.channel.ChannelSemantic;
@@ -111,30 +111,30 @@ import static org.assertj.core.api.Assertions.*;
 
 class MeshSystemPromptTemplateTest {
 
-    private static final UUID CASE_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-    private static final String WORKER_ID = "worker-abc";
+    private static final UUID   CASE_ID    = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final String WORKER_ID  = "worker-abc";
     private static final String CAPABILITY = "researcher";
 
     private static final List<CaseChannelLayout.ChannelSpec> NORMATIVE_SPECS = List.of(
             new CaseChannelLayout.ChannelSpec("work", ChannelSemantic.APPEND, null,
-                    "Primary coordination — all obligation-carrying message types"),
+                                              "Primary coordination — all obligation-carrying message types"),
             new CaseChannelLayout.ChannelSpec("observe", ChannelSemantic.APPEND,
-                    Set.of(MessageType.EVENT), "Telemetry — EVENT only, no obligations created"),
+                                              Set.of(MessageType.EVENT), "Telemetry — EVENT only, no obligations created"),
             new CaseChannelLayout.ChannelSpec("oversight", ChannelSemantic.APPEND,
-                    Set.of(MessageType.QUERY, MessageType.COMMAND),
-                    "Human governance — agent QUERY and human COMMAND")
-    );
+                                              Set.of(MessageType.QUERY, MessageType.COMMAND),
+                                              "Human governance — agent QUERY and human COMMAND")
+                                                                                      );
 
     private static final List<CaseChannelLayout.ChannelSpec> SIMPLE_SPECS = List.of(
             new CaseChannelLayout.ChannelSpec("work", ChannelSemantic.APPEND, null,
-                    "Primary coordination — all obligation-carrying message types"),
+                                              "Primary coordination — all obligation-carrying message types"),
             new CaseChannelLayout.ChannelSpec("observe", ChannelSemantic.APPEND,
-                    Set.of(MessageType.EVENT), "Telemetry — EVENT only, no obligations created")
-    );
+                                              Set.of(MessageType.EVENT), "Telemetry — EVENT only, no obligations created")
+                                                                                   );
 
     private static WorkerSummary summary(String name, String output) {
         return new WorkerSummary("id-" + name, name, Instant.now().minusSeconds(60),
-                Instant.now(), output, UUID.randomUUID());
+                                 Instant.now(), output, UUID.randomUUID());
     }
 
     // ── Happy path: SILENT ────────────────────────────────────────────────
@@ -337,9 +337,10 @@ Expected: COMPILE ERROR (class doesn't exist yet)
 - [ ] **Step 3: Create `MeshSystemPromptTemplate.java`**
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.model.WorkerSummary;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -361,43 +362,43 @@ class MeshSystemPromptTemplate {
     }
 
     private static String buildActive(String workerId, String capability, UUID caseId,
-                                       List<CaseChannelLayout.ChannelSpec> channelSpecs,
-                                       List<WorkerSummary> priorWorkers) {
+                                      List<CaseChannelLayout.ChannelSpec> channelSpecs,
+                                      List<WorkerSummary> priorWorkers) {
         return "You are a Claudony-managed agent working on case " + caseId + ".\n\n"
-                + "ROLE: " + capability + "\n\n"
-                + "MESH CHANNELS:\n" + formatChannels(caseId, channelSpecs) + "\n"
-                + "STARTUP:\n"
-                + "  1. register(\"" + workerId + "\", \"Starting " + capability + "\", [\"" + capability + "\"])\n"
-                + "  2. send_message(\"case-" + caseId + "/work\", STATUS, \"Starting: " + capability + "\")\n\n"
-                + "PRIOR WORKERS:\n" + formatPriorWorkers(priorWorkers) + "\n"
-                + "MESSAGE DISCIPLINE:\n"
-                + "  - Post EVENT to observe for every significant tool call (no obligations created)\n"
-                + "  - Post STATUS to work when you reach major milestones\n"
-                + "  - Use QUERY/RESPONSE for questions with other agents — these create obligations\n"
-                + "  - Use HANDOFF to pass work to a named next worker\n"
-                + "  - Use DONE only when your task is fully complete\n"
-                + "  - If you cannot proceed: DECLINE with a clear reason\n"
-                + "  - Check work channel every few steps: check_messages(\"case-" + caseId + "/work\", afterId=N)\n"
-                + "  - Check oversight if expecting human input\n";
+               + "ROLE: " + capability + "\n\n"
+               + "MESH CHANNELS:\n" + formatChannels(caseId, channelSpecs) + "\n"
+               + "STARTUP:\n"
+               + "  1. register(\"" + workerId + "\", \"Starting " + capability + "\", [\"" + capability + "\"])\n"
+               + "  2. send_message(\"case-" + caseId + "/work\", STATUS, \"Starting: " + capability + "\")\n\n"
+               + "PRIOR WORKERS:\n" + formatPriorWorkers(priorWorkers) + "\n"
+               + "MESSAGE DISCIPLINE:\n"
+               + "  - Post EVENT to observe for every significant tool call (no obligations created)\n"
+               + "  - Post STATUS to work when you reach major milestones\n"
+               + "  - Use QUERY/RESPONSE for questions with other agents — these create obligations\n"
+               + "  - Use HANDOFF to pass work to a named next worker\n"
+               + "  - Use DONE only when your task is fully complete\n"
+               + "  - If you cannot proceed: DECLINE with a clear reason\n"
+               + "  - Check work channel every few steps: check_messages(\"case-" + caseId + "/work\", afterId=N)\n"
+               + "  - Check oversight if expecting human input\n";
     }
 
     private static String buildReactive(String capability, UUID caseId,
-                                         List<CaseChannelLayout.ChannelSpec> channelSpecs,
-                                         List<WorkerSummary> priorWorkers) {
+                                        List<CaseChannelLayout.ChannelSpec> channelSpecs,
+                                        List<WorkerSummary> priorWorkers) {
         List<CaseChannelLayout.ChannelSpec> workOnly = channelSpecs.stream()
-                .filter(s -> s.purpose().equals("work"))
-                .toList();
+                                                                   .filter(s -> s.purpose().equals("work"))
+                                                                   .toList();
         List<CaseChannelLayout.ChannelSpec> channelsToShow = workOnly.isEmpty() ? channelSpecs : workOnly;
 
         return "You are a Claudony-managed agent working on case " + caseId + ".\n\n"
-                + "ROLE: " + capability + "\n\n"
-                + "MESH CHANNELS (respond when directly addressed):\n"
-                + formatChannels(caseId, channelsToShow) + "\n"
-                + "PRIOR WORKERS:\n" + formatPriorWorkers(priorWorkers) + "\n"
-                + "MESSAGE DISCIPLINE:\n"
-                + "  - Monitor work channel for QUERY or COMMAND addressed to you\n"
-                + "  - Use RESPONSE to answer QUERY; DONE when work is complete\n"
-                + "  - Post EVENT to observe for diagnostic output\n";
+               + "ROLE: " + capability + "\n\n"
+               + "MESH CHANNELS (respond when directly addressed):\n"
+               + formatChannels(caseId, channelsToShow) + "\n"
+               + "PRIOR WORKERS:\n" + formatPriorWorkers(priorWorkers) + "\n"
+               + "MESSAGE DISCIPLINE:\n"
+               + "  - Monitor work channel for QUERY or COMMAND addressed to you\n"
+               + "  - Use RESPONSE to answer QUERY; DONE when work is complete\n"
+               + "  - Post EVENT to observe for diagnostic output\n";
     }
 
     private static String formatChannels(UUID caseId, List<CaseChannelLayout.ChannelSpec> specs) {
@@ -466,9 +467,10 @@ This 2-arg constructor will be updated to default to `NormativeChannelLayout`. E
 New tests use a 4-arg package-private constructor `(CaseLineageQuery, CaseChannelProvider, MeshParticipationStrategy, CaseChannelLayout)`.
 
 Add these imports if not already present:
+
 ```java
-import dev.claudony.casehub.NormativeChannelLayout;
-import dev.claudony.casehub.SimpleLayout;
+import config.claudony.casehub.NormativeChannelLayout;
+import config.claudony.casehub.SimpleLayout;
 ```
 (Same package — no import needed.)
 
@@ -615,7 +617,7 @@ Key changes from current version:
 7. In `buildContext()` full path: call `layout.channelsFor()` + `MeshSystemPromptTemplate.generate()` + store result
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.context.PropagationContext;
 import io.casehub.api.model.CaseChannel;
@@ -626,10 +628,11 @@ import io.casehub.api.spi.CaseChannelProvider;
 import io.casehub.api.spi.WorkerContextProvider;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
+
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -637,38 +640,38 @@ public class ClaudonyWorkerContextProvider implements WorkerContextProvider {
 
     private static final Logger log = Logger.getLogger(ClaudonyWorkerContextProvider.class);
 
-    private final CaseLineageQuery lineageQuery;
-    private final CaseChannelProvider channelProvider;
+    private final CaseLineageQuery          lineageQuery;
+    private final CaseChannelProvider       channelProvider;
     private final MeshParticipationStrategy strategy;
-    private final CaseChannelLayout layout;
+    private final CaseChannelLayout         layout;
 
     @Inject
     public ClaudonyWorkerContextProvider(CaseLineageQuery lineageQuery,
-                                          CaseChannelProvider channelProvider,
-                                          CaseHubConfig config) {
+                                         CaseChannelProvider channelProvider,
+                                         CaseHubConfig config) {
         this(lineageQuery, channelProvider,
-                selectStrategy(config.meshParticipation()),
-                selectLayout(config.channelLayout()));
+             selectStrategy(config.meshParticipation()),
+             selectLayout(config.channelLayout()));
     }
 
     ClaudonyWorkerContextProvider(CaseLineageQuery lineageQuery,
-                                   CaseChannelProvider channelProvider,
-                                   MeshParticipationStrategy strategy,
-                                   CaseChannelLayout layout) {
-        this.lineageQuery = lineageQuery;
+                                  CaseChannelProvider channelProvider,
+                                  MeshParticipationStrategy strategy,
+                                  CaseChannelLayout layout) {
+        this.lineageQuery    = lineageQuery;
         this.channelProvider = channelProvider;
-        this.strategy = strategy;
-        this.layout = layout;
+        this.strategy        = strategy;
+        this.layout          = layout;
     }
 
     ClaudonyWorkerContextProvider(CaseLineageQuery lineageQuery,
-                                   CaseChannelProvider channelProvider,
-                                   MeshParticipationStrategy strategy) {
+                                  CaseChannelProvider channelProvider,
+                                  MeshParticipationStrategy strategy) {
         this(lineageQuery, channelProvider, strategy, new NormativeChannelLayout());
     }
 
     ClaudonyWorkerContextProvider(CaseLineageQuery lineageQuery,
-                                   CaseChannelProvider channelProvider) {
+                                  CaseChannelProvider channelProvider) {
         this(lineageQuery, channelProvider, new ActiveParticipationStrategy());
     }
 
@@ -683,13 +686,13 @@ public class ClaudonyWorkerContextProvider implements WorkerContextProvider {
         if (Boolean.TRUE.equals(task.input().get("clean-start"))) {
             props.put("clean-start", true);
             return new WorkerContext(task.capability(), null, null, List.of(),
-                    PropagationContext.createRoot(), props);
+                                     PropagationContext.createRoot(), props);
         }
 
         String caseIdStr = (String) task.input().get("caseId");
         if (caseIdStr == null || caseIdStr.isBlank()) {
             return new WorkerContext(task.capability(), null, null, List.of(),
-                    PropagationContext.createRoot(), props);
+                                     PropagationContext.createRoot(), props);
         }
 
         UUID caseId;
@@ -697,22 +700,22 @@ public class ClaudonyWorkerContextProvider implements WorkerContextProvider {
             caseId = UUID.fromString(caseIdStr);
         } catch (IllegalArgumentException e) {
             return new WorkerContext(task.capability(), null, null, List.of(),
-                    PropagationContext.createRoot(), props);
+                                     PropagationContext.createRoot(), props);
         }
 
         List<WorkerSummary> priorWorkers = lineageQuery.findCompletedWorkers(caseId);
 
         CaseChannel channel = channelProvider.listChannels(caseId).stream()
-                .findFirst()
-                .orElse(null);
+                                             .findFirst()
+                                             .orElse(null);
 
         List<CaseChannelLayout.ChannelSpec> channelSpecs = layout.channelsFor(caseId, null);
         MeshSystemPromptTemplate.generate(workerId, task.capability(), caseId,
-                        channelSpecs, priorWorkers, participation)
-                .ifPresent(prompt -> props.put("systemPrompt", prompt));
+                                          channelSpecs, priorWorkers, participation)
+                                .ifPresent(prompt -> props.put("systemPrompt", prompt));
 
         return new WorkerContext(task.capability(), caseId, channel, priorWorkers,
-                PropagationContext.createRoot(), props);
+                                 PropagationContext.createRoot(), props);
     }
 
     private static MeshParticipationStrategy selectStrategy(String name) {
@@ -785,17 +788,19 @@ Confirm `@TestSecurity(user = "test", roles = "user")` is required (it is — al
 - [ ] **Step 2: Create `SystemPromptIntegrationTest.java`**
 
 ```java
-package dev.claudony;
+package config.claudony;
 
-import dev.claudony.casehub.ClaudonyWorkerContextProvider;
+import config.claudony.casehub.ClaudonyWorkerContextProvider;
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkerContext;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
+
 import java.util.Map;
 import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.*;
 
 @QuarkusTest
@@ -809,7 +814,7 @@ class SystemPromptIntegrationTest {
     void defaultConfig_activeStrategy_systemPromptPresent() {
         UUID caseId = UUID.randomUUID();
         WorkerContext ctx = provider.buildContext("integration-worker",
-                WorkRequest.of("researcher", Map.of("caseId", caseId.toString())));
+                                                  WorkRequest.of("researcher", Map.of("caseId", caseId.toString())));
 
         assertThat(ctx.properties()).containsKey("systemPrompt");
     }
@@ -818,7 +823,7 @@ class SystemPromptIntegrationTest {
     void defaultConfig_systemPromptContainsCaseId() {
         UUID caseId = UUID.randomUUID();
         WorkerContext ctx = provider.buildContext("integration-worker",
-                WorkRequest.of("researcher", Map.of("caseId", caseId.toString())));
+                                                  WorkRequest.of("researcher", Map.of("caseId", caseId.toString())));
 
         String prompt = (String) ctx.properties().get("systemPrompt");
         assertThat(prompt).contains(caseId.toString());
@@ -828,7 +833,7 @@ class SystemPromptIntegrationTest {
     void defaultConfig_systemPromptContainsStartupSection() {
         UUID caseId = UUID.randomUUID();
         WorkerContext ctx = provider.buildContext("integration-worker",
-                WorkRequest.of("researcher", Map.of("caseId", caseId.toString())));
+                                                  WorkRequest.of("researcher", Map.of("caseId", caseId.toString())));
 
         String prompt = (String) ctx.properties().get("systemPrompt");
         assertThat(prompt).contains("STARTUP:");
@@ -839,9 +844,9 @@ class SystemPromptIntegrationTest {
 - [ ] **Step 3: Create `SystemPromptSilentProfileTest.java`**
 
 ```java
-package dev.claudony;
+package config.claudony;
 
-import dev.claudony.casehub.ClaudonyWorkerContextProvider;
+import config.claudony.casehub.ClaudonyWorkerContextProvider;
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkerContext;
 import io.quarkus.test.junit.QuarkusTest;
@@ -850,8 +855,10 @@ import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
+
 import java.util.Map;
 import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.*;
 
 @QuarkusTest
@@ -873,7 +880,7 @@ class SystemPromptSilentProfileTest {
     void silentConfig_systemPromptAbsent() {
         UUID caseId = UUID.randomUUID();
         WorkerContext ctx = provider.buildContext("integration-worker",
-                WorkRequest.of("researcher", Map.of("caseId", caseId.toString())));
+                                                  WorkRequest.of("researcher", Map.of("caseId", caseId.toString())));
 
         assertThat(ctx.properties()).doesNotContainKey("systemPrompt");
     }

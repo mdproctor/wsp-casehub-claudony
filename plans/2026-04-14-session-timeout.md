@@ -35,7 +35,7 @@ This task follows the full TDD cycle: write tests that fail to compile, add the 
 Create `src/test/java/dev/claudony/config/SessionTimeoutConfigTest.java`:
 
 ```java
-package dev.claudony.config;
+package config.claudony.config;
 
 import io.quarkus.security.webauthn.WebAuthnRunTimeConfig;
 import io.quarkus.test.junit.QuarkusTest;
@@ -92,11 +92,12 @@ In `src/main/java/dev/claudony/config/ClaudonyConfig.java`, add the import and n
 The full updated file:
 
 ```java
-package dev.claudony.config;
+package config.claudony.config;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
+
 import java.time.Duration;
 import java.util.Optional;
 
@@ -140,8 +141,9 @@ public interface ClaudonyConfig {
     @WithDefault("P7D")
     Duration sessionTimeout();
 
-    default boolean isServerMode() { return "server".equals(mode()); }
-    default boolean isAgentMode()  { return "agent".equals(mode()); }
+    default boolean isServerMode() {return "server".equals(mode());}
+
+    default boolean isAgentMode()  {return "agent".equals(mode());}
 }
 ```
 
