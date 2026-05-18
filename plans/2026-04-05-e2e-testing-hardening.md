@@ -216,8 +216,9 @@ git commit -m "test: add rename and resize endpoint coverage to SessionResourceT
 All existing 5 tests use `@InjectMock` for `ServerClient` and `TerminalAdapterFactory`. The `@BeforeEach` resets mocks and sets `terminalFactory.resolve()` to return `Optional.empty()`. Maintain that pattern.
 
 Add the following imports if not already present:
+
 ```java
-import dev.remotecc.server.model.SendInputRequest;
+import config.remotecc.server.model.SendInputRequest;
 ```
 
 - [ ] **Step 1: Add 5 new tests**
@@ -831,13 +832,15 @@ Use whichever mechanism is available. The test below assumes `CLAUDE_CONFIG_DIR`
 Create `src/test/java/dev/remotecc/e2e/ClaudeE2ETest.java`:
 
 ```java
-package dev.remotecc.e2e;
+package config.remotecc.e2e;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import java.nio.file.*;
 import java.util.concurrent.TimeUnit;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -865,15 +868,15 @@ class ClaudeE2ETest {
         // Create a temp config directory with MCP server pointing to test instance
         configDir = Files.createTempDirectory("remotecc-e2e-config-");
         var settings = """
-            {
-              "mcpServers": {
-                "remotecc": {
-                  "type": "http",
-                  "url": "http://localhost:8081/mcp"
-                }
-              }
-            }
-            """;
+                       {
+                         "mcpServers": {
+                           "remotecc": {
+                             "type": "http",
+                             "url": "http://localhost:8081/mcp"
+                           }
+                         }
+                       }
+                       """;
         // Try settings.json (Claude Code default config file name)
         Files.writeString(configDir.resolve("settings.json"), settings);
     }
@@ -882,15 +885,15 @@ class ClaudeE2ETest {
     static void cleanupConfig() throws Exception {
         if (configDir != null) {
             Files.walk(configDir)
-                .sorted(java.util.Comparator.reverseOrder())
-                .forEach(p -> p.toFile().delete());
+                 .sorted(java.util.Comparator.reverseOrder())
+                 .forEach(p -> p.toFile().delete());
         }
     }
 
     private int runClaude(String prompt) throws Exception {
         var pb = new ProcessBuilder(
-            "claude", "--dangerously-skip-permissions", "-p", prompt)
-            .redirectErrorStream(true);
+                "claude", "--dangerously-skip-permissions", "-p", prompt)
+                         .redirectErrorStream(true);
         pb.environment().put("CLAUDE_CONFIG_DIR", configDir.toString());
         // Propagate API key from test environment
         var apiKey = System.getenv("ANTHROPIC_API_KEY");
@@ -903,7 +906,7 @@ class ClaudeE2ETest {
 
     private boolean tmuxSessionExists(String name) throws Exception {
         return new ProcessBuilder("tmux", "has-session", "-t", name)
-            .redirectErrorStream(true).start().waitFor() == 0;
+                       .redirectErrorStream(true).start().waitFor() == 0;
     }
 
     @Test
@@ -913,10 +916,10 @@ class ClaudeE2ETest {
         // the MCP handshake (initialize → tools/list) is working end-to-end.
         // We assert the process exits 0, not Claude's exact words.
         var exitCode = runClaude(
-            "What tools do you have available from the remotecc MCP server? " +
-            "Just list their names briefly.");
+                "What tools do you have available from the remotecc MCP server? " +
+                "Just list their names briefly.");
         assertEquals(0, exitCode,
-            "claude process should exit 0 when it can connect to MCP server and list tools");
+                     "claude process should exit 0 when it can connect to MCP server and list tools");
     }
 
     @Test
@@ -927,20 +930,20 @@ class ClaudeE2ETest {
         try {
             // Ask Claude to create a session — assert on tmux state, not Claude's words
             var exitCode = runClaude(
-                "Using the remotecc MCP tools, create a new session called 'e2e-test' " +
-                "in the /tmp directory running bash.");
+                    "Using the remotecc MCP tools, create a new session called 'e2e-test' " +
+                    "in the /tmp directory running bash.");
             assertEquals(0, exitCode, "claude process should exit 0");
 
             // Side effect: tmux session must exist
             assertTrue(tmuxSessionExists(sessionName),
-                "tmux session '" + sessionName + "' should exist after Claude created it. " +
-                "If not, Claude did not call create_session or the tool failed.");
+                       "tmux session '" + sessionName + "' should exist after Claude created it. " +
+                       "If not, Claude did not call create_session or the tool failed.");
 
         } finally {
             // Clean up regardless of test outcome
             if (tmuxSessionExists(sessionName)) {
                 new ProcessBuilder("tmux", "kill-session", "-t", sessionName)
-                    .redirectErrorStream(true).start().waitFor();
+                        .redirectErrorStream(true).start().waitFor();
             }
         }
     }

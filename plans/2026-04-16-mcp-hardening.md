@@ -43,7 +43,7 @@ Add these imports to `ClaudonyMcpToolsTest.java` (after the existing imports):
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import dev.claudony.agent.terminal.TerminalAdapter;
+import config.claudony.agent.terminal.TerminalAdapter;
 ```
 
 Add these 8 tests to the class body (after the existing tests):
@@ -134,12 +134,12 @@ Expected: 8 failures — the error tests throw instead of returning strings. The
 Replace the entire file content with:
 
 ```java
-package dev.claudony.agent;
+package config.claudony.agent;
 
-import dev.claudony.agent.terminal.TerminalAdapterFactory;
-import dev.claudony.config.ClaudonyConfig;
-import dev.claudony.server.model.CreateSessionRequest;
-import dev.claudony.server.model.SendInputRequest;
+import config.claudony.agent.terminal.TerminalAdapterFactory;
+import config.claudony.config.ClaudonyConfig;
+import config.claudony.server.model.CreateSessionRequest;
+import config.claudony.server.model.SendInputRequest;
 import io.quarkiverse.mcp.server.Tool;
 import io.quarkiverse.mcp.server.ToolArg;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -188,11 +188,10 @@ public class ClaudonyMcpTools {
                 return "No active sessions.";
             }
             return sessions.stream()
-                    .map(s -> "• %s (id=%s, status=%s, dir=%s)"
-                            .formatted(s.name(), s.id(), s.status(), s.workingDir()))
-                    .reduce("Sessions:\n", (a, b) -> a + "\n" + b);
-        } catch (WebApplicationException e) { return serverError(e); }
-          catch (Exception e)               { return connectError(e); }
+                           .map(s -> "• %s (id=%s, status=%s, dir=%s)"
+                                             .formatted(s.name(), s.id(), s.status(), s.workingDir()))
+                           .reduce("Sessions:\n", (a, b) -> a + "\n" + b);
+        } catch (WebApplicationException e) {return serverError(e);} catch (Exception e) {return connectError(e);}
     }
 
     @Tool(name = "create_session", description = "Create a new Claude Code session")
@@ -207,8 +206,7 @@ public class ClaudonyMcpTools {
                     (command != null && !command.isBlank()) ? command : null);
             final var s = server.createSession(req);
             return "Created '%s' (id=%s)\nBrowser: %s".formatted(s.name(), s.id(), s.browserUrl());
-        } catch (WebApplicationException e) { return serverError(e); }
-          catch (Exception e)               { return connectError(e); }
+        } catch (WebApplicationException e) {return serverError(e);} catch (Exception e) {return connectError(e);}
     }
 
     @Tool(name = "delete_session", description = "Delete a session by id")
@@ -217,8 +215,7 @@ public class ClaudonyMcpTools {
         try {
             server.deleteSession(id);
             return "Session deleted.";
-        } catch (WebApplicationException e) { return serverError(e); }
-          catch (Exception e)               { return connectError(e); }
+        } catch (WebApplicationException e) {return serverError(e);} catch (Exception e) {return connectError(e);}
     }
 
     @Tool(name = "rename_session", description = "Rename a session")
@@ -228,8 +225,7 @@ public class ClaudonyMcpTools {
         try {
             final var s = server.renameSession(id, name);
             return "Renamed to '%s'.".formatted(s.name());
-        } catch (WebApplicationException e) { return serverError(e); }
-          catch (Exception e)               { return connectError(e); }
+        } catch (WebApplicationException e) {return serverError(e);} catch (Exception e) {return connectError(e);}
     }
 
     @Tool(name = "send_input", description = "Send text input to a session")
@@ -239,8 +235,7 @@ public class ClaudonyMcpTools {
         try {
             server.sendInput(id, new SendInputRequest(text));
             return "Input sent.";
-        } catch (WebApplicationException e) { return serverError(e); }
-          catch (Exception e)               { return connectError(e); }
+        } catch (WebApplicationException e) {return serverError(e);} catch (Exception e) {return connectError(e);}
     }
 
     @Tool(name = "get_output", description = "Get recent terminal output from a session")
@@ -249,8 +244,7 @@ public class ClaudonyMcpTools {
             @ToolArg(name = "lines", description = "Number of lines to return (default 50)", required = false) Integer lines) {
         try {
             return server.getOutput(id, lines != null ? lines : 50);
-        } catch (WebApplicationException e) { return serverError(e); }
-          catch (Exception e)               { return connectError(e); }
+        } catch (WebApplicationException e) {return serverError(e);} catch (Exception e) {return connectError(e);}
     }
 
     @Tool(name = "open_in_terminal", description = "Open a session in a local terminal window")
@@ -263,8 +257,8 @@ public class ClaudonyMcpTools {
             }
             final var sessions = server.listSessions();
             final var session = sessions.stream()
-                    .filter(s -> s.id().equals(id))
-                    .findFirst();
+                                        .filter(s -> s.id().equals(id))
+                                        .findFirst();
             if (session.isEmpty()) {
                 return "Session not found.";
             }
@@ -274,20 +268,18 @@ public class ClaudonyMcpTools {
                 return "Failed to open terminal: " + e.getMessage();
             }
             return "Opened in %s.".formatted(adapter.get().name());
-        } catch (WebApplicationException e) { return serverError(e); }
-          catch (Exception e)               { return connectError(e); }
+        } catch (WebApplicationException e) {return serverError(e);} catch (Exception e) {return connectError(e);}
     }
 
     @Tool(name = "get_server_info", description = "Get server connection info and status")
     public String getServerInfo() {
         try {
             final var adapter = terminalFactory.resolve();
-            final var url = config.serverUrl() != null ? config.serverUrl() : "(not configured)";
-            final var mode = config.mode() != null ? config.mode() : "(not configured)";
+            final var url     = config.serverUrl() != null ? config.serverUrl() : "(not configured)";
+            final var mode    = config.mode() != null ? config.mode() : "(not configured)";
             return "Server URL: %s\nAgent mode: %s\nTerminal adapter: %s".formatted(
                     url, mode, adapter.map(a -> a.name()).orElse("none"));
-        } catch (WebApplicationException e) { return serverError(e); }
-          catch (Exception e)               { return connectError(e); }
+        } catch (WebApplicationException e) {return serverError(e);} catch (Exception e) {return connectError(e);}
     }
 
     // ── Error helpers ────────────────────────────────────────────────────────
@@ -298,7 +290,7 @@ public class ClaudonyMcpTools {
             case 409 -> "Conflict: a session with that name already exists.";
             case 401, 403 -> "Authentication error. Check that the agent API key is configured correctly.";
             default -> "Server error (HTTP %d). Check that the Claudony server is running."
-                    .formatted(e.getResponse().getStatus());
+                               .formatted(e.getResponse().getStatus());
         };
     }
 
@@ -350,7 +342,7 @@ The `openInTerminal` method has three paths that have no tests: session-not-foun
 
 - [ ] **Step 1: Write 3 openInTerminal path tests**
 
-Add `import dev.claudony.agent.terminal.TerminalAdapter;` to the imports in `ClaudonyMcpToolsTest.java`.
+Add `import io.casehub.claudony.agent.terminal.TerminalAdapter;` to the imports in `ClaudonyMcpToolsTest.java`.
 
 Add these 3 tests to the class body:
 

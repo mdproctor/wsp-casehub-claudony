@@ -36,9 +36,9 @@
   Create `src/test/java/dev/remotecc/server/auth/ApiKeyServiceTest.java`:
 
   ```java
-  package dev.remotecc.server.auth;
+  package config.remotecc.server.auth;
 
-  import dev.remotecc.config.RemoteCCConfig;
+  import config.remotecc.config.RemoteCCConfig;
   import org.junit.jupiter.api.BeforeEach;
   import org.junit.jupiter.api.Test;
   import org.junit.jupiter.api.io.TempDir;
@@ -144,9 +144,9 @@
   Create `src/main/java/dev/remotecc/server/auth/ApiKeyService.java`:
 
   ```java
-  package dev.remotecc.server.auth;
+  package config.remotecc.server.auth;
 
-  import dev.remotecc.config.RemoteCCConfig;
+  import config.remotecc.config.RemoteCCConfig;
   import jakarta.enterprise.context.ApplicationScoped;
   import jakarta.inject.Inject;
   import org.jboss.logging.Logger;
@@ -320,7 +320,7 @@ The existing `ApiKeyAuthTest` (a `@QuarkusTest`) serves as the integration test.
   Also remove the now-unused `RemoteCCConfig` import:
   ```java
   // Remove:
-  import dev.remotecc.config.RemoteCCConfig;
+  import config.remotecc.config.RemoteCCConfig;
   ```
 
   The full updated `authenticate()` method:
@@ -376,14 +376,14 @@ The existing `ApiKeyAuthTest` (a `@QuarkusTest`) serves as the integration test.
 
   Remove the now-unused `RemoteCCConfig` import. Add the `ApiKeyService` import:
   ```java
-  import dev.remotecc.server.auth.ApiKeyService;
+  import config.remotecc.server.auth.ApiKeyService;
   ```
 
   The full updated class:
   ```java
-  package dev.remotecc.agent;
+  package config.remotecc.agent;
 
-  import dev.remotecc.server.auth.ApiKeyService;
+  import config.remotecc.server.auth.ApiKeyService;
   import jakarta.inject.Inject;
   import jakarta.ws.rs.client.ClientRequestContext;
   import jakarta.ws.rs.client.ClientRequestFilter;
@@ -451,7 +451,7 @@ The existing `ApiKeyAuthTest` (a `@QuarkusTest`) serves as the integration test.
 
   Add the import:
   ```java
-  import dev.remotecc.server.auth.ApiKeyService;
+  import config.remotecc.server.auth.ApiKeyService;
   ```
 
 - [ ] **Step 2: Update `AgentStartup`**
@@ -479,7 +479,7 @@ The existing `ApiKeyAuthTest` (a `@QuarkusTest`) serves as the integration test.
 
   Add the import:
   ```java
-  import dev.remotecc.server.auth.ApiKeyService;
+  import config.remotecc.server.auth.ApiKeyService;
   ```
 
 - [ ] **Step 3: Run the full test suite**

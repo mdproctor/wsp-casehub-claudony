@@ -97,7 +97,7 @@
   Replace the entire `Session.java`:
 
   ```java
-  package dev.claudony.server.model;
+  package config.claudony.server.model;
 
   import java.time.Instant;
   import java.util.Optional;
@@ -271,7 +271,7 @@
   Replace the entire `SessionResponse.java`:
 
   ```java
-  package dev.claudony.server.model;
+  package config.claudony.server.model;
 
   import com.fasterxml.jackson.annotation.JsonInclude;
   import java.time.Instant;
@@ -900,12 +900,12 @@
 - [ ] **Step 1: Create the E2E test class**
 
   ```java
-  package dev.claudony.e2e;
+  package config.claudony.e2e;
 
   import com.microsoft.playwright.*;
-  import dev.claudony.server.SessionRegistry;
-  import dev.claudony.server.model.Session;
-  import dev.claudony.server.model.SessionStatus;
+  import config.claudony.server.SessionRegistry;
+  import config.claudony.server.model.Session;
+  import config.claudony.server.model.SessionStatus;
   import io.quarkus.test.junit.QuarkusTest;
   import jakarta.inject.Inject;
   import org.junit.jupiter.api.*;
@@ -1159,7 +1159,7 @@
 
 - [ ] **Step 6: Update docs/DESIGN.md**
 
-  In the `dev.claudony — claudony-core + claudony-app` component listing, find:
+  In the `io.casehub.claudony — claudony-core + claudony-app` component listing, find:
   ```
   │   ├── model/                  — Session, SessionStatus, request/response records
   ```

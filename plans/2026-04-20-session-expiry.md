@@ -182,11 +182,13 @@ git commit -m "feat: add claudony.session-expiry-policy config (default: user-in
 Replace `src/test/java/dev/claudony/server/model/SessionTest.java` entirely:
 
 ```java
-package dev.claudony.server.model;
+package config.claudony.server.model;
 
 import org.junit.jupiter.api.Test;
+
 import java.time.Instant;
 import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class SessionTest {
@@ -195,7 +197,7 @@ class SessionTest {
     void sessionHasRequiredFields() {
         var now = Instant.now();
         var session = new Session("id-1", "myproject", "/home/user/proj",
-                "claude", SessionStatus.IDLE, now, now, Optional.empty());
+                                  "claude", SessionStatus.IDLE, now, now, Optional.empty());
 
         assertEquals("id-1", session.id());
         assertEquals("myproject", session.name());
@@ -209,7 +211,7 @@ class SessionTest {
     void withStatusReturnsCopyWithUpdatedStatusAndPreservesExpiryPolicy() {
         var now = Instant.now();
         var session = new Session("id-1", "myproject", "/home/user/proj",
-                "claude", SessionStatus.IDLE, now, now, Optional.of("terminal-output"));
+                                  "claude", SessionStatus.IDLE, now, now, Optional.of("terminal-output"));
 
         var updated = session.withStatus(SessionStatus.ACTIVE);
 
@@ -222,7 +224,7 @@ class SessionTest {
     void withLastActivePreservesExpiryPolicy() {
         var now = Instant.now();
         var session = new Session("id-1", "myproject", "/home/user/proj",
-                "claude", SessionStatus.IDLE, now, now, Optional.of("status-aware"));
+                                  "claude", SessionStatus.IDLE, now, now, Optional.of("status-aware"));
 
         var updated = session.withLastActive();
 
@@ -283,7 +285,7 @@ Expected: compilation errors — `Optional<String>` not in `Session`, `touch()` 
 Replace `src/main/java/dev/claudony/server/model/Session.java` entirely:
 
 ```java
-package dev.claudony.server.model;
+package config.claudony.server.model;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -313,7 +315,7 @@ public record Session(
 Replace `src/main/java/dev/claudony/server/model/CreateSessionRequest.java` entirely:
 
 ```java
-package dev.claudony.server.model;
+package config.claudony.server.model;
 
 public record CreateSessionRequest(
         String name,
@@ -440,13 +442,15 @@ To avoid a chicken-and-egg: create minimal stub implementations first, then repl
 - [ ] **Step 1: Create ExpiryPolicy.java**
 
 ```java
-package dev.claudony.server.expiry;
+package config.claudony.server.expiry;
 
-import dev.claudony.server.model.Session;
+import config.claudony.server.model.Session;
+
 import java.time.Duration;
 
 public interface ExpiryPolicy {
     String name();
+
     boolean isExpired(Session session, Duration timeout);
 }
 ```
@@ -454,14 +458,15 @@ public interface ExpiryPolicy {
 - [ ] **Step 2: Create ExpiryPolicyRegistry.java**
 
 ```java
-package dev.claudony.server.expiry;
+package config.claudony.server.expiry;
 
-import dev.claudony.config.ClaudonyConfig;
+import config.claudony.config.ClaudonyConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -474,19 +479,19 @@ public class ExpiryPolicyRegistry {
     private static final Logger LOG = Logger.getLogger(ExpiryPolicyRegistry.class);
 
     private final Map<String, ExpiryPolicy> policies;
-    private final String defaultPolicyName;
+    private final String                    defaultPolicyName;
 
     @Inject
     ExpiryPolicyRegistry(@Any Instance<ExpiryPolicy> all, ClaudonyConfig config) {
         this.defaultPolicyName = config.sessionExpiryPolicy();
-        this.policies = StreamSupport.stream(all.spliterator(), false)
-                .collect(Collectors.toMap(ExpiryPolicy::name, p -> p));
+        this.policies          = StreamSupport.stream(all.spliterator(), false)
+                                              .collect(Collectors.toMap(ExpiryPolicy::name, p -> p));
         if (!this.policies.containsKey(defaultPolicyName)) {
             LOG.warnf("Configured session-expiry-policy '%s' not found. Available: %s",
-                    defaultPolicyName, policies.keySet());
+                      defaultPolicyName, policies.keySet());
         }
         LOG.infof("ExpiryPolicyRegistry initialised with %d policies: %s",
-                policies.size(), policies.keySet());
+                  policies.size(), policies.keySet());
     }
 
     public ExpiryPolicy resolve(String name) {
@@ -504,17 +509,19 @@ public class ExpiryPolicyRegistry {
 - [ ] **Step 3: Create ExpiryPolicyRegistryTest.java**
 
 ```java
-package dev.claudony.server.expiry;
+package config.claudony.server.expiry;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
 class ExpiryPolicyRegistryTest {
 
-    @Inject ExpiryPolicyRegistry registry;
+    @Inject
+    ExpiryPolicyRegistry registry;
 
     @Test
     void resolvesUserInteractionPolicy() {
@@ -571,14 +578,16 @@ git commit -m "feat: ExpiryPolicy interface + ExpiryPolicyRegistry CDI bean Refs
 - [ ] **Step 1: Write the failing test (pure unit — no @QuarkusTest)**
 
 ```java
-package dev.claudony.server.expiry;
+package config.claudony.server.expiry;
 
-import dev.claudony.server.model.Session;
-import dev.claudony.server.model.SessionStatus;
+import config.claudony.server.model.Session;
+import config.claudony.server.model.SessionStatus;
 import org.junit.jupiter.api.Test;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class UserInteractionExpiryPolicyTest {
@@ -618,7 +627,7 @@ class UserInteractionExpiryPolicyTest {
     private Session sessionWith(Instant lastActive) {
         var now = Instant.now();
         return new Session("id", "name", "/tmp", "claude",
-                SessionStatus.IDLE, now, lastActive, Optional.empty());
+                           SessionStatus.IDLE, now, lastActive, Optional.empty());
     }
 }
 ```
@@ -636,10 +645,11 @@ Expected: compilation error — `UserInteractionExpiryPolicy` does not exist.
 - [ ] **Step 3: Create UserInteractionExpiryPolicy.java**
 
 ```java
-package dev.claudony.server.expiry;
+package config.claudony.server.expiry;
 
-import dev.claudony.server.model.Session;
+import config.claudony.server.model.Session;
 import jakarta.enterprise.context.ApplicationScoped;
+
 import java.time.Duration;
 import java.time.Instant;
 
@@ -647,7 +657,7 @@ import java.time.Instant;
 public class UserInteractionExpiryPolicy implements ExpiryPolicy {
 
     @Override
-    public String name() { return "user-interaction"; }
+    public String name() {return "user-interaction";}
 
     @Override
     public boolean isExpired(Session session, Duration timeout) {
@@ -755,24 +765,28 @@ git commit -m "feat: TmuxService.displayMessage() for tmux format queries Refs #
 - [ ] **Step 1: Write the failing test**
 
 ```java
-package dev.claudony.server.expiry;
+package config.claudony.server.expiry;
 
-import dev.claudony.server.TmuxService;
-import dev.claudony.server.model.Session;
-import dev.claudony.server.model.SessionStatus;
+import config.claudony.server.TmuxService;
+import config.claudony.server.model.Session;
+import config.claudony.server.model.SessionStatus;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
 class TerminalOutputExpiryPolicyTest {
 
-    @Inject TerminalOutputExpiryPolicy policy;
-    @Inject TmuxService tmux;
+    @Inject
+    TerminalOutputExpiryPolicy policy;
+    @Inject
+    TmuxService                tmux;
 
     private static final String TEST_SESSION = "test-expiry-terminal-output";
 
@@ -818,13 +832,14 @@ Expected: compilation error — `TerminalOutputExpiryPolicy` does not exist.
 - [ ] **Step 3: Create TerminalOutputExpiryPolicy.java**
 
 ```java
-package dev.claudony.server.expiry;
+package config.claudony.server.expiry;
 
-import dev.claudony.server.TmuxService;
-import dev.claudony.server.model.Session;
+import config.claudony.server.TmuxService;
+import config.claudony.server.model.Session;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
+
 import java.time.Duration;
 import java.time.Instant;
 
@@ -833,10 +848,11 @@ public class TerminalOutputExpiryPolicy implements ExpiryPolicy {
 
     private static final Logger LOG = Logger.getLogger(TerminalOutputExpiryPolicy.class);
 
-    @Inject TmuxService tmux;
+    @Inject
+    TmuxService tmux;
 
     @Override
-    public String name() { return "terminal-output"; }
+    public String name() {return "terminal-output";}
 
     @Override
     public boolean isExpired(Session session, Duration timeout) {
@@ -847,7 +863,7 @@ public class TerminalOutputExpiryPolicy implements ExpiryPolicy {
             return Duration.between(lastActivity, Instant.now()).compareTo(timeout) > 0;
         } catch (Exception e) {
             LOG.debugf("terminal-output policy: tmux call failed for '%s': %s",
-                    session.name(), e.getMessage());
+                       session.name(), e.getMessage());
             return true;
         }
     }
@@ -881,25 +897,29 @@ git commit -m "feat: TerminalOutputExpiryPolicy — uses tmux pane_activity time
 - [ ] **Step 1: Write the failing test**
 
 ```java
-package dev.claudony.server.expiry;
+package config.claudony.server.expiry;
 
-import dev.claudony.server.TmuxService;
-import dev.claudony.server.model.Session;
-import dev.claudony.server.model.SessionStatus;
+import config.claudony.server.TmuxService;
+import config.claudony.server.model.Session;
+import config.claudony.server.model.SessionStatus;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
 class StatusAwareExpiryPolicyTest {
 
-    @Inject StatusAwareExpiryPolicy policy;
-    @Inject TmuxService tmux;
+    @Inject
+    StatusAwareExpiryPolicy policy;
+    @Inject
+    TmuxService             tmux;
 
     private static final String TEST_SESSION = "test-expiry-status-aware";
 
@@ -962,13 +982,14 @@ Expected: compilation error — `StatusAwareExpiryPolicy` does not exist.
 - [ ] **Step 3: Create StatusAwareExpiryPolicy.java**
 
 ```java
-package dev.claudony.server.expiry;
+package config.claudony.server.expiry;
 
-import dev.claudony.server.TmuxService;
-import dev.claudony.server.model.Session;
+import config.claudony.server.TmuxService;
+import config.claudony.server.model.Session;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
@@ -976,13 +997,14 @@ import java.util.Set;
 @ApplicationScoped
 public class StatusAwareExpiryPolicy implements ExpiryPolicy {
 
-    private static final Logger LOG = Logger.getLogger(StatusAwareExpiryPolicy.class);
+    private static final Logger      LOG            = Logger.getLogger(StatusAwareExpiryPolicy.class);
     private static final Set<String> SHELL_COMMANDS = Set.of("bash", "zsh", "sh", "dash", "fish");
 
-    @Inject TmuxService tmux;
+    @Inject
+    TmuxService tmux;
 
     @Override
-    public String name() { return "status-aware"; }
+    public String name() {return "status-aware";}
 
     @Override
     public boolean isExpired(Session session, Duration timeout) {
@@ -993,7 +1015,7 @@ public class StatusAwareExpiryPolicy implements ExpiryPolicy {
             return Duration.between(session.lastActive(), Instant.now()).compareTo(timeout) > 0;
         } catch (Exception e) {
             LOG.debugf("status-aware policy: tmux call failed for '%s': %s",
-                    session.name(), e.getMessage());
+                       session.name(), e.getMessage());
             return true;
         }
     }
@@ -1036,7 +1058,7 @@ git commit -m "feat: StatusAwareExpiryPolicy — defers expiry when non-shell co
 - [ ] **Step 1: Create SessionExpiredEvent.java**
 
 ```java
-package dev.claudony.server.model;
+package config.claudony.server.model;
 
 public record SessionExpiredEvent(Session session) {}
 ```
@@ -1044,32 +1066,38 @@ public record SessionExpiredEvent(Session session) {}
 - [ ] **Step 2: Write the failing scheduler test**
 
 ```java
-package dev.claudony.server.expiry;
+package config.claudony.server.expiry;
 
-import dev.claudony.server.SessionRegistry;
-import dev.claudony.server.TmuxService;
-import dev.claudony.server.model.Session;
-import dev.claudony.server.model.SessionExpiredEvent;
-import dev.claudony.server.model.SessionStatus;
+import config.claudony.server.SessionRegistry;
+import config.claudony.server.TmuxService;
+import config.claudony.server.model.Session;
+import config.claudony.server.model.SessionExpiredEvent;
+import config.claudony.server.model.SessionStatus;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.junit.jupiter.api.*;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
 class SessionIdleSchedulerTest {
 
-    @Inject SessionIdleScheduler scheduler;
-    @Inject SessionRegistry registry;
-    @Inject TmuxService tmux;
-    @Inject EventCaptor eventCaptor;
+    @Inject
+    SessionIdleScheduler scheduler;
+    @Inject
+    SessionRegistry      registry;
+    @Inject
+    TmuxService          tmux;
+    @Inject
+    EventCaptor          eventCaptor;
 
     private static final String EXPIRED_TMUX = "test-sched-expired";
     private static final String ACTIVE_TMUX  = "test-sched-active";
@@ -1092,7 +1120,7 @@ class SessionIdleSchedulerTest {
         tmux.createSession(EXPIRED_TMUX, System.getProperty("user.home"), "bash");
         var now = Instant.now();
         var session = new Session("exp-id", EXPIRED_TMUX, "/tmp", "bash",
-                SessionStatus.IDLE, now, now.minus(Duration.ofDays(8)), Optional.empty());
+                                  SessionStatus.IDLE, now, now.minus(Duration.ofDays(8)), Optional.empty());
         registry.register(session);
 
         scheduler.expiryCheck();
@@ -1106,7 +1134,7 @@ class SessionIdleSchedulerTest {
         tmux.createSession(ACTIVE_TMUX, System.getProperty("user.home"), "bash");
         var now = Instant.now();
         var session = new Session("active-id", ACTIVE_TMUX, "/tmp", "bash",
-                SessionStatus.IDLE, now, now, Optional.empty()); // lastActive = now
+                                  SessionStatus.IDLE, now, now, Optional.empty()); // lastActive = now
         registry.register(session);
 
         scheduler.expiryCheck();
@@ -1120,7 +1148,7 @@ class SessionIdleSchedulerTest {
         tmux.createSession(EXPIRED_TMUX, System.getProperty("user.home"), "bash");
         var now = Instant.now();
         var session = new Session("evt-id", EXPIRED_TMUX, "/tmp", "bash",
-                SessionStatus.IDLE, now, now.minus(Duration.ofDays(8)), Optional.empty());
+                                  SessionStatus.IDLE, now, now.minus(Duration.ofDays(8)), Optional.empty());
         registry.register(session);
 
         scheduler.expiryCheck();
@@ -1136,22 +1164,23 @@ class SessionIdleSchedulerTest {
         Thread.sleep(300);
         var now = Instant.now();
         var session = new Session("pol-id", EXPIRED_TMUX, "/tmp", "bash",
-                SessionStatus.IDLE, now, now.minus(Duration.ofDays(8)),
-                Optional.of("terminal-output")); // policy override
+                                  SessionStatus.IDLE, now, now.minus(Duration.ofDays(8)),
+                                  Optional.of("terminal-output")); // policy override
         registry.register(session);
 
         scheduler.expiryCheck();
 
         // terminal-output uses pane_activity which is recent — should NOT expire
         assertTrue(registry.find("pol-id").isPresent(),
-                "Session with terminal-output policy and recent tmux activity should not be expired");
+                   "Session with terminal-output policy and recent tmux activity should not be expired");
         assertTrue(tmux.sessionExists(EXPIRED_TMUX), "Tmux session should survive");
     }
 
     @Singleton
     static class EventCaptor {
         final List<SessionExpiredEvent> events = new ArrayList<>();
-        void observe(@Observes SessionExpiredEvent e) { events.add(e); }
+
+        void observe(@Observes SessionExpiredEvent e) {events.add(e);}
     }
 }
 ```
@@ -1167,12 +1196,12 @@ Expected: compilation error — `SessionIdleScheduler` does not exist.
 - [ ] **Step 4: Create SessionIdleScheduler.java**
 
 ```java
-package dev.claudony.server.expiry;
+package config.claudony.server.expiry;
 
-import dev.claudony.config.ClaudonyConfig;
-import dev.claudony.server.SessionRegistry;
-import dev.claudony.server.TmuxService;
-import dev.claudony.server.model.SessionExpiredEvent;
+import config.claudony.config.ClaudonyConfig;
+import config.claudony.server.SessionRegistry;
+import config.claudony.server.TmuxService;
+import config.claudony.server.model.SessionExpiredEvent;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
@@ -1184,11 +1213,16 @@ public class SessionIdleScheduler {
 
     private static final Logger LOG = Logger.getLogger(SessionIdleScheduler.class);
 
-    @Inject ClaudonyConfig config;
-    @Inject SessionRegistry registry;
-    @Inject TmuxService tmux;
-    @Inject ExpiryPolicyRegistry policyRegistry;
-    @Inject Event<SessionExpiredEvent> expiryEvents;
+    @Inject
+    ClaudonyConfig             config;
+    @Inject
+    SessionRegistry            registry;
+    @Inject
+    TmuxService                tmux;
+    @Inject
+    ExpiryPolicyRegistry       policyRegistry;
+    @Inject
+    Event<SessionExpiredEvent> expiryEvents;
 
     @Scheduled(every = "5m", delayed = "1m")
     void scheduledCheck() {
@@ -1202,7 +1236,7 @@ public class SessionIdleScheduler {
             var policy = policyRegistry.resolve(session.expiryPolicy().orElse(null));
             if (!policy.isExpired(session, timeout)) continue;
             LOG.infof("Expiring session '%s' (policy=%s, lastActive=%s)",
-                    session.name(), policy.name(), session.lastActive());
+                      session.name(), policy.name(), session.lastActive());
             try {
                 expiryEvents.fire(new SessionExpiredEvent(session));
                 tmux.killSession(session.name());
@@ -1341,7 +1375,7 @@ When a session expires, send `{"type":"session-expired"}` to any connected WebSo
 
 In `src/main/java/dev/claudony/server/TerminalWebSocket.java`:
 
-Add import: `import dev.claudony.server.model.SessionExpiredEvent;` and `import jakarta.enterprise.event.Observes;`
+Add import: `import io.casehub.claudony.model.server.claudony.SessionExpiredEvent;` and `import jakarta.enterprise.event.Observes;`
 
 After the `sessionIds` field, add:
 
@@ -1408,9 +1442,10 @@ git commit -m "feat: WebSocket observer — send session-expired message to conn
 Replace `src/main/java/dev/claudony/server/model/SessionResponse.java` entirely:
 
 ```java
-package dev.claudony.server.model;
+package config.claudony.server.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.time.Instant;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -1456,7 +1491,7 @@ Add inject after other injects:
 @Inject ExpiryPolicyRegistry policyRegistry;
 ```
 
-Add import: `import dev.claudony.server.expiry.ExpiryPolicyRegistry;`
+Add import: `import io.casehub.claudony.expiry.server.claudony.ExpiryPolicyRegistry;`
 
 Create a helper method at the bottom of the class (before the private helpers):
 

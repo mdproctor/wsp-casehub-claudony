@@ -58,7 +58,7 @@ long caseWorkerHeartbeatMs();
 Create `claudony-core/src/main/java/dev/claudony/server/WorkerCaseLifecycleEvent.java`:
 
 ```java
-package dev.claudony.server;
+package config.claudony.server;
 
 /**
  * Fired by ClaudonyWorkerStatusListener when a CaseHub worker lifecycle event occurs.
@@ -124,10 +124,10 @@ Refs #104, Refs #99"
 Create `claudony-core/src/test/java/dev/claudony/server/SessionRegistryTest.java` (or add to existing):
 
 ```java
-package dev.claudony.server;
+package config.claudony.server;
 
-import dev.claudony.server.model.Session;
-import dev.claudony.server.model.SessionStatus;
+import config.claudony.server.model.Session;
+import config.claudony.server.model.SessionStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -143,12 +143,12 @@ class SessionRegistryTest {
     private SessionRegistry registry;
 
     @BeforeEach
-    void setUp() { registry = new SessionRegistry(); }
+    void setUp() {registry = new SessionRegistry();}
 
     private Session session(String id, String caseId) {
         return new Session(id, "name-" + id, "/tmp", "cmd", SessionStatus.IDLE,
-                Instant.now(), Instant.now(), Optional.empty(),
-                Optional.ofNullable(caseId), Optional.empty());
+                           Instant.now(), Instant.now(), Optional.empty(),
+                           Optional.ofNullable(caseId), Optional.empty());
     }
 
     @Test
@@ -285,7 +285,7 @@ Refs #104, Refs #99"
 Create `claudony-app/src/test/java/dev/claudony/server/strategy/EventsOnlyStrategyTest.java`:
 
 ```java
-package dev.claudony.server.strategy;
+package config.claudony.server.strategy;
 
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import org.junit.jupiter.api.BeforeEach;
@@ -303,12 +303,12 @@ class EventsOnlyStrategyTest {
     private EventsOnlyStrategy strategy;
 
     @BeforeEach
-    void setUp() { strategy = new EventsOnlyStrategy(); }
+    void setUp() {strategy = new EventsOnlyStrategy();}
 
     @Test
     void subscribe_emitsInitialSnapshot() {
         var subscriber = strategy.subscribe("case-1", () -> "data: initial\n\n")
-                .subscribe().withSubscriber(AssertSubscriber.create(10));
+                                 .subscribe().withSubscriber(AssertSubscriber.create(10));
 
         subscriber.assertNotTerminated();
         assertThat(subscriber.getItems()).containsExactly("data: initial\n\n");
@@ -318,12 +318,18 @@ class EventsOnlyStrategyTest {
     void onLifecycleEvent_pushesToAllSubscribersForCase() throws Exception {
         var received1 = new CopyOnWriteArrayList<String>();
         var received2 = new CopyOnWriteArrayList<String>();
-        var latch = new CountDownLatch(2);
+        var latch     = new CountDownLatch(2);
 
         strategy.subscribe("case-2", () -> "data: snap\n\n")
-                .subscribe().with(e -> { received1.add(e); if (received1.size() == 2) latch.countDown(); });
+                .subscribe().with(e -> {
+                    received1.add(e);
+                    if (received1.size() == 2) latch.countDown();
+                });
         strategy.subscribe("case-2", () -> "data: snap\n\n")
-                .subscribe().with(e -> { received2.add(e); if (received2.size() == 2) latch.countDown(); });
+                .subscribe().with(e -> {
+                    received2.add(e);
+                    if (received2.size() == 2) latch.countDown();
+                });
 
         // Both subscribers got initial snapshot; now emit lifecycle event
         strategy.onLifecycleEvent("case-2");
@@ -349,7 +355,7 @@ class EventsOnlyStrategyTest {
     @Test
     void clientDisconnect_removesEmitter_noLeak() {
         var subscriber = strategy.subscribe("case-3", () -> "data: x\n\n")
-                .subscribe().withSubscriber(AssertSubscriber.create(10));
+                                 .subscribe().withSubscriber(AssertSubscriber.create(10));
 
         subscriber.cancel();
 
@@ -366,8 +372,8 @@ class EventsOnlyStrategyTest {
     @Test
     void multipleClients_sameCase_allReceiveEvent() throws Exception {
         int clientCount = 3;
-        var latch = new CountDownLatch(clientCount);
-        var counter = new AtomicInteger(0);
+        var latch       = new CountDownLatch(clientCount);
+        var counter     = new AtomicInteger(0);
 
         for (int i = 0; i < clientCount; i++) {
             strategy.subscribe("case-multi", () -> "data: m\n\n")
@@ -380,7 +386,7 @@ class EventsOnlyStrategyTest {
         counter.set(0);
         for (int i = 0; i < clientCount; i++) {
             strategy.subscribe("case-multi", () -> "data: m\n\n")
-                    .subscribe().with(e -> { if (counter.getAndIncrement() >= 0) latch.countDown(); });
+                    .subscribe().with(e -> {if (counter.getAndIncrement() >= 0) latch.countDown();});
         }
 
         strategy.onLifecycleEvent("case-multi");
@@ -401,9 +407,10 @@ Expected: compilation error.
 Create `claudony-app/src/main/java/dev/claudony/server/CaseWorkerUpdateStrategy.java`:
 
 ```java
-package dev.claudony.server;
+package config.claudony.server;
 
 import io.smallrye.mutiny.Multi;
+
 import java.util.function.Supplier;
 
 /**
@@ -437,11 +444,12 @@ public interface CaseWorkerUpdateStrategy {
 Create `claudony-app/src/main/java/dev/claudony/server/strategy/EventsOnlyStrategy.java`:
 
 ```java
-package dev.claudony.server.strategy;
+package config.claudony.server.strategy;
 
-import dev.claudony.server.CaseWorkerUpdateStrategy;
+import config.claudony.server.CaseWorkerUpdateStrategy;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.MultiEmitter;
+
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -454,17 +462,17 @@ import java.util.function.Supplier;
 public class EventsOnlyStrategy implements CaseWorkerUpdateStrategy {
 
     // Package-private for testing
-    final ConcurrentHashMap<String, List<MultiEmitter<String>>> emitters = new ConcurrentHashMap<>();
-    final ConcurrentHashMap<String, Supplier<String>> snapshotFns = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<String, List<MultiEmitter<String>>> emitters    = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<String, Supplier<String>>           snapshotFns = new ConcurrentHashMap<>();
 
     @Override
     public void onLifecycleEvent(String caseId) {
         Supplier<String> fn = snapshotFns.get(caseId);
         if (fn == null) return;
-        String snapshot = fn.get();
-        List<MultiEmitter<String>> list = emitters.get(caseId);
+        String                     snapshot = fn.get();
+        List<MultiEmitter<String>> list     = emitters.get(caseId);
         if (list == null) return;
-        list.forEach(e -> { if (!e.isCancelled()) e.emit(snapshot); });
+        list.forEach(e -> {if (!e.isCancelled()) e.emit(snapshot);});
     }
 
     @Override
@@ -533,7 +541,7 @@ Refs #104, Refs #99"
 Create `claudony-app/src/test/java/dev/claudony/server/strategy/HybridStrategyTest.java`:
 
 ```java
-package dev.claudony.server.strategy;
+package config.claudony.server.strategy;
 
 import org.junit.jupiter.api.Test;
 
@@ -561,10 +569,13 @@ class HybridStrategyTest {
     void heartbeat_emitsSnapshot_afterInterval() throws Exception {
         var strategy = new HybridStrategy(200); // 200ms heartbeat for test
         var received = new CopyOnWriteArrayList<String>();
-        var latch = new CountDownLatch(2); // initial + 1 heartbeat
+        var latch    = new CountDownLatch(2); // initial + 1 heartbeat
 
         strategy.subscribe("case-h2", () -> "data: tick\n\n")
-                .subscribe().with(e -> { received.add(e); latch.countDown(); });
+                .subscribe().with(e -> {
+                    received.add(e);
+                    latch.countDown();
+                });
 
         assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
         assertThat(received.size()).isGreaterThanOrEqualTo(2);
@@ -576,10 +587,13 @@ class HybridStrategyTest {
     void lifecycleEvent_stillPushes_betweenHeartbeats() throws Exception {
         var strategy = new HybridStrategy(60_000); // long heartbeat
         var received = new CopyOnWriteArrayList<String>();
-        var latch = new CountDownLatch(2); // initial + lifecycle
+        var latch    = new CountDownLatch(2); // initial + lifecycle
 
         strategy.subscribe("case-h3", () -> "data: snap\n\n")
-                .subscribe().with(e -> { received.add(e); latch.countDown(); });
+                .subscribe().with(e -> {
+                    received.add(e);
+                    latch.countDown();
+                });
 
         strategy.onLifecycleEvent("case-h3");
 
@@ -619,12 +633,12 @@ Expected: compilation error.
 Create `claudony-app/src/main/java/dev/claudony/server/strategy/HybridStrategy.java`:
 
 ```java
-package dev.claudony.server.strategy;
+package config.claudony.server.strategy;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.Cancellable;
+
 import java.time.Duration;
-import java.util.function.Supplier;
 
 /**
  * Extends EventsOnly with a periodic heartbeat tick.
@@ -639,7 +653,7 @@ public class HybridStrategy extends EventsOnlyStrategy {
 
     public HybridStrategy(long heartbeatMs) {
         ticker = Multi.createFrom().ticks().every(Duration.ofMillis(heartbeatMs))
-                .subscribe().with(tick -> tickAllCases(), err -> {});
+                      .subscribe().with(tick -> tickAllCases(), err -> {});
     }
 
     private void tickAllCases() {
@@ -647,7 +661,7 @@ public class HybridStrategy extends EventsOnlyStrategy {
             var list = emitters.get(caseId);
             if (list != null && !list.isEmpty()) {
                 String snapshot = fn.get();
-                list.forEach(e -> { if (!e.isCancelled()) e.emit(snapshot); });
+                list.forEach(e -> {if (!e.isCancelled()) e.emit(snapshot);});
             }
         });
     }
@@ -696,7 +710,7 @@ No additional logic needed — hooks are wired by `CaseEventBroadcaster` in `@Po
 Create `claudony-app/src/main/java/dev/claudony/server/strategy/RegistryHooksStrategy.java`:
 
 ```java
-package dev.claudony.server.strategy;
+package config.claudony.server.strategy;
 
 /**
  * Extends EventsOnly — additionally reacts to any SessionRegistry mutation for case sessions.
@@ -742,11 +756,11 @@ Refs #104, Refs #99"
 Create `claudony-app/src/test/java/dev/claudony/server/CaseEventBroadcasterTest.java`:
 
 ```java
-package dev.claudony.server;
+package config.claudony.server;
 
-import dev.claudony.server.strategy.EventsOnlyStrategy;
-import dev.claudony.server.strategy.HybridStrategy;
-import dev.claudony.server.strategy.RegistryHooksStrategy;
+import config.claudony.server.strategy.EventsOnlyStrategy;
+import config.claudony.server.strategy.HybridStrategy;
+import config.claudony.server.strategy.RegistryHooksStrategy;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
@@ -780,7 +794,7 @@ class CaseEventBroadcasterTest {
         var received = new CopyOnWriteArrayList<String>();
 
         broadcaster.subscribe("bc-case-1", () -> "data: init\n\n")
-                .subscribe().with(received::add);
+                   .subscribe().with(received::add);
 
         assertThat(received).containsExactly("data: init\n\n");
     }
@@ -788,10 +802,13 @@ class CaseEventBroadcasterTest {
     @Test
     void emit_pushesSnapshotToSubscribers() throws Exception {
         var received = new CopyOnWriteArrayList<String>();
-        var latch = new CountDownLatch(2); // initial + emitted
+        var latch    = new CountDownLatch(2); // initial + emitted
 
         broadcaster.subscribe("bc-case-2", () -> "data: snap\n\n")
-                .subscribe().with(e -> { received.add(e); latch.countDown(); });
+                   .subscribe().with(e -> {
+                       received.add(e);
+                       latch.countDown();
+                   });
 
         broadcaster.emit("bc-case-2");
 
@@ -824,18 +841,20 @@ Expected: compilation error — `CaseEventBroadcaster` not found.
 Create `claudony-app/src/main/java/dev/claudony/server/CaseEventBroadcaster.java`:
 
 ```java
-package dev.claudony.server;
+package config.claudony.server;
 
-import dev.claudony.config.ClaudonyConfig;
-import dev.claudony.server.strategy.EventsOnlyStrategy;
-import dev.claudony.server.strategy.HybridStrategy;
-import dev.claudony.server.strategy.RegistryHooksStrategy;
+import config.claudony.config.ClaudonyConfig;
+import config.claudony.server.strategy.EventsOnlyStrategy;
+import config.claudony.server.strategy.HybridStrategy;
+import config.claudony.server.strategy.RegistryHooksStrategy;
 import io.smallrye.mutiny.Multi;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+
 import java.util.function.Supplier;
+
 import org.jboss.logging.Logger;
 
 /**
@@ -852,15 +871,17 @@ public class CaseEventBroadcaster {
 
     private static final Logger LOG = Logger.getLogger(CaseEventBroadcaster.class);
 
-    @Inject ClaudonyConfig config;
-    @Inject SessionRegistry registry;
+    @Inject
+    ClaudonyConfig  config;
+    @Inject
+    SessionRegistry registry;
 
     private CaseWorkerUpdateStrategy strategy;
 
     @PostConstruct
     void init() {
         String strategyName = config.caseWorkerUpdate();
-        long heartbeatMs = config.caseWorkerHeartbeatMs();
+        long   heartbeatMs  = config.caseWorkerHeartbeatMs();
         strategy = switch (strategyName) {
             case "events-only" -> new EventsOnlyStrategy();
             case "registry-hooks" -> {
@@ -987,8 +1008,10 @@ void onWorkerStarted_doesNotFireEvent_whenNoCaseId() {
 ```
 
 Also add these imports to `ClaudonyWorkerStatusListenerTest`:
+
 ```java
-import dev.claudony.server.WorkerCaseLifecycleEvent;
+import config.claudony.server.WorkerCaseLifecycleEvent;
+
 import static org.mockito.Mockito.*;
 ```
 
@@ -1045,8 +1068,9 @@ public void onWorkerStalled(String workerId) {
 ```
 
 Add import at top of `ClaudonyWorkerStatusListener.java`:
+
 ```java
-import dev.claudony.server.WorkerCaseLifecycleEvent;
+import config.claudony.server.WorkerCaseLifecycleEvent;
 ```
 
 - [ ] **Step 4: Run tests, verify they pass**
@@ -1085,10 +1109,10 @@ Refs #104, Refs #99"
 Create `claudony-app/src/test/java/dev/claudony/server/SessionResourceCaseEventsTest.java`:
 
 ```java
-package dev.claudony.server;
+package config.claudony.server;
 
-import dev.claudony.server.model.Session;
-import dev.claudony.server.model.SessionStatus;
+import config.claudony.server.model.Session;
+import config.claudony.server.model.SessionStatus;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
@@ -1108,8 +1132,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestSecurity(user = "test", roles = "user")
 class SessionResourceCaseEventsTest {
 
-    @Inject SessionRegistry registry;
-    @Inject CaseEventBroadcaster broadcaster;
+    @Inject
+    SessionRegistry      registry;
+    @Inject
+    CaseEventBroadcaster broadcaster;
 
     @AfterEach
     void cleanup() {
@@ -1118,39 +1144,39 @@ class SessionResourceCaseEventsTest {
 
     private Session caseSession(String id, String caseId) {
         return new Session(id, "name-" + id, "/tmp", "cmd", SessionStatus.IDLE,
-                Instant.now(), Instant.now(), Optional.empty(),
-                Optional.of(caseId), Optional.of("researcher"));
+                           Instant.now(), Instant.now(), Optional.empty(),
+                           Optional.of(caseId), Optional.of("researcher"));
     }
 
     private Session standaloneSession(String id) {
         return new Session(id, "name-" + id, "/tmp", "cmd", SessionStatus.IDLE,
-                Instant.now(), Instant.now(), Optional.empty(),
-                Optional.empty(), Optional.empty());
+                           Instant.now(), Instant.now(), Optional.empty(),
+                           Optional.empty(), Optional.empty());
     }
 
     @Test
     void caseEvents_404_forUnknownSession() {
         given()
-            .get("/api/sessions/no-such-session/case-events")
-        .then()
-            .statusCode(404);
+                .get("/api/sessions/no-such-session/case-events")
+                .then()
+                .statusCode(404);
     }
 
     @Test
     void caseEvents_404_forStandaloneSession() {
         registry.register(standaloneSession("standalone-1"));
         given()
-            .get("/api/sessions/standalone-1/case-events")
-        .then()
-            .statusCode(404);
+                .get("/api/sessions/standalone-1/case-events")
+                .then()
+                .statusCode(404);
     }
 
     @Test
     void caseEvents_contentType_isEventStream() {
         registry.register(caseSession("sse-ct-1", "ct-case-1"));
         var contentType = given()
-            .get("/api/sessions/sse-ct-1/case-events")
-            .contentType();
+                                  .get("/api/sessions/sse-ct-1/case-events")
+                                  .contentType();
         assertThat(contentType).contains("text/event-stream");
     }
 
@@ -1159,11 +1185,14 @@ class SessionResourceCaseEventsTest {
         registry.register(caseSession("sse-init-1", "init-case-1"));
 
         var received = new CopyOnWriteArrayList<String>();
-        var latch = new CountDownLatch(1);
+        var latch    = new CountDownLatch(1);
 
         broadcaster.subscribe("init-case-1",
-                () -> "data: [{\"id\":\"sse-init-1\"}]\n\n")
-            .subscribe().with(e -> { received.add(e); latch.countDown(); });
+                              () -> "data: [{\"id\":\"sse-init-1\"}]\n\n")
+                   .subscribe().with(e -> {
+                       received.add(e);
+                       latch.countDown();
+                   });
 
         assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
         assertThat(received.get(0)).startsWith("data:");
@@ -1174,10 +1203,13 @@ class SessionResourceCaseEventsTest {
         registry.register(caseSession("sse-upd-1", "upd-case-1"));
 
         var received = new CopyOnWriteArrayList<String>();
-        var latch = new CountDownLatch(2); // initial + emitted
+        var latch    = new CountDownLatch(2); // initial + emitted
 
         broadcaster.subscribe("upd-case-1", () -> "data: snap\n\n")
-            .subscribe().with(e -> { received.add(e); latch.countDown(); });
+                   .subscribe().with(e -> {
+                       received.add(e);
+                       latch.countDown();
+                   });
 
         broadcaster.emit("upd-case-1");
 
@@ -1192,12 +1224,18 @@ class SessionResourceCaseEventsTest {
 
         var received1 = new CopyOnWriteArrayList<String>();
         var received2 = new CopyOnWriteArrayList<String>();
-        var latch = new CountDownLatch(4); // 2 initials + 2 updates
+        var latch     = new CountDownLatch(4); // 2 initials + 2 updates
 
         broadcaster.subscribe("multi-case-1", () -> "data: m\n\n")
-            .subscribe().with(e -> { received1.add(e); latch.countDown(); });
+                   .subscribe().with(e -> {
+                       received1.add(e);
+                       latch.countDown();
+                   });
         broadcaster.subscribe("multi-case-1", () -> "data: m\n\n")
-            .subscribe().with(e -> { received2.add(e); latch.countDown(); });
+                   .subscribe().with(e -> {
+                       received2.add(e);
+                       latch.countDown();
+                   });
 
         broadcaster.emit("multi-case-1");
 
@@ -1225,9 +1263,10 @@ Expected: `caseEvents_404_forUnknownSession` and others fail (endpoint doesn't e
 - [ ] **Step 3: Add SSE endpoint and helper to SessionResource**
 
 In `SessionResource.java`, add imports:
+
 ```java
 import com.fasterxml.jackson.core.JsonProcessingException;
-import dev.claudony.server.CaseEventBroadcaster;
+import config.claudony.server.CaseEventBroadcaster;
 import io.smallrye.mutiny.Multi;
 import jakarta.ws.rs.NotFoundException;
 ```
@@ -1440,10 +1479,12 @@ Refs #104, Refs #99"
 In `CaseWorkerPanelE2ETest.java`, add import and inject broadcaster:
 
 ```java
-import dev.claudony.server.CaseEventBroadcaster;
+import config.claudony.server.CaseEventBroadcaster;
 import jakarta.inject.Inject;
+
 // Add alongside existing @Inject SessionRegistry:
-@Inject CaseEventBroadcaster broadcaster;
+@Inject
+CaseEventBroadcaster broadcaster;
 ```
 
 Add 4 new tests after AC 3:

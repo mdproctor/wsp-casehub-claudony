@@ -74,11 +74,12 @@ Use the backend issue number from Task 1 in all commits (e.g. `Refs #59`).
 Create `src/test/java/dev/claudony/server/MeshResourceTest.java`:
 
 ```java
-package dev.claudony.server;
+package config.claudony.server;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import org.junit.jupiter.api.Test;
+
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
@@ -89,11 +90,11 @@ class MeshResourceTest {
     @Test
     void meshConfig_returnsStrategyAndInterval() {
         given().when().get("/api/mesh/config")
-            .then()
-            .statusCode(200)
-            .contentType(containsString("application/json"))
-            .body("strategy", equalTo("poll"))
-            .body("interval", equalTo(3000));
+               .then()
+               .statusCode(200)
+               .contentType(containsString("application/json"))
+               .body("strategy", equalTo("poll"))
+               .body("interval", equalTo(3000));
     }
 }
 ```
@@ -137,10 +138,10 @@ claudony.mesh.refresh-interval=3000
 Create `src/main/java/dev/claudony/server/MeshResource.java`:
 
 ```java
-package dev.claudony.server;
+package config.claudony.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.claudony.config.ClaudonyConfig;
+import config.claudony.config.ClaudonyConfig;
 import io.quarkiverse.qhorus.runtime.mcp.QhorusMcpTools;
 import io.quarkus.security.Authenticated;
 import io.smallrye.mutiny.Multi;
@@ -149,12 +150,6 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 @Path("/api/mesh")
 @Produces(MediaType.APPLICATION_JSON)
 @Authenticated
@@ -162,9 +157,12 @@ public class MeshResource {
 
     private static final Logger LOG = Logger.getLogger(MeshResource.class);
 
-    @Inject ClaudonyConfig config;
-    @Inject QhorusMcpTools qhorusMcpTools;
-    @Inject ObjectMapper mapper;
+    @Inject
+    ClaudonyConfig config;
+    @Inject
+    QhorusMcpTools qhorusMcpTools;
+    @Inject
+    ObjectMapper   mapper;
 
     record MeshConfig(String strategy, int interval) {}
 
@@ -1052,11 +1050,12 @@ Use the E2E issue number from Task 1 (e.g. `Refs #61`).
 Create `src/test/java/dev/claudony/e2e/MeshPanelE2ETest.java`:
 
 ```java
-package dev.claudony.e2e;
+package config.claudony.e2e;
 
 import com.microsoft.playwright.Locator;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -1099,8 +1098,8 @@ class MeshPanelE2ETest extends PlaywrightBase {
         page.evaluate("localStorage.removeItem('mesh-collapsed')");
         page.reload();
 
-        var panel = page.locator("#mesh-panel");
-        var expandBtn = page.locator("#mesh-expand-btn");
+        var panel       = page.locator("#mesh-panel");
+        var expandBtn   = page.locator("#mesh-expand-btn");
         var collapseBtn = page.locator("#mesh-collapse-btn");
 
         // Panel is visible initially
@@ -1164,7 +1163,7 @@ class MeshPanelE2ETest extends PlaywrightBase {
 
         // Wait for the panel's init() to complete (fetch /api/mesh/config)
         page.waitForFunction("() => document.getElementById('mesh-body').textContent.trim().length > 0",
-                new com.microsoft.playwright.Page.WaitForFunctionOptions().setTimeout(5000));
+                             new com.microsoft.playwright.Page.WaitForFunctionOptions().setTimeout(5000));
 
         var body = page.locator("#mesh-body");
 

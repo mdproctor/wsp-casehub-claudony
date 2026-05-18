@@ -33,7 +33,7 @@ These tests are plain JUnit 5 — no Quarkus container. This is intentional: Con
 - [ ] **Step 1: Create the test file**
 
 ```java
-package dev.claudony.config;
+package config.claudony.config;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -67,7 +67,7 @@ class EncryptionKeyConfigSourceTest {
     @Test
     void firstRun_persistsKeyToFile() throws IOException {
         var source = new EncryptionKeyConfigSource(tempDir);
-        var key = source.getValue(ENC_KEY_PROP);
+        var key    = source.getValue(ENC_KEY_PROP);
 
         var keyFile = tempDir.resolve("encryption-key");
         assertThat(keyFile).exists();
@@ -77,7 +77,7 @@ class EncryptionKeyConfigSourceTest {
     @Test
     void firstRun_keyIs43CharBase64Url() {
         var source = new EncryptionKeyConfigSource(tempDir);
-        var key = source.getValue(ENC_KEY_PROP);
+        var key    = source.getValue(ENC_KEY_PROP);
 
         // 32 random bytes → base64url without padding → exactly 43 chars
         assertThat(key).matches("[A-Za-z0-9_\\-]{43}");
@@ -94,7 +94,7 @@ class EncryptionKeyConfigSourceTest {
         assertThat(perms).isEqualTo(EnumSet.of(
                 PosixFilePermission.OWNER_READ,
                 PosixFilePermission.OWNER_WRITE
-        ));
+                                              ));
     }
 
     // ─── Idempotency ────────────────────────────────────────────────────────
@@ -102,8 +102,8 @@ class EncryptionKeyConfigSourceTest {
     @Test
     void idempotent_sameKeyReturnedOnRepeatCalls() {
         var source = new EncryptionKeyConfigSource(tempDir);
-        var key1 = source.getValue(ENC_KEY_PROP);
-        var key2 = source.getValue(ENC_KEY_PROP);
+        var key1   = source.getValue(ENC_KEY_PROP);
+        var key2   = source.getValue(ENC_KEY_PROP);
 
         assertThat(key1).isEqualTo(key2);
     }
@@ -192,7 +192,7 @@ class EncryptionKeyConfigSourceTest {
 
         try {
             var source = new EncryptionKeyConfigSource(readOnlyDir);
-            var key = source.getValue(ENC_KEY_PROP);
+            var key    = source.getValue(ENC_KEY_PROP);
 
             // Still returns a usable key even though file could not be persisted
             assertThat(key).isNotBlank();
@@ -230,7 +230,7 @@ Expected: compilation error — `cannot find symbol: class EncryptionKeyConfigSo
 - [ ] **Step 1: Create the implementation**
 
 ```java
-package dev.claudony.config;
+package config.claudony.config;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -264,11 +264,11 @@ import java.util.Set;
 @RegisterForReflection
 public class EncryptionKeyConfigSource implements ConfigSource {
 
-    private static final Logger LOG = Logger.getLogger(EncryptionKeyConfigSource.class);
+    private static final Logger LOG          = Logger.getLogger(EncryptionKeyConfigSource.class);
     private static final String KEY_PROPERTY = "quarkus.http.auth.session.encryption-key";
-    private static final int ORDINAL = 200;
+    private static final int    ORDINAL      = 200;
 
-    private final Path configDir;
+    private final    Path   configDir;
     private volatile String cachedKey;
 
     /** Called by ServiceLoader at Quarkus bootstrap. */
@@ -343,7 +343,7 @@ public class EncryptionKeyConfigSource implements ConfigSource {
                 }
             } catch (IOException e) {
                 LOG.warnf("Could not read session encryption key from %s: %s — regenerating",
-                        keyFile, e.getMessage());
+                          keyFile, e.getMessage());
             }
         }
 
@@ -356,7 +356,7 @@ public class EncryptionKeyConfigSource implements ConfigSource {
                 Files.createDirectories(configDir);
             } catch (IOException e) {
                 LOG.warnf("Could not create config directory %s: %s" +
-                        " — sessions will not survive restart", configDir, e.getMessage());
+                          " — sessions will not survive restart", configDir, e.getMessage());
                 return key;
             }
         }
@@ -373,7 +373,7 @@ public class EncryptionKeyConfigSource implements ConfigSource {
             logGenerationBanner(keyFile);
         } catch (IOException e) {
             LOG.warnf("Could not persist session encryption key to %s: %s" +
-                    " — sessions will not survive restart. Check directory permissions.", keyFile, e.getMessage());
+                      " — sessions will not survive restart. Check directory permissions.", keyFile, e.getMessage());
         }
 
         return key;
@@ -387,14 +387,14 @@ public class EncryptionKeyConfigSource implements ConfigSource {
 
     private void logGenerationBanner(Path keyFile) {
         LOG.info("\n================================================================\n" +
-                "CLAUDONY — Session Encryption Key Generated (first run)\n" +
-                "  Saved to: " + keyFile.toAbsolutePath() + "\n" +
-                "  Permissions: rw------- (owner read/write only)\n\n" +
-                "  Sessions will now survive server restarts.\n\n" +
-                "  To use a custom key (e.g. from a secrets manager):\n" +
-                "    export QUARKUS_HTTP_AUTH_SESSION_ENCRYPTION_KEY=<your-key>\n" +
-                "  The env var takes precedence over the persisted file.\n" +
-                "================================================================");
+                 "CLAUDONY — Session Encryption Key Generated (first run)\n" +
+                 "  Saved to: " + keyFile.toAbsolutePath() + "\n" +
+                 "  Permissions: rw------- (owner read/write only)\n\n" +
+                 "  Sessions will now survive server restarts.\n\n" +
+                 "  To use a custom key (e.g. from a secrets manager):\n" +
+                 "    export QUARKUS_HTTP_AUTH_SESSION_ENCRYPTION_KEY=<your-key>\n" +
+                 "  The env var takes precedence over the persisted file.\n" +
+                 "================================================================");
     }
 }
 ```
@@ -434,7 +434,7 @@ git commit -m "feat: EncryptionKeyConfigSource — per-deployment session key wi
 Create the file `src/main/resources/META-INF/services/org.eclipse.microprofile.config.spi.ConfigSource` with this exact content (one line, no trailing whitespace):
 
 ```
-dev.claudony.config.EncryptionKeyConfigSource
+io.casehub.claudony.config.EncryptionKeyConfigSource
 ```
 
 This registers the ConfigSource with both the JVM ServiceLoader and Quarkus's native image build processor.
@@ -502,7 +502,7 @@ These tests start the full Quarkus container and verify that the ConfigSource is
 - [ ] **Step 1: Write the integration test**
 
 ```java
-package dev.claudony.config;
+package config.claudony.config;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -521,12 +521,12 @@ class EncryptionKeyConfigSourceIntegrationTest {
     /** Locates our ConfigSource in the live SmallRye Config registry. */
     private ConfigSource ourSource() {
         return StreamSupport.stream(
-                        ConfigProvider.getConfig().getConfigSources().spliterator(), false)
-                .filter(cs -> "claudony-file-encryption-key".equals(cs.getName()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError(
-                        "EncryptionKeyConfigSource not registered — " +
-                        "check META-INF/services/org.eclipse.microprofile.config.spi.ConfigSource"));
+                                    ConfigProvider.getConfig().getConfigSources().spliterator(), false)
+                            .filter(cs -> "claudony-file-encryption-key".equals(cs.getName()))
+                            .findFirst()
+                            .orElseThrow(() -> new AssertionError(
+                                    "EncryptionKeyConfigSource not registered — " +
+                                    "check META-INF/services/org.eclipse.microprofile.config.spi.ConfigSource"));
     }
 
     @Test
@@ -618,31 +618,31 @@ In `src/main/resources/META-INF/native-image/reflect-config.json`, add the new e
 ```json
 [
   {
-    "name": "dev.claudony.server.model.Session",
+    "name": "io.casehub.claudony.model.server.claudony.Session",
     "allDeclaredConstructors": true,
     "allPublicMethods": true,
     "allDeclaredFields": true
   },
   {
-    "name": "dev.claudony.server.model.SessionStatus",
+    "name": "io.casehub.claudony.model.server.claudony.SessionStatus",
     "allDeclaredConstructors": true,
     "allPublicMethods": true,
     "allDeclaredFields": true
   },
   {
-    "name": "dev.claudony.server.model.CreateSessionRequest",
+    "name": "io.casehub.claudony.server.model.CreateSessionRequest",
     "allDeclaredConstructors": true,
     "allPublicMethods": true,
     "allDeclaredFields": true
   },
   {
-    "name": "dev.claudony.server.model.SessionResponse",
+    "name": "io.casehub.claudony.server.model.SessionResponse",
     "allDeclaredConstructors": true,
     "allPublicMethods": true,
     "allDeclaredFields": true
   },
   {
-    "name": "dev.claudony.config.EncryptionKeyConfigSource",
+    "name": "io.casehub.claudony.config.EncryptionKeyConfigSource",
     "allDeclaredConstructors": true,
     "allPublicMethods": true,
     "allDeclaredMethods": true

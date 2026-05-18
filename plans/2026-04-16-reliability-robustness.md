@@ -198,7 +198,7 @@ excludes them rather than propagating the exception."
 Create `src/test/java/dev/claudony/Await.java`:
 
 ```java
-package dev.claudony;
+package config.claudony;
 
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
@@ -226,7 +226,7 @@ public final class Await {
         long deadline = System.currentTimeMillis() + timeout.toMillis();
         while (System.currentTimeMillis() < deadline) {
             if (condition.getAsBoolean()) return;
-            try { Thread.sleep(POLL_MS); } catch (InterruptedException e) {
+            try {Thread.sleep(POLL_MS);} catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new AssertionError("Interrupted while waiting: " + timeoutMessage, e);
             }
@@ -246,18 +246,20 @@ public final class Await {
 Replace the body of `TmuxServiceTest.java` entirely:
 
 ```java
-package dev.claudony.server;
+package config.claudony.server;
 
-import dev.claudony.Await;
+import config.claudony.Await;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
 class TmuxServiceTest {
 
-    @Inject TmuxService tmux;
+    @Inject
+    TmuxService tmux;
 
     private static final String TEST_SESSION = "test-claudony-unit";
 
@@ -291,15 +293,16 @@ class TmuxServiceTest {
         tmux.createSession(TEST_SESSION, System.getProperty("user.home"), "echo hello");
         var names = tmux.listSessionNames();
         assertTrue(names.contains(TEST_SESSION),
-                "Expected session list to contain: " + TEST_SESSION + ", got: " + names);
+                   "Expected session list to contain: " + TEST_SESSION + ", got: " + names);
     }
 
     @Test
     void capturePaneReturnsOutput() throws Exception {
         tmux.createSession(TEST_SESSION, System.getProperty("user.home"), "echo claudony-marker");
         Await.until(() -> {
-            try { return tmux.capturePane(TEST_SESSION, 20).contains("claudony-marker"); }
-            catch (Exception e) { return false; }
+            try {return tmux.capturePane(TEST_SESSION, 20).contains("claudony-marker");} catch (Exception e) {
+                return false;
+            }
         }, "'claudony-marker' to appear in pane output");
     }
 
@@ -308,13 +311,11 @@ class TmuxServiceTest {
         tmux.createSession(TEST_SESSION, System.getProperty("user.home"), "bash");
         // Wait for bash prompt before sending keys
         Await.until(() -> {
-            try { return !tmux.capturePane(TEST_SESSION, 5).isBlank(); }
-            catch (Exception e) { return false; }
+            try {return !tmux.capturePane(TEST_SESSION, 5).isBlank();} catch (Exception e) {return false;}
         }, "bash prompt to appear");
         tmux.sendKeys(TEST_SESSION, "Escape");
         Await.until(() -> {
-            try { return tmux.capturePane(TEST_SESSION, 20).contains("Escape"); }
-            catch (Exception e) { return false; }
+            try {return tmux.capturePane(TEST_SESSION, 20).contains("Escape");} catch (Exception e) {return false;}
         }, "literal 'Escape' to appear in pane output (missing -l flag would fire key instead)");
     }
 }
@@ -325,13 +326,14 @@ class TmuxServiceTest {
 Replace the body of `SessionInputOutputTest.java`:
 
 ```java
-package dev.claudony.server;
+package config.claudony.server;
 
-import dev.claudony.Await;
+import config.claudony.Await;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
+
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
@@ -339,50 +341,52 @@ import static org.hamcrest.Matchers.*;
 @TestSecurity(user = "test", roles = "user")
 class SessionInputOutputTest {
 
-    @Inject SessionRegistry registry;
-    @Inject TmuxService tmux;
+    @Inject
+    SessionRegistry registry;
+    @Inject
+    TmuxService     tmux;
 
     @AfterEach
     void cleanup() throws Exception {
         for (var s : registry.all()) {
             registry.remove(s.id());
-            try { tmux.killSession(s.name()); } catch (Exception ignored) {}
+            try {tmux.killSession(s.name());} catch (Exception ignored) {}
         }
     }
 
     @Test
     void sendInputToSessionReturns204() {
         var sessionId = given().contentType("application/json")
-            .body("{\"name\":\"test-io-1\",\"workingDir\":\"/tmp\",\"command\":\"bash\"}")
-            .when().post("/api/sessions")
-            .then().statusCode(201).extract().path("id");
+                               .body("{\"name\":\"test-io-1\",\"workingDir\":\"/tmp\",\"command\":\"bash\"}")
+                               .when().post("/api/sessions")
+                               .then().statusCode(201).extract().path("id");
 
         awaitSessionReady(sessionId);
 
         given().contentType("application/json")
-            .body("{\"text\":\"echo input-test-marker\\n\"}")
-            .when().post("/api/sessions/" + sessionId + "/input")
-            .then().statusCode(204);
+               .body("{\"text\":\"echo input-test-marker\\n\"}")
+               .when().post("/api/sessions/" + sessionId + "/input")
+               .then().statusCode(204);
     }
 
     @Test
     void getOutputFromSessionReturnsText() {
         var sessionId = given().contentType("application/json")
-            .body("{\"name\":\"test-io-2\",\"workingDir\":\"/tmp\",\"command\":\"bash\"}")
-            .when().post("/api/sessions")
-            .then().statusCode(201).extract().path("id");
+                               .body("{\"name\":\"test-io-2\",\"workingDir\":\"/tmp\",\"command\":\"bash\"}")
+                               .when().post("/api/sessions")
+                               .then().statusCode(201).extract().path("id");
 
         awaitSessionReady(sessionId);
 
         given().contentType("application/json")
-            .body("{\"text\":\"echo input-test-marker\\n\"}")
-            .when().post("/api/sessions/" + sessionId + "/input")
-            .then().statusCode(204);
+               .body("{\"text\":\"echo input-test-marker\\n\"}")
+               .when().post("/api/sessions/" + sessionId + "/input")
+               .then().statusCode(204);
 
         Await.until(() -> {
             var body = given().when()
-                .get("/api/sessions/" + sessionId + "/output?lines=20")
-                .then().statusCode(200).extract().asString();
+                              .get("/api/sessions/" + sessionId + "/output?lines=20")
+                              .then().statusCode(200).extract().asString();
             return body.contains("input-test-marker");
         }, "'input-test-marker' to appear in session output");
     }
@@ -390,35 +394,35 @@ class SessionInputOutputTest {
     @Test
     void sendInputToUnknownSessionReturns404() {
         given().contentType("application/json")
-            .body("{\"text\":\"echo hi\\n\"}")
-            .when().post("/api/sessions/does-not-exist/input")
-            .then().statusCode(404);
+               .body("{\"text\":\"echo hi\\n\"}")
+               .when().post("/api/sessions/does-not-exist/input")
+               .then().statusCode(404);
     }
 
     @Test
     void getOutputFromUnknownSessionReturns404() {
         given().when().get("/api/sessions/does-not-exist/output")
-            .then().statusCode(404);
+               .then().statusCode(404);
     }
 
     @Test
     void sendInputWithTmuxKeyNameViaRestPreservesLiteralText() {
         var sessionId = given().contentType("application/json")
-            .body("{\"name\":\"test-io-keyname\",\"workingDir\":\"/tmp\",\"command\":\"bash\"}")
-            .when().post("/api/sessions")
-            .then().statusCode(201).extract().path("id");
+                               .body("{\"name\":\"test-io-keyname\",\"workingDir\":\"/tmp\",\"command\":\"bash\"}")
+                               .when().post("/api/sessions")
+                               .then().statusCode(201).extract().path("id");
 
         awaitSessionReady(sessionId);
 
         given().contentType("application/json")
-            .body("{\"text\":\"Escape\"}")
-            .when().post("/api/sessions/" + sessionId + "/input")
-            .then().statusCode(204);
+               .body("{\"text\":\"Escape\"}")
+               .when().post("/api/sessions/" + sessionId + "/input")
+               .then().statusCode(204);
 
         Await.until(() -> {
             var body = given().when()
-                .get("/api/sessions/" + sessionId + "/output?lines=20")
-                .then().statusCode(200).extract().asString();
+                              .get("/api/sessions/" + sessionId + "/output?lines=20")
+                              .then().statusCode(200).extract().asString();
             return body.contains("Escape");
         }, "literal 'Escape' to appear in session output");
     }
@@ -427,8 +431,8 @@ class SessionInputOutputTest {
     private static void awaitSessionReady(String sessionId) {
         Await.until(() -> {
             var body = given().when()
-                .get("/api/sessions/" + sessionId + "/output?lines=5")
-                .then().extract().asString();
+                              .get("/api/sessions/" + sessionId + "/output?lines=5")
+                              .then().extract().asString();
             return !body.isBlank();
         }, "session bash prompt to appear");
     }
@@ -440,20 +444,20 @@ class SessionInputOutputTest {
 Read `src/test/java/dev/claudony/frontend/ResizeEndpointTest.java` first, then replace its `Thread.sleep(200)` with:
 
 ```java
-import dev.claudony.Await;
+import config.claudony.Await;
 // ...
 // After creating session (statusCode 201):
-Await.until(() -> {
-    var status = given().when()
-        .get("/api/sessions/" + sessionId)
-        .then().extract().statusCode();
-    return status == 200;
-}, "session to be available before resize");
+Await.until(() ->{
+var status = given().when()
+                    .get("/api/sessions/" + sessionId)
+                    .then().extract().statusCode();
+    return status ==200;
+        },"session to be available before resize");
 ```
 
 - [ ] **Step 5: Update McpServerIntegrationTest — replace 3 sleeps**
 
-In `McpServerIntegrationTest.java`, add `import dev.claudony.Await;` and replace each `Thread.sleep` with:
+In `McpServerIntegrationTest.java`, add `import io.casehub.claudony.Await;` and replace each `Thread.sleep` with:
 
 Replace the sleep after `sendInput` (waiting for echo output):
 ```java
@@ -536,22 +540,22 @@ The test already uses `LinkedBlockingQueue<String>` + `poll(timeout, unit)` for 
 The `@BeforeEach` `Thread.sleep(300)` (line 40) waits for bash to be ready. Replace with:
 
 ```java
+
 @BeforeEach
 void setup() throws Exception {
     tmux.createSession(TEST_SESSION, System.getProperty("user.home"), "bash");
     var now = Instant.now();
-    registry.register(new dev.claudony.server.model.Session(
-        "ws-test-id", TEST_SESSION, System.getProperty("user.home"),
-        "bash", SessionStatus.IDLE, now, now));
+    registry.register(new config.claudony.server.model.Session(
+            "ws-test-id", TEST_SESSION, System.getProperty("user.home"),
+            "bash", SessionStatus.IDLE, now, now));
     // Wait for bash prompt instead of sleeping a fixed 300ms
     Await.until(() -> {
-        try { return !tmux.capturePane(TEST_SESSION, 5).isBlank(); }
-        catch (Exception e) { return false; }
+        try {return !tmux.capturePane(TEST_SESSION, 5).isBlank();} catch (Exception e) {return false;}
     }, "bash prompt to be ready in test session");
 }
 ```
 
-Add `import dev.claudony.Await;` at the top of the file.
+Add `import io.casehub.claudony.Await;` at the top of the file.
 
 - [ ] **Step 2: Replace pipe-pane connection sleeps**
 

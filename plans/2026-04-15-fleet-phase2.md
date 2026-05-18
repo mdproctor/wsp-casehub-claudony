@@ -45,7 +45,7 @@ On open: look up peer by ID → if not found, close immediately. If found, open 
 Create `src/test/java/dev/claudony/server/fleet/ProxyWebSocketTest.java`:
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -59,7 +59,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -70,7 +69,8 @@ class ProxyWebSocketTest {
     private static final String WS_BASE = "ws://localhost:8081";
     private static final String API_KEY = "test-api-key-do-not-use-in-prod";
 
-    @Inject PeerRegistry registry;
+    @Inject
+    PeerRegistry registry;
 
     @AfterEach
     void cleanup() {
@@ -84,27 +84,28 @@ class ProxyWebSocketTest {
     @Test
     void proxyWebSocket_unknownPeer_closesConnection() throws Exception {
         var closed = new AtomicBoolean(false);
-        var latch = new CountDownLatch(1);
+        var latch  = new CountDownLatch(1);
 
         HttpClient.newHttpClient()
-                .newWebSocketBuilder()
-                .header("X-Api-Key", API_KEY)
-                .buildAsync(
-                        URI.create(WS_BASE + "/ws/proxy/unknown-peer-id/any-session/80/24"),
-                        new WebSocket.Listener() {
-                            @Override
-                            public CompletionStage<?> onClose(WebSocket ws, int code, String reason) {
-                                closed.set(true);
-                                latch.countDown();
-                                return null;
-                            }
-                            @Override
-                            public void onError(WebSocket ws, Throwable err) {
-                                closed.set(true);
-                                latch.countDown();
-                            }
-                        })
-                .join();
+                  .newWebSocketBuilder()
+                  .header("X-Api-Key", API_KEY)
+                  .buildAsync(
+                          URI.create(WS_BASE + "/ws/proxy/unknown-peer-id/any-session/80/24"),
+                          new WebSocket.Listener() {
+                              @Override
+                              public CompletionStage<?> onClose(WebSocket ws, int code, String reason) {
+                                  closed.set(true);
+                                  latch.countDown();
+                                  return null;
+                              }
+
+                              @Override
+                              public void onError(WebSocket ws, Throwable err) {
+                                  closed.set(true);
+                                  latch.countDown();
+                              }
+                          })
+                  .join();
 
         // Server closes the connection immediately for unknown peer
         assertThat(latch.await(3, TimeUnit.SECONDS)).isTrue();
@@ -114,27 +115,28 @@ class ProxyWebSocketTest {
     @Test
     void proxyWebSocket_unauthenticated_rejected() throws Exception {
         var rejected = new AtomicBoolean(false);
-        var latch = new CountDownLatch(1);
+        var latch    = new CountDownLatch(1);
 
         try {
             HttpClient.newHttpClient()
-                    .newWebSocketBuilder()
-                    // No X-Api-Key header
-                    .buildAsync(
-                            URI.create(WS_BASE + "/ws/proxy/any-peer/any-session/80/24"),
-                            new WebSocket.Listener() {
-                                @Override
-                                public CompletionStage<?> onClose(WebSocket ws, int code, String reason) {
-                                    latch.countDown();
-                                    return null;
-                                }
-                                @Override
-                                public void onError(WebSocket ws, Throwable err) {
-                                    rejected.set(true);
-                                    latch.countDown();
-                                }
-                            })
-                    .join();
+                      .newWebSocketBuilder()
+                      // No X-Api-Key header
+                      .buildAsync(
+                              URI.create(WS_BASE + "/ws/proxy/any-peer/any-session/80/24"),
+                              new WebSocket.Listener() {
+                                  @Override
+                                  public CompletionStage<?> onClose(WebSocket ws, int code, String reason) {
+                                      latch.countDown();
+                                      return null;
+                                  }
+
+                                  @Override
+                                  public void onError(WebSocket ws, Throwable err) {
+                                      rejected.set(true);
+                                      latch.countDown();
+                                  }
+                              })
+                      .join();
         } catch (Exception e) {
             rejected.set(true);
             latch.countDown();
@@ -149,30 +151,31 @@ class ProxyWebSocketTest {
     void proxyWebSocket_unreachablePeer_closesGracefully() throws Exception {
         // Add a peer that exists in registry but can't be reached
         registry.addPeer("proxy-test-peer", "http://localhost:19999",
-                "Unreachable", DiscoverySource.MANUAL, TerminalMode.PROXY);
+                         "Unreachable", DiscoverySource.MANUAL, TerminalMode.PROXY);
 
         var closed = new AtomicBoolean(false);
-        var latch = new CountDownLatch(1);
+        var latch  = new CountDownLatch(1);
 
         HttpClient.newHttpClient()
-                .newWebSocketBuilder()
-                .header("X-Api-Key", API_KEY)
-                .buildAsync(
-                        URI.create(WS_BASE + "/ws/proxy/proxy-test-peer/any-session/80/24"),
-                        new WebSocket.Listener() {
-                            @Override
-                            public CompletionStage<?> onClose(WebSocket ws, int code, String reason) {
-                                closed.set(true);
-                                latch.countDown();
-                                return null;
-                            }
-                            @Override
-                            public void onError(WebSocket ws, Throwable err) {
-                                closed.set(true);
-                                latch.countDown();
-                            }
-                        })
-                .join();
+                  .newWebSocketBuilder()
+                  .header("X-Api-Key", API_KEY)
+                  .buildAsync(
+                          URI.create(WS_BASE + "/ws/proxy/proxy-test-peer/any-session/80/24"),
+                          new WebSocket.Listener() {
+                              @Override
+                              public CompletionStage<?> onClose(WebSocket ws, int code, String reason) {
+                                  closed.set(true);
+                                  latch.countDown();
+                                  return null;
+                              }
+
+                              @Override
+                              public void onError(WebSocket ws, Throwable err) {
+                                  closed.set(true);
+                                  latch.countDown();
+                              }
+                          })
+                  .join();
 
         // Server opens the connection, fails upstream connect, then closes gracefully
         assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
@@ -194,9 +197,9 @@ Expected: compilation error — `cannot find symbol: class ProxyWebSocket`
 Create `src/main/java/dev/claudony/server/fleet/ProxyWebSocket.java`:
 
 ```java
-package dev.claudony.server.fleet;
+package config.claudony.server.fleet;
 
-import dev.claudony.server.auth.FleetKeyService;
+import config.claudony.server.auth.FleetKeyService;
 import io.quarkus.websockets.next.*;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocketConnectOptions;
@@ -222,9 +225,12 @@ public class ProxyWebSocket {
 
     private static final Logger LOG = Logger.getLogger(ProxyWebSocket.class);
 
-    @Inject PeerRegistry peerRegistry;
-    @Inject FleetKeyService fleetKeyService;
-    @Inject Vertx vertx;
+    @Inject
+    PeerRegistry    peerRegistry;
+    @Inject
+    FleetKeyService fleetKeyService;
+    @Inject
+    Vertx           vertx;
 
     /** connectionId → upstream WebSocket to the peer */
     private final ConcurrentHashMap<String, io.vertx.mutiny.core.http.WebSocket> upstreams
@@ -232,10 +238,10 @@ public class ProxyWebSocket {
 
     @OnOpen
     public void onOpen(WebSocketConnection connection) {
-        var peerId = connection.pathParam("peerId");
+        var peerId    = connection.pathParam("peerId");
         var sessionId = connection.pathParam("sessionId");
-        var cols = connection.pathParam("cols");
-        var rows = connection.pathParam("rows");
+        var cols      = connection.pathParam("cols");
+        var rows      = connection.pathParam("rows");
 
         var peer = peerRegistry.findById(peerId);
         if (peer.isEmpty()) {
@@ -245,41 +251,41 @@ public class ProxyWebSocket {
         }
 
         var peerUrl = peer.get().url();
-        var uri = URI.create(peerUrl);
-        var port = uri.getPort() == -1 ? (peerUrl.startsWith("https") ? 443 : 80) : uri.getPort();
-        var wsPath = "/ws/" + sessionId + "/" + cols + "/" + rows;
+        var uri     = URI.create(peerUrl);
+        var port    = uri.getPort() == -1 ? (peerUrl.startsWith("https") ? 443 : 80) : uri.getPort();
+        var wsPath  = "/ws/" + sessionId + "/" + cols + "/" + rows;
 
         var options = new WebSocketConnectOptions()
-                .setHost(uri.getHost())
-                .setPort(port)
-                .setURI(wsPath);
+                              .setHost(uri.getHost())
+                              .setPort(port)
+                              .setURI(wsPath);
         fleetKeyService.getKey().ifPresent(k -> options.addHeader("X-Api-Key", k));
 
         vertx.createHttpClient().webSocket(options).subscribe().with(
-            upstream -> {
-                upstreams.put(connection.id(), upstream);
+                upstream -> {
+                    upstreams.put(connection.id(), upstream);
 
-                // upstream → browser
-                upstream.textMessageHandler(text -> connection.sendTextAndForget(text));
-                upstream.binaryMessageHandler(buf ->
-                        connection.sendBinaryAndForget(buf.getBytes()));
-                upstream.closeHandler(v -> {
-                    upstreams.remove(connection.id());
-                    connection.closeAndForget();
-                });
-                upstream.exceptionHandler(e -> {
-                    LOG.debugf("Proxy upstream error for %s: %s", peerUrl, e.getMessage());
-                    upstreams.remove(connection.id());
-                    connection.closeAndForget();
-                });
+                    // upstream → browser
+                    upstream.textMessageHandler(text -> connection.sendTextAndForget(text));
+                    upstream.binaryMessageHandler(buf ->
+                                                          connection.sendBinaryAndForget(buf.getBytes()));
+                    upstream.closeHandler(v -> {
+                        upstreams.remove(connection.id());
+                        connection.closeAndForget();
+                    });
+                    upstream.exceptionHandler(e -> {
+                        LOG.debugf("Proxy upstream error for %s: %s", peerUrl, e.getMessage());
+                        upstreams.remove(connection.id());
+                        connection.closeAndForget();
+                    });
 
-                LOG.debugf("Proxy WS open: peer=%s session=%s at %sx%s", peerUrl, sessionId, cols, rows);
-            },
-            err -> {
-                LOG.warnf("Proxy WS upstream connect failed to %s: %s", peerUrl, err.getMessage());
-                connection.closeAndAwait();
-            }
-        );
+                    LOG.debugf("Proxy WS open: peer=%s session=%s at %sx%s", peerUrl, sessionId, cols, rows);
+                },
+                err -> {
+                    LOG.warnf("Proxy WS upstream connect failed to %s: %s", peerUrl, err.getMessage());
+                    connection.closeAndAwait();
+                }
+                                                                    );
     }
 
     @OnTextMessage

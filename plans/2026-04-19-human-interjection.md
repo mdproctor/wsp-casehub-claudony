@@ -103,7 +103,7 @@ Record as `E2E_ISSUE`.
 Create `src/test/java/dev/claudony/server/MeshResourceInterjectionTest.java`:
 
 ```java
-package dev.claudony.server;
+package config.claudony.server;
 
 import io.quarkiverse.qhorus.runtime.channel.Channel;
 import io.quarkiverse.qhorus.runtime.message.Message;
@@ -124,8 +124,10 @@ import static org.hamcrest.Matchers.*;
 @TestSecurity(user = "test", roles = "user")
 class MeshResourceInterjectionTest {
 
-    @Inject QhorusMcpTools tools;
-    @Inject UserTransaction ut;
+    @Inject
+    QhorusMcpTools  tools;
+    @Inject
+    UserTransaction ut;
 
     private String channelName;
 
@@ -149,49 +151,49 @@ class MeshResourceInterjectionTest {
     @Test
     void postMessage_sendsToChannel() {
         given()
-            .contentType(JSON)
-            .body("{\"content\":\"prioritise security\",\"type\":\"status\"}")
-        .when()
-            .post("/api/mesh/channels/{name}/messages", channelName)
-        .then()
-            .statusCode(200)
-            .body("sender", equalTo("human"))
-            .body("channelName", equalTo(channelName))
-            .body("messageType", equalTo("STATUS"))
-            .body("messageId", notNullValue());
+                .contentType(JSON)
+                .body("{\"content\":\"prioritise security\",\"type\":\"status\"}")
+                .when()
+                .post("/api/mesh/channels/{name}/messages", channelName)
+                .then()
+                .statusCode(200)
+                .body("sender", equalTo("human"))
+                .body("channelName", equalTo(channelName))
+                .body("messageType", equalTo("STATUS"))
+                .body("messageId", notNullValue());
     }
 
     @Test
     void postMessage_blankContent_returns400() {
         given()
-            .contentType(JSON)
-            .body("{\"content\":\"\",\"type\":\"status\"}")
-        .when()
-            .post("/api/mesh/channels/{name}/messages", channelName)
-        .then()
-            .statusCode(400);
+                .contentType(JSON)
+                .body("{\"content\":\"\",\"type\":\"status\"}")
+                .when()
+                .post("/api/mesh/channels/{name}/messages", channelName)
+                .then()
+                .statusCode(400);
     }
 
     @Test
     void postMessage_invalidType_returns400() {
         given()
-            .contentType(JSON)
-            .body("{\"content\":\"hello\",\"type\":\"blah\"}")
-        .when()
-            .post("/api/mesh/channels/{name}/messages", channelName)
-        .then()
-            .statusCode(400);
+                .contentType(JSON)
+                .body("{\"content\":\"hello\",\"type\":\"blah\"}")
+                .when()
+                .post("/api/mesh/channels/{name}/messages", channelName)
+                .then()
+                .statusCode(400);
     }
 
     @Test
     void postMessage_unknownChannel_returns404() {
         given()
-            .contentType(JSON)
-            .body("{\"content\":\"hello\",\"type\":\"status\"}")
-        .when()
-            .post("/api/mesh/channels/{name}/messages", "does-not-exist-xyz-abc")
-        .then()
-            .statusCode(404);
+                .contentType(JSON)
+                .body("{\"content\":\"hello\",\"type\":\"status\"}")
+                .when()
+                .post("/api/mesh/channels/{name}/messages", "does-not-exist-xyz-abc")
+                .then()
+                .statusCode(404);
     }
 }
 ```
@@ -746,7 +748,7 @@ git commit -m "feat: mesh panel interjection dock JS — MeshPanel wiring, trigg
 Create `src/test/java/dev/claudony/e2e/MeshInterjectionE2ETest.java`:
 
 ```java
-package dev.claudony.e2e;
+package config.claudony.e2e;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
@@ -795,9 +797,9 @@ class MeshInterjectionE2ETest extends PlaywrightBase {
 
         // Wait for MeshPanel.init() to complete — poll has run at least once
         page.waitForFunction(
-            "() => document.getElementById('mesh-body').textContent.trim().length > 0",
-            null,
-            new com.microsoft.playwright.Page.WaitForFunctionOptions().setTimeout(5000));
+                "() => document.getElementById('mesh-body').textContent.trim().length > 0",
+                null,
+                new com.microsoft.playwright.Page.WaitForFunctionOptions().setTimeout(5000));
 
         // With no Qhorus agents active, channel select and send should be disabled
         var channelSelect = page.locator("#mesh-dock-channel");
@@ -806,7 +808,7 @@ class MeshInterjectionE2ETest extends PlaywrightBase {
         assertThat(channelSelect.evaluate("el => el.disabled")).isEqualTo(true);
         assertThat(sendBtn.evaluate("el => el.disabled")).isEqualTo(true);
         assertThat(channelSelect.evaluate("el => el.options[0].text"))
-            .isEqualTo("— no channels —");
+                .isEqualTo("— no channels —");
     }
 
     @Test
@@ -818,11 +820,11 @@ class MeshInterjectionE2ETest extends PlaywrightBase {
 
         // Create a channel via the API so the panel shows it
         var createResp = page.evaluate("""
-            fetch('/api/mesh/channels', {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' }
-            }).then(r => r.json()).then(chs => chs.length)
-            """);
+                                       fetch('/api/mesh/channels', {
+                                           method: 'GET',
+                                           headers: { 'Content-Type': 'application/json' }
+                                       }).then(r => r.json()).then(chs => chs.length)
+                                       """);
 
         // Skip the channel-click assertion if no channels are available
         // (this test is a best-effort check — full coverage needs live agents)

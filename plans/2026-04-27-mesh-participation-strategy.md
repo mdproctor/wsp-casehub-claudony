@@ -41,7 +41,7 @@ No test needed — pure interface + enum.
 - [ ] **Step 1: Create the file**
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.model.WorkerContext;
 
@@ -96,9 +96,10 @@ git commit -m "feat: add MeshParticipationStrategy SPI interface and MeshPartici
 12 tests covering happy path, robustness, and correctness:
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.*;
 
 class MeshParticipationStrategyTest {
@@ -173,9 +174,9 @@ class MeshParticipationStrategyTest {
 
     @Test
     void resultsAreConsistentAcrossRepeatedCalls() {
-        var strategy = new ActiveParticipationStrategy();
-        MeshParticipationStrategy.MeshParticipation first = strategy.strategyFor("w", null);
-        MeshParticipationStrategy.MeshParticipation second = strategy.strategyFor("w", null);
+        var                                         strategy = new ActiveParticipationStrategy();
+        MeshParticipationStrategy.MeshParticipation first    = strategy.strategyFor("w", null);
+        MeshParticipationStrategy.MeshParticipation second   = strategy.strategyFor("w", null);
         assertThat(first).isEqualTo(second);
     }
 
@@ -211,7 +212,7 @@ Expected: COMPILE ERROR (classes don't exist yet)
 - [ ] **Step 3: Create `ActiveParticipationStrategy.java`**
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.model.WorkerContext;
 
@@ -227,7 +228,7 @@ public class ActiveParticipationStrategy implements MeshParticipationStrategy {
 - [ ] **Step 4: Create `ReactiveParticipationStrategy.java`**
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.model.WorkerContext;
 
@@ -243,7 +244,7 @@ public class ReactiveParticipationStrategy implements MeshParticipationStrategy 
 - [ ] **Step 5: Create `SilentParticipationStrategy.java`**
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.model.WorkerContext;
 
@@ -290,11 +291,12 @@ git commit -m "feat: implement Active/Reactive/Silent participation strategies R
 - [ ] **Step 1: Update `CaseHubConfig`**
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
+
 import java.util.Map;
 
 @ConfigMapping(prefix = "claudony.casehub")
@@ -456,7 +458,7 @@ Append these to the existing test class (after the last existing `@Test`). Impor
     }
 ```
 
-Also add `import static org.mockito.Mockito.mock;` if not already present (it is, since `lineageQuery = mock(...)`), and add `import dev.claudony.casehub.CaseHubConfig;` (same package, not needed).
+Also add `import static org.mockito.Mockito.mock;` if not already present (it is, since `lineageQuery = mock(...)`), and add `import io.casehub.claudony.casehub.CaseHubConfig;` (same package, not needed).
 
 - [ ] **Step 3: Run new tests — expect compile errors (3-arg constructor doesn't exist yet)**
 
@@ -472,7 +474,7 @@ Expected: COMPILE ERROR
 - [ ] **Step 4: Rewrite `ClaudonyWorkerContextProvider.java`**
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.context.PropagationContext;
 import io.casehub.api.model.CaseChannel;
@@ -483,10 +485,11 @@ import io.casehub.api.spi.CaseChannelProvider;
 import io.casehub.api.spi.WorkerContextProvider;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
+
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -494,27 +497,27 @@ public class ClaudonyWorkerContextProvider implements WorkerContextProvider {
 
     private static final Logger log = Logger.getLogger(ClaudonyWorkerContextProvider.class);
 
-    private final CaseLineageQuery lineageQuery;
-    private final CaseChannelProvider channelProvider;
+    private final CaseLineageQuery          lineageQuery;
+    private final CaseChannelProvider       channelProvider;
     private final MeshParticipationStrategy strategy;
 
     @Inject
     public ClaudonyWorkerContextProvider(CaseLineageQuery lineageQuery,
-                                          CaseChannelProvider channelProvider,
-                                          CaseHubConfig config) {
+                                         CaseChannelProvider channelProvider,
+                                         CaseHubConfig config) {
         this(lineageQuery, channelProvider, selectStrategy(config.meshParticipation()));
     }
 
     ClaudonyWorkerContextProvider(CaseLineageQuery lineageQuery,
-                                   CaseChannelProvider channelProvider,
-                                   MeshParticipationStrategy strategy) {
-        this.lineageQuery = lineageQuery;
+                                  CaseChannelProvider channelProvider,
+                                  MeshParticipationStrategy strategy) {
+        this.lineageQuery    = lineageQuery;
         this.channelProvider = channelProvider;
-        this.strategy = strategy;
+        this.strategy        = strategy;
     }
 
     ClaudonyWorkerContextProvider(CaseLineageQuery lineageQuery,
-                                   CaseChannelProvider channelProvider) {
+                                  CaseChannelProvider channelProvider) {
         this(lineageQuery, channelProvider, new ActiveParticipationStrategy());
     }
 
@@ -529,13 +532,13 @@ public class ClaudonyWorkerContextProvider implements WorkerContextProvider {
         if (Boolean.TRUE.equals(task.input().get("clean-start"))) {
             props.put("clean-start", true);
             return new WorkerContext(task.capability(), null, null, List.of(),
-                    PropagationContext.createRoot(), props);
+                                     PropagationContext.createRoot(), props);
         }
 
         String caseIdStr = (String) task.input().get("caseId");
         if (caseIdStr == null || caseIdStr.isBlank()) {
             return new WorkerContext(task.capability(), null, null, List.of(),
-                    PropagationContext.createRoot(), props);
+                                     PropagationContext.createRoot(), props);
         }
 
         UUID caseId;
@@ -543,17 +546,17 @@ public class ClaudonyWorkerContextProvider implements WorkerContextProvider {
             caseId = UUID.fromString(caseIdStr);
         } catch (IllegalArgumentException e) {
             return new WorkerContext(task.capability(), null, null, List.of(),
-                    PropagationContext.createRoot(), props);
+                                     PropagationContext.createRoot(), props);
         }
 
         List<WorkerSummary> priorWorkers = lineageQuery.findCompletedWorkers(caseId);
 
         CaseChannel channel = channelProvider.listChannels(caseId).stream()
-                .findFirst()
-                .orElse(null);
+                                             .findFirst()
+                                             .orElse(null);
 
         return new WorkerContext(task.capability(), caseId, channel, priorWorkers,
-                PropagationContext.createRoot(), props);
+                                 PropagationContext.createRoot(), props);
     }
 
     private static MeshParticipationStrategy selectStrategy(String name) {
@@ -643,9 +646,9 @@ These tests verify the full CDI wiring: `CaseHubConfig` → `ClaudonyWorkerConte
 The first inner class tests the default config (no profile, no restart). The second uses a `@TestProfile` for "silent" config (one Quarkus restart).
 
 ```java
-package dev.claudony;
+package config.claudony;
 
-import dev.claudony.casehub.ClaudonyWorkerContextProvider;
+import config.claudony.casehub.ClaudonyWorkerContextProvider;
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkerContext;
 import io.quarkus.test.junit.QuarkusTest;
@@ -653,7 +656,9 @@ import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
+
 import java.util.Map;
+
 import static org.assertj.core.api.Assertions.*;
 
 @QuarkusTest
@@ -666,7 +671,7 @@ class MeshParticipationIntegrationTest {
     void defaultConfig_stampsActiveParticipation() {
         // Default: claudony.casehub.mesh-participation=active (from @WithDefault)
         WorkerContext ctx = provider.buildContext("integration-worker",
-                WorkRequest.of("task", Map.of()));
+                                                  WorkRequest.of("task", Map.of()));
 
         assertThat(ctx.properties())
                 .containsEntry("meshParticipation", "ACTIVE");
@@ -676,7 +681,7 @@ class MeshParticipationIntegrationTest {
     void defaultConfig_meshParticipationKeyAlwaysPresent() {
         // Even with no caseId, the key must be in every context
         WorkerContext ctx = provider.buildContext("integration-worker",
-                WorkRequest.of("researcher", Map.of("caseId", "not-a-uuid")));
+                                                  WorkRequest.of("researcher", Map.of("caseId", "not-a-uuid")));
 
         assertThat(ctx.properties()).containsKey("meshParticipation");
     }
@@ -686,9 +691,9 @@ class MeshParticipationIntegrationTest {
 Also create a second test class for the silent profile (must be a separate class because `@TestProfile` applies to the whole class and triggers a Quarkus restart):
 
 ```java
-package dev.claudony;
+package config.claudony;
 
-import dev.claudony.casehub.ClaudonyWorkerContextProvider;
+import config.claudony.casehub.ClaudonyWorkerContextProvider;
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkerContext;
 import io.quarkus.test.junit.QuarkusTest;
@@ -696,7 +701,9 @@ import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
+
 import java.util.Map;
+
 import static org.assertj.core.api.Assertions.*;
 
 @QuarkusTest
@@ -716,7 +723,7 @@ class MeshParticipationSilentProfileTest {
     @Test
     void silentConfig_stampsParticipationSilent() {
         WorkerContext ctx = provider.buildContext("integration-worker",
-                WorkRequest.of("task", Map.of()));
+                                                  WorkRequest.of("task", Map.of()));
 
         assertThat(ctx.properties())
                 .containsEntry("meshParticipation", "SILENT");
@@ -836,7 +843,7 @@ claudony.casehub.mesh-participation=active     # active | reactive | silent
 
 Find the section starting:
 ```
-claudony-casehub — dev.claudony.casehub
+claudony-casehub — io.casehub.claudony.casehub
 ├── CaseHubConfig                   — @ConfigMapping for claudony.casehub.*
 ```
 

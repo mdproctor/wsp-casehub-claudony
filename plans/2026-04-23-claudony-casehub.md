@@ -20,18 +20,18 @@
 
 | File | Package |
 |---|---|
-| `config/ClaudonyConfig.java` | `dev.claudony.config` |
-| `server/TmuxService.java` | `dev.claudony.server` |
-| `server/SessionRegistry.java` | `dev.claudony.server` |
-| `server/model/Session.java` | `dev.claudony.server.model` |
-| `server/model/SessionStatus.java` | `dev.claudony.server.model` |
-| `server/model/SessionExpiredEvent.java` | `dev.claudony.server.model` |
-| `server/expiry/ExpiryPolicy.java` | `dev.claudony.server.expiry` |
-| `server/expiry/ExpiryPolicyRegistry.java` | `dev.claudony.server.expiry` |
-| `server/expiry/SessionIdleScheduler.java` | `dev.claudony.server.expiry` |
-| `server/expiry/StatusAwareExpiryPolicy.java` | `dev.claudony.server.expiry` |
-| `server/expiry/TerminalOutputExpiryPolicy.java` | `dev.claudony.server.expiry` |
-| `server/expiry/UserInteractionExpiryPolicy.java` | `dev.claudony.server.expiry` |
+| `config/ClaudonyConfig.java` | `io.casehub.claudony.config` |
+| `server/TmuxService.java` | `io.casehub.claudony.server` |
+| `server/SessionRegistry.java` | `io.casehub.claudony.server` |
+| `server/model/Session.java` | `io.casehub.claudony.server.model` |
+| `server/model/SessionStatus.java` | `io.casehub.claudony.server.model` |
+| `server/model/SessionExpiredEvent.java` | `io.casehub.claudony.server.model` |
+| `server/expiry/ExpiryPolicy.java` | `io.casehub.claudony.server.expiry` |
+| `server/expiry/ExpiryPolicyRegistry.java` | `io.casehub.claudony.server.expiry` |
+| `server/expiry/SessionIdleScheduler.java` | `io.casehub.claudony.server.expiry` |
+| `server/expiry/StatusAwareExpiryPolicy.java` | `io.casehub.claudony.server.expiry` |
+| `server/expiry/TerminalOutputExpiryPolicy.java` | `io.casehub.claudony.server.expiry` |
+| `server/expiry/UserInteractionExpiryPolicy.java` | `io.casehub.claudony.server.expiry` |
 
 ### Files staying in `claudony-app/src/` (unchanged)
 
@@ -217,7 +217,7 @@ The result should be a minimal parent pom managing versions only.
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>dev.claudony</groupId>
+        <groupId>io.casehub.claudony</groupId>
         <artifactId>claudony-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
@@ -264,7 +264,7 @@ The `claudony-app/pom.xml` is based on the original root `pom.xml` but as a chil
 ```xml
 <!-- Add inside <dependencies>: -->
 <dependency>
-    <groupId>dev.claudony</groupId>
+    <groupId>config.claudony</groupId>
     <artifactId>claudony-core</artifactId>
     <version>${project.version}</version>
 </dependency>
@@ -321,7 +321,7 @@ becomes parent aggregator. All existing tests pass. Refs #ISSUE_N"
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>dev.claudony</groupId>
+        <groupId>io.casehub.claudony</groupId>
         <artifactId>claudony-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
@@ -333,7 +333,7 @@ becomes parent aggregator. All existing tests pass. Refs #ISSUE_N"
     <dependencies>
         <!-- Claudony core services -->
         <dependency>
-            <groupId>dev.claudony</groupId>
+            <groupId>io.casehub.claudony</groupId>
             <artifactId>claudony-core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -398,7 +398,7 @@ Add inside `claudony-app/pom.xml` `<dependencies>`:
 ```xml
 <!-- CaseHub integration (optional — enabled via claudony.casehub.enabled=true) -->
 <dependency>
-    <groupId>dev.claudony</groupId>
+    <groupId>config.claudony</groupId>
     <artifactId>claudony-casehub</artifactId>
     <version>${project.version}</version>
 </dependency>
@@ -409,11 +409,13 @@ Add inside `claudony-app/pom.xml` `<dependencies>`:
 Create `claudony-casehub/src/test/java/dev/claudony/casehub/WorkerCommandResolverTest.java`:
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import org.junit.jupiter.api.Test;
+
 import java.util.Map;
 import java.util.Set;
+
 import static org.assertj.core.api.Assertions.*;
 
 class WorkerCommandResolverTest {
@@ -432,7 +434,7 @@ class WorkerCommandResolverTest {
 
     @Test
     void resolve_noMatch_returnsDefault() {
-        var config = Map.of("default", "claude");
+        var config   = Map.of("default", "claude");
         var resolver = new WorkerCommandResolver(config);
 
         assertThat(resolver.resolve(Set.of("unknown-capability"))).isEqualTo("claude");
@@ -452,7 +454,7 @@ class WorkerCommandResolverTest {
 
     @Test
     void resolve_emptyCapabilities_returnsDefault() {
-        var config = Map.of("default", "claude");
+        var config   = Map.of("default", "claude");
         var resolver = new WorkerCommandResolver(config);
 
         assertThat(resolver.resolve(Set.of())).isEqualTo("claude");
@@ -473,7 +475,7 @@ class WorkerCommandResolverTest {
 
     @Test
     void resolve_noDefaultConfigured_throwsWhenNoMatch() {
-        var config = Map.of("code-reviewer", "claude");
+        var config   = Map.of("code-reviewer", "claude");
         var resolver = new WorkerCommandResolver(config);
 
         assertThatThrownBy(() -> resolver.resolve(Set.of("unknown")))
@@ -497,7 +499,7 @@ Expected: compilation error — `WorkerCommandResolver` not found.
 Create `claudony-casehub/src/main/java/dev/claudony/casehub/WorkerCommandResolver.java`:
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import java.util.Map;
 import java.util.Set;
@@ -531,8 +533,8 @@ public class WorkerCommandResolver {
 
     public Set<String> getAvailableCapabilities() {
         return capabilityToCommand.keySet().stream()
-                .filter(k -> !k.equals("default"))
-                .collect(Collectors.toUnmodifiableSet());
+                                  .filter(k -> !k.equals("default"))
+                                  .collect(Collectors.toUnmodifiableSet());
     }
 }
 ```
@@ -542,13 +544,13 @@ public class WorkerCommandResolver {
 Create `claudony-casehub/src/main/java/dev/claudony/casehub/CaseHubConfig.java`:
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
+
 import java.util.Map;
-import java.util.Optional;
 
 @ConfigMapping(prefix = "claudony.casehub")
 public interface CaseHubConfig {
@@ -628,53 +630,55 @@ Refs #ISSUE_N"
 Create `claudony-casehub/src/test/java/dev/claudony/casehub/ClaudonyWorkerProvisionerTest.java`:
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.context.PropagationContext;
 import io.casehub.api.model.ProvisionContext;
 import io.casehub.api.model.Worker;
 import io.casehub.api.model.WorkerContext;
 import io.casehub.api.spi.ProvisioningException;
-import dev.claudony.server.SessionRegistry;
-import dev.claudony.server.TmuxService;
+import config.claudony.server.SessionRegistry;
+import config.claudony.server.TmuxService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class ClaudonyWorkerProvisionerTest {
 
-    private TmuxService tmux;
-    private SessionRegistry registry;
+    private TmuxService                   tmux;
+    private SessionRegistry               registry;
     private ClaudonyWorkerContextProvider contextProvider;
-    private WorkerCommandResolver resolver;
-    private ClaudonyWorkerProvisioner provisioner;
+    private WorkerCommandResolver         resolver;
+    private ClaudonyWorkerProvisioner     provisioner;
 
     @BeforeEach
     void setUp() {
-        tmux = mock(TmuxService.class);
-        registry = mock(SessionRegistry.class);
+        tmux            = mock(TmuxService.class);
+        registry        = mock(SessionRegistry.class);
         contextProvider = mock(ClaudonyWorkerContextProvider.class);
-        resolver = new WorkerCommandResolver(Map.of("code-reviewer", "claude", "default", "claude"));
-        provisioner = new ClaudonyWorkerProvisioner(true, tmux, registry, resolver, contextProvider, "/tmp/workers");
+        resolver        = new WorkerCommandResolver(Map.of("code-reviewer", "claude", "default", "claude"));
+        provisioner     = new ClaudonyWorkerProvisioner(true, tmux, registry, resolver, contextProvider, "/tmp/workers");
     }
 
     // --- Happy path ---
 
     @Test
     void provision_createsSessionAndRegistersWorker() throws Exception {
-        var caseId = UUID.randomUUID();
+        var caseId       = UUID.randomUUID();
         var capabilities = Set.of("code-reviewer");
-        var ctx = provisionContext(caseId, capabilities);
+        var ctx          = provisionContext(caseId, capabilities);
         when(contextProvider.buildContext(anyString(), any())).thenReturn(
                 new WorkerContext("refactor auth", caseId, null, List.of(),
-                        PropagationContext.createRoot(), Map.of()));
+                                  PropagationContext.createRoot(), Map.of()));
 
         Worker worker = provisioner.provision(capabilities, ctx);
 
@@ -685,16 +689,16 @@ class ClaudonyWorkerProvisionerTest {
 
     @Test
     void provision_returnsWorkerWithRequestedCapabilities() throws Exception {
-        var caseId = UUID.randomUUID();
+        var caseId       = UUID.randomUUID();
         var capabilities = Set.of("code-reviewer");
-        var ctx = provisionContext(caseId, capabilities);
+        var ctx          = provisionContext(caseId, capabilities);
         when(contextProvider.buildContext(anyString(), any())).thenReturn(
                 new WorkerContext("task", caseId, null, List.of(), PropagationContext.createRoot(), Map.of()));
 
         Worker worker = provisioner.provision(capabilities, ctx);
 
         assertThat(worker.getCapabilities()).extracting(c -> c.name())
-                .containsExactlyInAnyOrder("code-reviewer");
+                                            .containsExactlyInAnyOrder("code-reviewer");
     }
 
     // --- Robustness ---
@@ -716,7 +720,7 @@ class ClaudonyWorkerProvisionerTest {
         when(contextProvider.buildContext(anyString(), any())).thenReturn(
                 new WorkerContext("task", null, null, List.of(), PropagationContext.createRoot(), Map.of()));
         doThrow(new java.io.IOException("tmux not found")).when(tmux)
-                .createSession(anyString(), anyString(), anyString());
+                                                          .createSession(anyString(), anyString(), anyString());
 
         assertThatThrownBy(() -> provisioner.provision(Set.of("code-reviewer"), ctx))
                 .isInstanceOf(ProvisioningException.class)
@@ -748,7 +752,7 @@ class ClaudonyWorkerProvisionerTest {
 
     private ProvisionContext provisionContext(UUID caseId, Set<String> capabilities) {
         var wc = new WorkerContext("task", caseId, null, List.of(),
-                PropagationContext.createRoot(), Map.of());
+                                   PropagationContext.createRoot(), Map.of());
         return new ProvisionContext(caseId, "code-reviewer", wc, PropagationContext.createRoot());
     }
 }
@@ -766,12 +770,12 @@ JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test -pl claudony-casehub \
 Create `claudony-casehub/src/main/java/dev/claudony/casehub/ClaudonyWorkerProvisioner.java`:
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
-import dev.claudony.server.SessionRegistry;
-import dev.claudony.server.TmuxService;
-import dev.claudony.server.model.Session;
-import dev.claudony.server.model.SessionStatus;
+import config.claudony.server.SessionRegistry;
+import config.claudony.server.TmuxService;
+import config.claudony.server.model.Session;
+import config.claudony.server.model.SessionStatus;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.ProvisionContext;
 import io.casehub.api.model.Worker;
@@ -780,6 +784,7 @@ import io.casehub.api.spi.ProvisioningException;
 import io.casehub.api.spi.WorkerProvisioner;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -793,12 +798,12 @@ public class ClaudonyWorkerProvisioner implements WorkerProvisioner {
 
     static final String SESSION_PREFIX = "claudony-worker-";
 
-    private final boolean enabled;
-    private final TmuxService tmux;
-    private final SessionRegistry registry;
-    private final WorkerCommandResolver resolver;
+    private final boolean                       enabled;
+    private final TmuxService                   tmux;
+    private final SessionRegistry               registry;
+    private final WorkerCommandResolver         resolver;
     private final ClaudonyWorkerContextProvider contextProvider;
-    private final String defaultWorkingDir;
+    private final String                        defaultWorkingDir;
 
     @Inject
     public ClaudonyWorkerProvisioner(
@@ -808,19 +813,19 @@ public class ClaudonyWorkerProvisioner implements WorkerProvisioner {
             WorkerCommandResolver resolver,
             ClaudonyWorkerContextProvider contextProvider) {
         this(config.enabled(), tmux, registry, resolver, contextProvider,
-                config.workers().defaultWorkingDir());
+             config.workers().defaultWorkingDir());
     }
 
     // Package-private constructor for unit tests
     ClaudonyWorkerProvisioner(boolean enabled, TmuxService tmux, SessionRegistry registry,
-                               WorkerCommandResolver resolver,
-                               ClaudonyWorkerContextProvider contextProvider,
-                               String defaultWorkingDir) {
-        this.enabled = enabled;
-        this.tmux = tmux;
-        this.registry = registry;
-        this.resolver = resolver;
-        this.contextProvider = contextProvider;
+                              WorkerCommandResolver resolver,
+                              ClaudonyWorkerContextProvider contextProvider,
+                              String defaultWorkingDir) {
+        this.enabled           = enabled;
+        this.tmux              = tmux;
+        this.registry          = registry;
+        this.resolver          = resolver;
+        this.contextProvider   = contextProvider;
         this.defaultWorkingDir = defaultWorkingDir;
     }
 
@@ -831,11 +836,11 @@ public class ClaudonyWorkerProvisioner implements WorkerProvisioner {
                     "CaseHub integration is disabled — set claudony.casehub.enabled=true");
         }
         String workerId = UUID.randomUUID().toString();
-        String command = resolver.resolve(capabilities);
+        String command  = resolver.resolve(capabilities);
 
         // Build worker context for startup prompt
         WorkRequest task = WorkRequest.of(context.taskType(),
-                Map.of("caseId", context.caseId() != null ? context.caseId().toString() : ""));
+                                          Map.of("caseId", context.caseId() != null ? context.caseId().toString() : ""));
         var workerContext = contextProvider.buildContext(workerId, task);
 
         // Build startup command with prompt args
@@ -851,13 +856,13 @@ public class ClaudonyWorkerProvisioner implements WorkerProvisioner {
 
         // Register in session registry
         var session = new Session(workerId, sessionName, defaultWorkingDir, fullCommand,
-                SessionStatus.IDLE, Instant.now(), Instant.now(), Optional.empty());
+                                  SessionStatus.IDLE, Instant.now(), Instant.now(), Optional.empty());
         registry.register(session);
 
         // Build and return Worker — external worker with placeholder function
         List<Capability> capList = capabilities.stream()
-                .map(Capability::new)
-                .toList();
+                                               .map(Capability::new)
+                                               .toList();
         return new Worker(workerId, capList, ctx -> Map.of());
     }
 
@@ -905,10 +910,11 @@ Note: Check if `Capability` has a `name()` method or is a record. Adjust the `ca
 Update `WorkerCommandResolver.java` to be a CDI `@ApplicationScoped` bean with config injection:
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -944,8 +950,8 @@ public class WorkerCommandResolver {
 
     public Set<String> getAvailableCapabilities() {
         return capabilityToCommand.keySet().stream()
-                .filter(k -> !k.equals("default"))
-                .collect(Collectors.toUnmodifiableSet());
+                                  .filter(k -> !k.equals("default"))
+                                  .collect(Collectors.toUnmodifiableSet());
     }
 }
 ```
@@ -986,28 +992,30 @@ terminate(). Refs #ISSUE_N"
 Create `claudony-casehub/src/test/java/dev/claudony/casehub/ClaudonyCaseChannelProviderTest.java`:
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.model.CaseChannel;
 import io.quarkiverse.qhorus.runtime.mcp.QhorusMcpTools;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class ClaudonyCaseChannelProviderTest {
 
-    private QhorusMcpTools qhorusMcpTools;
+    private QhorusMcpTools              qhorusMcpTools;
     private ClaudonyCaseChannelProvider provider;
 
     @BeforeEach
     void setUp() {
         qhorusMcpTools = mock(QhorusMcpTools.class);
-        provider = new ClaudonyCaseChannelProvider(qhorusMcpTools);
+        provider       = new ClaudonyCaseChannelProvider(qhorusMcpTools);
     }
 
     // --- Happy path ---
@@ -1031,8 +1039,8 @@ class ClaudonyCaseChannelProviderTest {
 
     @Test
     void openChannel_channelNameContainsCaseId() {
-        UUID caseId = UUID.randomUUID();
-        var channelDetail = mock(io.quarkiverse.qhorus.runtime.mcp.QhorusMcpToolsBase.ChannelDetail.class);
+        UUID caseId        = UUID.randomUUID();
+        var  channelDetail = mock(io.quarkiverse.qhorus.runtime.mcp.QhorusMcpToolsBase.ChannelDetail.class);
         when(channelDetail.id()).thenReturn(UUID.randomUUID());
         when(channelDetail.name()).thenReturn("case-" + caseId + "/coordination");
         when(qhorusMcpTools.createChannel(anyString(), anyString(), any())).thenReturn(channelDetail);
@@ -1044,15 +1052,15 @@ class ClaudonyCaseChannelProviderTest {
 
     @Test
     void postToChannel_callsQhorussendMessage() {
-        UUID caseId = UUID.randomUUID();
+        UUID   caseId      = UUID.randomUUID();
         String channelName = "case-" + caseId + "/coordination";
         CaseChannel ch = new CaseChannel("ch-id", channelName, "coordination", "qhorus",
-                Map.of("qhorus-name", channelName));
+                                         Map.of("qhorus-name", channelName));
 
         provider.postToChannel(ch, "alice", "hello");
 
         verify(qhorusMcpTools).sendMessage(eq(channelName), eq("alice"), anyString(),
-                eq("hello"), isNull(), isNull());
+                                           eq("hello"), isNull(), isNull());
     }
 
     @Test
@@ -1064,8 +1072,8 @@ class ClaudonyCaseChannelProviderTest {
 
     @Test
     void listChannels_returnsChannelsFilteredByCaseId() {
-        UUID caseId = UUID.randomUUID();
-        var matching = mock(io.quarkiverse.qhorus.runtime.mcp.QhorusMcpToolsBase.ChannelDetail.class);
+        UUID caseId   = UUID.randomUUID();
+        var  matching = mock(io.quarkiverse.qhorus.runtime.mcp.QhorusMcpToolsBase.ChannelDetail.class);
         when(matching.name()).thenReturn("case-" + caseId + "/coord");
         when(matching.id()).thenReturn(UUID.randomUUID());
         var other = mock(io.quarkiverse.qhorus.runtime.mcp.QhorusMcpToolsBase.ChannelDetail.class);
@@ -1106,7 +1114,7 @@ JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test -pl claudony-casehub \
 Create `claudony-casehub/src/main/java/dev/claudony/casehub/ClaudonyCaseChannelProvider.java`:
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.model.CaseChannel;
 import io.casehub.api.spi.CaseChannelProvider;
@@ -1114,6 +1122,7 @@ import io.quarkiverse.qhorus.runtime.mcp.QhorusMcpTools;
 import io.quarkiverse.qhorus.runtime.mcp.QhorusMcpToolsBase;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -1121,7 +1130,7 @@ import java.util.UUID;
 @ApplicationScoped
 public class ClaudonyCaseChannelProvider implements CaseChannelProvider {
 
-    private static final String CHANNEL_PREFIX = "case-";
+    private static final String CHANNEL_PREFIX  = "case-";
     private static final String QHORUS_NAME_KEY = "qhorus-name";
 
     private final QhorusMcpTools qhorusMcpTools;
@@ -1159,14 +1168,14 @@ public class ClaudonyCaseChannelProvider implements CaseChannelProvider {
     public List<CaseChannel> listChannels(UUID caseId) {
         String prefix = CHANNEL_PREFIX + caseId;
         return qhorusMcpTools.listChannels().stream()
-                .filter(ch -> ch.name().startsWith(prefix))
-                .map(ch -> new CaseChannel(
-                        ch.id().toString(),
-                        ch.name(),
-                        extractPurpose(ch.name(), caseId),
-                        "qhorus",
-                        Map.of(QHORUS_NAME_KEY, ch.name())))
-                .toList();
+                             .filter(ch -> ch.name().startsWith(prefix))
+                             .map(ch -> new CaseChannel(
+                                     ch.id().toString(),
+                                     ch.name(),
+                                     extractPurpose(ch.name(), caseId),
+                                     "qhorus",
+                                     Map.of(QHORUS_NAME_KEY, ch.name())))
+                             .toList();
     }
 
     private String extractPurpose(String channelName, UUID caseId) {
@@ -1211,7 +1220,7 @@ Refs #ISSUE_N"
 Create `claudony-casehub/src/test/java/dev/claudony/casehub/ClaudonyWorkerContextProviderTest.java`:
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkerContext;
@@ -1221,24 +1230,26 @@ import io.casehub.ledger.model.CaseLedgerEntry;
 import io.casehub.ledger.repository.CaseLedgerEntryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class ClaudonyWorkerContextProviderTest {
 
-    private CaseLedgerEntryRepository ledgerRepo;
-    private CaseChannelProvider channelProvider;
+    private CaseLedgerEntryRepository     ledgerRepo;
+    private CaseChannelProvider           channelProvider;
     private ClaudonyWorkerContextProvider provider;
 
     @BeforeEach
     void setUp() {
-        ledgerRepo = mock(CaseLedgerEntryRepository.class);
+        ledgerRepo      = mock(CaseLedgerEntryRepository.class);
         channelProvider = mock(CaseChannelProvider.class);
-        provider = new ClaudonyWorkerContextProvider(ledgerRepo, channelProvider);
+        provider        = new ClaudonyWorkerContextProvider(ledgerRepo, channelProvider);
     }
 
     // --- Happy path ---
@@ -1250,7 +1261,7 @@ class ClaudonyWorkerContextProviderTest {
         when(channelProvider.listChannels(caseId)).thenReturn(List.of());
 
         WorkerContext ctx = provider.buildContext("worker-1",
-                WorkRequest.of("researcher", Map.of("caseId", caseId.toString())));
+                                                  WorkRequest.of("researcher", Map.of("caseId", caseId.toString())));
 
         assertThat(ctx.priorWorkers()).isEmpty();
         assertThat(ctx.taskDescription()).isEqualTo("researcher");
@@ -1259,12 +1270,12 @@ class ClaudonyWorkerContextProviderTest {
     @Test
     void buildContext_withCompletedPriorWorkers_buildsWorkerSummaries() {
         UUID caseId = UUID.randomUUID();
-        var entry = completedEntry(caseId, "alice", "AliceRole");
+        var  entry  = completedEntry(caseId, "alice", "AliceRole");
         when(ledgerRepo.findByCaseId(caseId)).thenReturn(List.of(entry));
         when(channelProvider.listChannels(caseId)).thenReturn(List.of());
 
         WorkerContext ctx = provider.buildContext("worker-2",
-                WorkRequest.of("coder", Map.of("caseId", caseId.toString())));
+                                                  WorkRequest.of("coder", Map.of("caseId", caseId.toString())));
 
         assertThat(ctx.priorWorkers()).hasSize(1);
         WorkerSummary summary = ctx.priorWorkers().get(0);
@@ -1277,12 +1288,12 @@ class ClaudonyWorkerContextProviderTest {
     void buildContext_withChannel_includesChannelInContext() {
         UUID caseId = UUID.randomUUID();
         var channel = new io.casehub.api.model.CaseChannel("ch-id", "case-coord", "coordination",
-                "qhorus", Map.of());
+                                                           "qhorus", Map.of());
         when(ledgerRepo.findByCaseId(caseId)).thenReturn(List.of());
         when(channelProvider.listChannels(caseId)).thenReturn(List.of(channel));
 
         WorkerContext ctx = provider.buildContext("worker-1",
-                WorkRequest.of("task", Map.of("caseId", caseId.toString())));
+                                                  WorkRequest.of("task", Map.of("caseId", caseId.toString())));
 
         assertThat(ctx.channel()).isNotNull();
         assertThat(ctx.channel().name()).isEqualTo("case-coord");
@@ -1293,11 +1304,11 @@ class ClaudonyWorkerContextProviderTest {
     @Test
     void buildContext_cleanStart_returnsEmptyPriorWorkers() {
         UUID caseId = UUID.randomUUID();
-        var entry = completedEntry(caseId, "alice", "AliceRole");
+        var  entry  = completedEntry(caseId, "alice", "AliceRole");
         when(ledgerRepo.findByCaseId(caseId)).thenReturn(List.of(entry));
 
         WorkerContext ctx = provider.buildContext("worker-new",
-                WorkRequest.of("task", Map.of("caseId", caseId.toString(), "clean-start", true)));
+                                                  WorkRequest.of("task", Map.of("caseId", caseId.toString(), "clean-start", true)));
 
         assertThat(ctx.priorWorkers()).isEmpty();
         verifyNoInteractions(ledgerRepo); // should not even query
@@ -1308,7 +1319,7 @@ class ClaudonyWorkerContextProviderTest {
     @Test
     void buildContext_missingCaseId_returnsEmptyContext() {
         WorkerContext ctx = provider.buildContext("worker-1",
-                WorkRequest.of("task", Map.of())); // no caseId
+                                                  WorkRequest.of("task", Map.of())); // no caseId
 
         assertThat(ctx.priorWorkers()).isEmpty();
         assertThat(ctx.caseId()).isNull();
@@ -1316,14 +1327,14 @@ class ClaudonyWorkerContextProviderTest {
 
     @Test
     void buildContext_onlyReturnsCompletedWorkerEntries() {
-        UUID caseId = UUID.randomUUID();
-        var completed = completedEntry(caseId, "alice", "AliceRole");
-        var started = startedEntry(caseId, "bob", "BobRole");
+        UUID caseId    = UUID.randomUUID();
+        var  completed = completedEntry(caseId, "alice", "AliceRole");
+        var  started   = startedEntry(caseId, "bob", "BobRole");
         when(ledgerRepo.findByCaseId(caseId)).thenReturn(List.of(completed, started));
         when(channelProvider.listChannels(caseId)).thenReturn(List.of());
 
         WorkerContext ctx = provider.buildContext("worker-3",
-                WorkRequest.of("task", Map.of("caseId", caseId.toString())));
+                                                  WorkRequest.of("task", Map.of("caseId", caseId.toString())));
 
         assertThat(ctx.priorWorkers()).hasSize(1);
         assertThat(ctx.priorWorkers().get(0).workerId()).isEqualTo("alice");
@@ -1332,29 +1343,29 @@ class ClaudonyWorkerContextProviderTest {
     @Test
     void buildContext_propagationContextIsAlwaysSet() {
         WorkerContext ctx = provider.buildContext("worker-1",
-                WorkRequest.of("task", Map.of()));
+                                                  WorkRequest.of("task", Map.of()));
 
         assertThat(ctx.propagationContext()).isNotNull();
     }
 
     private CaseLedgerEntry completedEntry(UUID caseId, String actorId, String actorRole) {
         var e = new CaseLedgerEntry();
-        e.id = UUID.randomUUID();
-        e.caseId = caseId;
-        e.actorId = actorId;
-        e.actorRole = actorRole;
-        e.eventType = "WorkerExecutionCompleted";
+        e.id         = UUID.randomUUID();
+        e.caseId     = caseId;
+        e.actorId    = actorId;
+        e.actorRole  = actorRole;
+        e.eventType  = "WorkerExecutionCompleted";
         e.occurredAt = Instant.now().minusSeconds(60);
         return e;
     }
 
     private CaseLedgerEntry startedEntry(UUID caseId, String actorId, String actorRole) {
         var e = new CaseLedgerEntry();
-        e.id = UUID.randomUUID();
-        e.caseId = caseId;
-        e.actorId = actorId;
-        e.actorRole = actorRole;
-        e.eventType = "WorkerExecutionStarted";
+        e.id         = UUID.randomUUID();
+        e.caseId     = caseId;
+        e.actorId    = actorId;
+        e.actorRole  = actorRole;
+        e.eventType  = "WorkerExecutionStarted";
         e.occurredAt = Instant.now().minusSeconds(120);
         return e;
     }
@@ -1368,7 +1379,7 @@ Note: `CaseLedgerEntry` fields are public (no getters) — access directly: `ent
 Create `claudony-casehub/src/main/java/dev/claudony/casehub/ClaudonyWorkerContextProvider.java`:
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.context.PropagationContext;
 import io.casehub.api.model.CaseChannel;
@@ -1381,6 +1392,7 @@ import io.casehub.ledger.model.CaseLedgerEntry;
 import io.casehub.ledger.repository.CaseLedgerEntryRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -1391,12 +1403,12 @@ public class ClaudonyWorkerContextProvider implements WorkerContextProvider {
     private static final String WORKER_EXECUTION_COMPLETED = "WorkerExecutionCompleted";
 
     private final CaseLedgerEntryRepository ledgerRepo;
-    private final CaseChannelProvider channelProvider;
+    private final CaseChannelProvider       channelProvider;
 
     @Inject
     public ClaudonyWorkerContextProvider(CaseLedgerEntryRepository ledgerRepo,
-                                          CaseChannelProvider channelProvider) {
-        this.ledgerRepo = ledgerRepo;
+                                         CaseChannelProvider channelProvider) {
+        this.ledgerRepo      = ledgerRepo;
         this.channelProvider = channelProvider;
     }
 
@@ -1405,14 +1417,14 @@ public class ClaudonyWorkerContextProvider implements WorkerContextProvider {
         // Clean-start: skip all lineage
         if (Boolean.TRUE.equals(task.input().get("clean-start"))) {
             return new WorkerContext(task.capability(), null, null, List.of(),
-                    PropagationContext.createRoot(), Map.of("clean-start", true));
+                                     PropagationContext.createRoot(), Map.of("clean-start", true));
         }
 
         // Extract caseId — graceful degradation if absent
         String caseIdStr = (String) task.input().get("caseId");
         if (caseIdStr == null || caseIdStr.isBlank()) {
             return new WorkerContext(task.capability(), null, null, List.of(),
-                    PropagationContext.createRoot(), Map.of());
+                                     PropagationContext.createRoot(), Map.of());
         }
 
         UUID caseId;
@@ -1420,22 +1432,22 @@ public class ClaudonyWorkerContextProvider implements WorkerContextProvider {
             caseId = UUID.fromString(caseIdStr);
         } catch (IllegalArgumentException e) {
             return new WorkerContext(task.capability(), null, null, List.of(),
-                    PropagationContext.createRoot(), Map.of());
+                                     PropagationContext.createRoot(), Map.of());
         }
 
         // Query ledger for prior COMPLETED worker entries
         List<WorkerSummary> priorWorkers = ledgerRepo.findByCaseId(caseId).stream()
-                .filter(e -> WORKER_EXECUTION_COMPLETED.equals(e.eventType))
-                .map(this::toWorkerSummary)
-                .toList();
+                                                     .filter(e -> WORKER_EXECUTION_COMPLETED.equals(e.eventType))
+                                                     .map(this::toWorkerSummary)
+                                                     .toList();
 
         // Find first available channel for this case
         CaseChannel channel = channelProvider.listChannels(caseId).stream()
-                .findFirst()
-                .orElse(null);
+                                             .findFirst()
+                                             .orElse(null);
 
         return new WorkerContext(task.capability(), caseId, channel, priorWorkers,
-                PropagationContext.createRoot(), Map.of());
+                                 PropagationContext.createRoot(), Map.of());
     }
 
     private WorkerSummary toWorkerSummary(CaseLedgerEntry entry) {
@@ -1483,35 +1495,37 @@ is absent. Refs #ISSUE_N"
 Create `claudony-casehub/src/test/java/dev/claudony/casehub/ClaudonyWorkerStatusListenerTest.java`:
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
-import dev.claudony.server.SessionRegistry;
-import dev.claudony.server.TmuxService;
-import dev.claudony.server.model.Session;
-import dev.claudony.server.model.SessionStatus;
+import config.claudony.server.SessionRegistry;
+import config.claudony.server.TmuxService;
+import config.claudony.server.model.Session;
+import config.claudony.server.model.SessionStatus;
 import io.casehub.api.model.WorkResult;
 import io.casehub.api.model.WorkStatus;
 import jakarta.enterprise.event.Event;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class ClaudonyWorkerStatusListenerTest {
 
-    private SessionRegistry registry;
-    private TmuxService tmux;
+    private SessionRegistry              registry;
+    private TmuxService                  tmux;
     private ClaudonyWorkerStatusListener listener;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
     void setUp() {
         registry = mock(SessionRegistry.class);
-        tmux = mock(TmuxService.class);
+        tmux     = mock(TmuxService.class);
         Event<Object> events = mock(Event.class);
         listener = new ClaudonyWorkerStatusListener(registry, tmux, events);
     }
@@ -1521,7 +1535,7 @@ class ClaudonyWorkerStatusListenerTest {
     @Test
     void onWorkerStarted_updatesSessionToActive() {
         String workerId = "worker-123";
-        var session = session(workerId, SessionStatus.IDLE);
+        var    session  = session(workerId, SessionStatus.IDLE);
         when(registry.find(workerId)).thenReturn(Optional.of(session));
 
         listener.onWorkerStarted(workerId, Map.of("session", "tmux-123"));
@@ -1532,7 +1546,7 @@ class ClaudonyWorkerStatusListenerTest {
     @Test
     void onWorkerCompleted_updatesSessionToIdle() {
         String workerId = "worker-456";
-        var session = session(workerId, SessionStatus.ACTIVE);
+        var    session  = session(workerId, SessionStatus.ACTIVE);
         when(registry.find(workerId)).thenReturn(Optional.of(session));
         var result = WorkResult.completed("corr-1", Map.of(), workerId);
 
@@ -1546,7 +1560,7 @@ class ClaudonyWorkerStatusListenerTest {
     @Test
     void onWorkerCompleted_faultedResult_terminatesSession() throws Exception {
         String workerId = "worker-faulted";
-        var session = session(workerId, SessionStatus.ACTIVE);
+        var    session  = session(workerId, SessionStatus.ACTIVE);
         when(registry.find(workerId)).thenReturn(Optional.of(session));
         var result = WorkResult.faulted("corr-1", workerId);
 
@@ -1572,7 +1586,7 @@ class ClaudonyWorkerStatusListenerTest {
     void onWorkerStarted_sessionNotFound_isNoOp() {
         when(registry.find("unknown")).thenReturn(Optional.empty());
         assertThatNoException().isThrownBy(() ->
-                listener.onWorkerStarted("unknown", Map.of()));
+                                                   listener.onWorkerStarted("unknown", Map.of()));
         verify(registry, never()).updateStatus(any(), any());
     }
 
@@ -1589,7 +1603,7 @@ class ClaudonyWorkerStatusListenerTest {
 
     private Session session(String id, SessionStatus status) {
         return new Session(id, "claudony-worker-" + id, "/tmp", "claude",
-                status, Instant.now(), Instant.now(), Optional.empty());
+                           status, Instant.now(), Instant.now(), Optional.empty());
     }
 }
 ```
@@ -1599,43 +1613,45 @@ class ClaudonyWorkerStatusListenerTest {
 Create `claudony-casehub/src/main/java/dev/claudony/casehub/ClaudonyWorkerStatusListener.java`:
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
-import dev.claudony.server.SessionRegistry;
-import dev.claudony.server.TmuxService;
-import dev.claudony.server.model.SessionStatus;
+import config.claudony.server.SessionRegistry;
+import config.claudony.server.TmuxService;
+import config.claudony.server.model.SessionStatus;
 import io.casehub.api.model.WorkResult;
 import io.casehub.api.model.WorkStatus;
 import io.casehub.api.spi.WorkerStatusListener;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
+
 import java.io.IOException;
 import java.util.Map;
+
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ClaudonyWorkerStatusListener implements WorkerStatusListener {
 
-    private static final Logger LOG = Logger.getLogger(ClaudonyWorkerStatusListener.class);
-    static final String SESSION_PREFIX = "claudony-worker-";
+    private static final Logger LOG            = Logger.getLogger(ClaudonyWorkerStatusListener.class);
+    static final         String SESSION_PREFIX = "claudony-worker-";
 
     private final SessionRegistry registry;
-    private final TmuxService tmux;
-    private final Event<Object> events;
+    private final TmuxService     tmux;
+    private final Event<Object>   events;
 
     @Inject
     public ClaudonyWorkerStatusListener(SessionRegistry registry, TmuxService tmux,
-                                         Event<Object> events) {
+                                        Event<Object> events) {
         this.registry = registry;
-        this.tmux = tmux;
-        this.events = events;
+        this.tmux     = tmux;
+        this.events   = events;
     }
 
     @Override
     public void onWorkerStarted(String workerId, Map<String, String> sessionMeta) {
         registry.find(workerId).ifPresent(session ->
-                registry.updateStatus(workerId, SessionStatus.ACTIVE));
+                                                  registry.updateStatus(workerId, SessionStatus.ACTIVE));
         LOG.infof("Worker started: %s meta=%s", workerId, sessionMeta);
     }
 
@@ -1651,7 +1667,7 @@ public class ClaudonyWorkerStatusListener implements WorkerStatusListener {
             registry.remove(workerId);
         } else {
             registry.find(workerId).ifPresent(session ->
-                    registry.updateStatus(workerId, SessionStatus.IDLE));
+                                                      registry.updateStatus(workerId, SessionStatus.IDLE));
         }
         LOG.infof("Worker completed: %s status=%s", workerId, result.status());
     }

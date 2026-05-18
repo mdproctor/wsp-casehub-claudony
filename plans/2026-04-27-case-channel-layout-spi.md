@@ -37,11 +37,12 @@ No test needed — this is a pure interface definition.
 - [ ] **Step 1: Create the interface**
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.model.CaseDefinition;
 import io.quarkiverse.qhorus.runtime.channel.ChannelSemantic;
 import io.quarkiverse.qhorus.runtime.message.MessageType;
+
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -85,13 +86,15 @@ git commit -m "feat: add CaseChannelLayout SPI interface and ChannelSpec record 
 - [ ] **Step 1: Write the failing tests**
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.quarkiverse.qhorus.runtime.channel.ChannelSemantic;
 import io.quarkiverse.qhorus.runtime.message.MessageType;
 import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.*;
 
 class NormativeChannelLayoutTest {
@@ -108,37 +111,37 @@ class NormativeChannelLayoutTest {
     void channelsFor_purposes_areWorkObserveOversight() {
         List<CaseChannelLayout.ChannelSpec> specs = layout.channelsFor(UUID.randomUUID(), null);
         assertThat(specs).extracting(CaseChannelLayout.ChannelSpec::purpose)
-                .containsExactly("work", "observe", "oversight");
+                         .containsExactly("work", "observe", "oversight");
     }
 
     @Test
     void channelsFor_allUseAppendSemantic() {
         List<CaseChannelLayout.ChannelSpec> specs = layout.channelsFor(UUID.randomUUID(), null);
         assertThat(specs).extracting(CaseChannelLayout.ChannelSpec::semantic)
-                .containsOnly(ChannelSemantic.APPEND);
+                         .containsOnly(ChannelSemantic.APPEND);
     }
 
     @Test
     void channelsFor_observeChannel_allowsOnlyEventType() {
         CaseChannelLayout.ChannelSpec observe = layout.channelsFor(UUID.randomUUID(), null).stream()
-                .filter(s -> s.purpose().equals("observe"))
-                .findFirst().orElseThrow();
+                                                      .filter(s -> s.purpose().equals("observe"))
+                                                      .findFirst().orElseThrow();
         assertThat(observe.allowedTypes()).containsExactly(MessageType.EVENT);
     }
 
     @Test
     void channelsFor_oversightChannel_allowsQueryAndCommand() {
         CaseChannelLayout.ChannelSpec oversight = layout.channelsFor(UUID.randomUUID(), null).stream()
-                .filter(s -> s.purpose().equals("oversight"))
-                .findFirst().orElseThrow();
+                                                        .filter(s -> s.purpose().equals("oversight"))
+                                                        .findFirst().orElseThrow();
         assertThat(oversight.allowedTypes()).containsExactlyInAnyOrder(MessageType.QUERY, MessageType.COMMAND);
     }
 
     @Test
     void channelsFor_workChannel_allowsAllTypes() {
         CaseChannelLayout.ChannelSpec work = layout.channelsFor(UUID.randomUUID(), null).stream()
-                .filter(s -> s.purpose().equals("work"))
-                .findFirst().orElseThrow();
+                                                   .filter(s -> s.purpose().equals("work"))
+                                                   .findFirst().orElseThrow();
         assertThat(work.allowedTypes()).isNull();
     }
 
@@ -164,11 +167,12 @@ Expected: COMPILE ERROR or test failure (class doesn't exist yet)
 - [ ] **Step 3: Implement `NormativeChannelLayout`**
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.model.CaseDefinition;
 import io.quarkiverse.qhorus.runtime.channel.ChannelSemantic;
 import io.quarkiverse.qhorus.runtime.message.MessageType;
+
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -179,13 +183,13 @@ public class NormativeChannelLayout implements CaseChannelLayout {
     public List<ChannelSpec> channelsFor(UUID caseId, CaseDefinition definition) {
         return List.of(
                 new ChannelSpec("work", ChannelSemantic.APPEND, null,
-                        "Primary coordination — all obligation-carrying message types"),
+                                "Primary coordination — all obligation-carrying message types"),
                 new ChannelSpec("observe", ChannelSemantic.APPEND, Set.of(MessageType.EVENT),
-                        "Telemetry — EVENT only, no obligations created"),
+                                "Telemetry — EVENT only, no obligations created"),
                 new ChannelSpec("oversight", ChannelSemantic.APPEND,
-                        Set.of(MessageType.QUERY, MessageType.COMMAND),
-                        "Human governance — agent QUERY and human COMMAND")
-        );
+                                Set.of(MessageType.QUERY, MessageType.COMMAND),
+                                "Human governance — agent QUERY and human COMMAND")
+                      );
     }
 }
 ```
@@ -217,13 +221,15 @@ git commit -m "feat: implement NormativeChannelLayout — work/observe/oversight
 - [ ] **Step 1: Write the failing tests**
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.quarkiverse.qhorus.runtime.channel.ChannelSemantic;
 import io.quarkiverse.qhorus.runtime.message.MessageType;
 import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.*;
 
 class SimpleLayoutTest {
@@ -240,29 +246,29 @@ class SimpleLayoutTest {
     void channelsFor_purposes_areWorkAndObserve() {
         List<CaseChannelLayout.ChannelSpec> specs = layout.channelsFor(UUID.randomUUID(), null);
         assertThat(specs).extracting(CaseChannelLayout.ChannelSpec::purpose)
-                .containsExactly("work", "observe");
+                         .containsExactly("work", "observe");
     }
 
     @Test
     void channelsFor_allUseAppendSemantic() {
         List<CaseChannelLayout.ChannelSpec> specs = layout.channelsFor(UUID.randomUUID(), null);
         assertThat(specs).extracting(CaseChannelLayout.ChannelSpec::semantic)
-                .containsOnly(ChannelSemantic.APPEND);
+                         .containsOnly(ChannelSemantic.APPEND);
     }
 
     @Test
     void channelsFor_observeChannel_allowsOnlyEventType() {
         CaseChannelLayout.ChannelSpec observe = layout.channelsFor(UUID.randomUUID(), null).stream()
-                .filter(s -> s.purpose().equals("observe"))
-                .findFirst().orElseThrow();
+                                                      .filter(s -> s.purpose().equals("observe"))
+                                                      .findFirst().orElseThrow();
         assertThat(observe.allowedTypes()).containsExactly(MessageType.EVENT);
     }
 
     @Test
     void channelsFor_workChannel_allowsAllTypes() {
         CaseChannelLayout.ChannelSpec work = layout.channelsFor(UUID.randomUUID(), null).stream()
-                .filter(s -> s.purpose().equals("work"))
-                .findFirst().orElseThrow();
+                                                   .filter(s -> s.purpose().equals("work"))
+                                                   .findFirst().orElseThrow();
         assertThat(work.allowedTypes()).isNull();
     }
 
@@ -270,7 +276,7 @@ class SimpleLayoutTest {
     void channelsFor_hasNoOversightChannel() {
         List<CaseChannelLayout.ChannelSpec> specs = layout.channelsFor(UUID.randomUUID(), null);
         assertThat(specs).extracting(CaseChannelLayout.ChannelSpec::purpose)
-                .doesNotContain("oversight");
+                         .doesNotContain("oversight");
     }
 }
 ```
@@ -286,11 +292,12 @@ Expected: COMPILE ERROR (class doesn't exist yet)
 - [ ] **Step 3: Implement `SimpleLayout`**
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.model.CaseDefinition;
 import io.quarkiverse.qhorus.runtime.channel.ChannelSemantic;
 import io.quarkiverse.qhorus.runtime.message.MessageType;
+
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -301,10 +308,10 @@ public class SimpleLayout implements CaseChannelLayout {
     public List<ChannelSpec> channelsFor(UUID caseId, CaseDefinition definition) {
         return List.of(
                 new ChannelSpec("work", ChannelSemantic.APPEND, null,
-                        "Primary coordination — all obligation-carrying message types"),
+                                "Primary coordination — all obligation-carrying message types"),
                 new ChannelSpec("observe", ChannelSemantic.APPEND, Set.of(MessageType.EVENT),
-                        "Telemetry — EVENT only, no obligations created")
-        );
+                                "Telemetry — EVENT only, no obligations created")
+                      );
     }
 }
 ```
@@ -341,11 +348,12 @@ git commit -m "feat: implement SimpleLayout — work/observe channels (no oversi
 Replace the entire file content:
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
+
 import java.util.Map;
 
 @ConfigMapping(prefix = "claudony.casehub")
@@ -381,7 +389,7 @@ The provider now:
 4. Returns the requested purpose channel from cache (creates ad-hoc if not in layout)
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.model.CaseChannel;
 import io.casehub.api.spi.CaseChannelProvider;
@@ -389,6 +397,7 @@ import io.quarkiverse.qhorus.runtime.mcp.QhorusMcpTools;
 import io.quarkiverse.qhorus.runtime.mcp.QhorusMcpToolsBase;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -398,22 +407,22 @@ import java.util.concurrent.ConcurrentHashMap;
 @ApplicationScoped
 public class ClaudonyCaseChannelProvider implements CaseChannelProvider {
 
-    private static final String CHANNEL_PREFIX = "case-";
+    private static final String CHANNEL_PREFIX  = "case-";
     private static final String QHORUS_NAME_KEY = "qhorus-name";
 
-    private final QhorusMcpTools qhorusMcpTools;
-    private final CaseChannelLayout layout;
+    private final QhorusMcpTools                                    qhorusMcpTools;
+    private final CaseChannelLayout                                 layout;
     private final ConcurrentHashMap<UUID, Map<String, CaseChannel>> caseChannels = new ConcurrentHashMap<>();
 
     @Inject
     public ClaudonyCaseChannelProvider(QhorusMcpTools qhorusMcpTools, CaseHubConfig config) {
         this.qhorusMcpTools = qhorusMcpTools;
-        this.layout = selectLayout(config.channelLayout());
+        this.layout         = selectLayout(config.channelLayout());
     }
 
     ClaudonyCaseChannelProvider(QhorusMcpTools qhorusMcpTools, CaseChannelLayout layout) {
         this.qhorusMcpTools = qhorusMcpTools;
-        this.layout = layout;
+        this.layout         = layout;
     }
 
     @Override
@@ -437,14 +446,14 @@ public class ClaudonyCaseChannelProvider implements CaseChannelProvider {
     public List<CaseChannel> listChannels(UUID caseId) {
         String prefix = CHANNEL_PREFIX + caseId;
         return qhorusMcpTools.listChannels().stream()
-                .filter(ch -> ch.name().startsWith(prefix))
-                .map(ch -> new CaseChannel(
-                        ch.channelId().toString(),
-                        ch.name(),
-                        extractPurpose(ch.name(), caseId),
-                        "qhorus",
-                        Map.of(QHORUS_NAME_KEY, ch.name())))
-                .toList();
+                             .filter(ch -> ch.name().startsWith(prefix))
+                             .map(ch -> new CaseChannel(
+                                     ch.channelId().toString(),
+                                     ch.name(),
+                                     extractPurpose(ch.name(), caseId),
+                                     "qhorus",
+                                     Map.of(QHORUS_NAME_KEY, ch.name())))
+                             .toList();
     }
 
     private Map<String, CaseChannel> initializeLayout(UUID caseId) {
@@ -490,29 +499,31 @@ public class ClaudonyCaseChannelProvider implements CaseChannelProvider {
 The constructor now takes `(QhorusMcpTools, CaseChannelLayout)` via the package-private constructor, so no config mock is needed in tests. Key behavioral change: `openChannel(caseId, "work")` now triggers 3 `createChannel` calls (layout initialisation); second call for same caseId hits the cache.
 
 ```java
-package dev.claudony.casehub;
+package config.claudony.casehub;
 
 import io.casehub.api.model.CaseChannel;
 import io.quarkiverse.qhorus.runtime.mcp.QhorusMcpTools;
 import io.quarkiverse.qhorus.runtime.mcp.QhorusMcpToolsBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class ClaudonyCaseChannelProviderTest {
 
-    private QhorusMcpTools qhorusMcpTools;
+    private QhorusMcpTools              qhorusMcpTools;
     private ClaudonyCaseChannelProvider provider;
 
     @BeforeEach
     void setUp() {
         qhorusMcpTools = mock(QhorusMcpTools.class);
-        provider = new ClaudonyCaseChannelProvider(qhorusMcpTools, new NormativeChannelLayout());
+        provider       = new ClaudonyCaseChannelProvider(qhorusMcpTools, new NormativeChannelLayout());
     }
 
     private QhorusMcpToolsBase.ChannelDetail channelDetail(UUID channelId, String name) {
@@ -608,15 +619,15 @@ class ClaudonyCaseChannelProviderTest {
 
     @Test
     void postToChannel_sendsViaQhorus() {
-        UUID caseId = UUID.randomUUID();
+        UUID   caseId      = UUID.randomUUID();
         String channelName = "case-" + caseId + "/work";
         CaseChannel ch = new CaseChannel("ch-id", channelName, "work", "qhorus",
-                Map.of("qhorus-name", channelName));
+                                         Map.of("qhorus-name", channelName));
 
         provider.postToChannel(ch, "alice", "hello");
 
         verify(qhorusMcpTools).sendMessage(eq(channelName), eq("alice"), anyString(),
-                eq("hello"), isNull(), isNull());
+                                           eq("hello"), isNull(), isNull());
     }
 
     @Test
@@ -628,9 +639,9 @@ class ClaudonyCaseChannelProviderTest {
 
     @Test
     void listChannels_returnsChannelsFilteredByCaseId() {
-        UUID caseId = UUID.randomUUID();
-        var matching = channelDetail(UUID.randomUUID(), "case-" + caseId + "/coord");
-        var other = channelDetail(UUID.randomUUID(), "case-" + UUID.randomUUID() + "/coord");
+        UUID caseId   = UUID.randomUUID();
+        var  matching = channelDetail(UUID.randomUUID(), "case-" + caseId + "/coord");
+        var  other    = channelDetail(UUID.randomUUID(), "case-" + UUID.randomUUID() + "/coord");
         when(qhorusMcpTools.listChannels()).thenReturn(List.of(matching, other));
 
         List<CaseChannel> result = provider.listChannels(caseId);
@@ -650,7 +661,7 @@ class ClaudonyCaseChannelProviderTest {
         CaseChannel ch = new CaseChannel("ch-id", "channel", "purpose", "qhorus", Map.of());
         assertThatNoException().isThrownBy(() -> provider.postToChannel(ch, "alice", "hello"));
         verify(qhorusMcpTools).sendMessage(eq("ch-id"), eq("alice"), anyString(),
-                eq("hello"), isNull(), isNull());
+                                           eq("hello"), isNull(), isNull());
     }
 }
 ```

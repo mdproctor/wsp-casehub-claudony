@@ -157,7 +157,7 @@ quarkus.log.category."dev.remotecc".level=DEBUG
 - [ ] **Step 3: Create RemoteCCConfig.java**
 
 ```java
-package dev.remotecc.config;
+package config.remotecc.config;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
@@ -188,18 +188,20 @@ public interface RemoteCCConfig {
     @WithDefault("auto")
     String terminal();
 
-    default boolean isServerMode() { return "server".equals(mode()); }
-    default boolean isAgentMode()  { return "agent".equals(mode()); }
+    default boolean isServerMode() {return "server".equals(mode());}
+
+    default boolean isAgentMode()  {return "agent".equals(mode());}
 }
 ```
 
 - [ ] **Step 4: Write smoke test**
 
 ```java
-package dev.remotecc;
+package config.remotecc;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
+
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 
@@ -209,9 +211,9 @@ class SmokeTest {
     @Test
     void healthEndpointResponds() {
         given()
-            .when().get("/q/health")
-            .then()
-            .statusCode(200);
+                .when().get("/q/health")
+                .then()
+                .statusCode(200);
     }
 }
 ```
@@ -260,10 +262,12 @@ git commit -m "feat: bootstrap Quarkus project with config and smoke test"
 - [ ] **Step 1: Write failing test**
 
 ```java
-package dev.remotecc.server.model;
+package config.remotecc.server.model;
 
 import org.junit.jupiter.api.Test;
+
 import java.time.Instant;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class SessionTest {
@@ -272,7 +276,7 @@ class SessionTest {
     void sessionHasRequiredFields() {
         var now = Instant.now();
         var session = new Session("id-1", "myproject", "/home/user/proj",
-                "claude", SessionStatus.IDLE, now, now);
+                                  "claude", SessionStatus.IDLE, now, now);
 
         assertEquals("id-1", session.id());
         assertEquals("myproject", session.name());
@@ -285,7 +289,7 @@ class SessionTest {
     void withStatusReturnsCopyWithUpdatedStatus() {
         var now = Instant.now();
         var session = new Session("id-1", "myproject", "/home/user/proj",
-                "claude", SessionStatus.IDLE, now, now);
+                                  "claude", SessionStatus.IDLE, now, now);
 
         var updated = session.withStatus(SessionStatus.ACTIVE);
 
@@ -313,7 +317,7 @@ Expected: FAIL — `Session` and `SessionStatus` not found.
 - [ ] **Step 3: Create SessionStatus.java**
 
 ```java
-package dev.remotecc.server.model;
+package config.remotecc.server.model;
 
 public enum SessionStatus {
     ACTIVE,   // Claude is actively responding
@@ -325,7 +329,7 @@ public enum SessionStatus {
 - [ ] **Step 4: Create Session.java**
 
 ```java
-package dev.remotecc.server.model;
+package config.remotecc.server.model;
 
 import java.time.Instant;
 
@@ -376,11 +380,12 @@ Note: TmuxService tests require tmux to be installed. They spawn real tmux sessi
 - [ ] **Step 1: Write failing tests**
 
 ```java
-package dev.remotecc.server;
+package config.remotecc.server;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.*;
 import jakarta.inject.Inject;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
@@ -429,7 +434,7 @@ class TmuxServiceTest {
         tmux.createSession(TEST_SESSION, System.getProperty("user.home"), "echo hello");
         var names = tmux.listSessionNames();
         assertTrue(names.contains(TEST_SESSION),
-                "Expected session list to contain: " + TEST_SESSION + ", got: " + names);
+                   "Expected session list to contain: " + TEST_SESSION + ", got: " + names);
     }
 
     @Test
@@ -439,7 +444,7 @@ class TmuxServiceTest {
         Thread.sleep(300); // let echo run
         var output = tmux.capturePane(TEST_SESSION, 20);
         assertTrue(output.contains("remotecc-marker"),
-                "Expected pane output to contain 'remotecc-marker', got: " + output);
+                   "Expected pane output to contain 'remotecc-marker', got: " + output);
     }
 }
 ```
@@ -455,9 +460,10 @@ Expected: FAIL — `TmuxService` not found.
 - [ ] **Step 3: Create TmuxService.java**
 
 ```java
-package dev.remotecc.server;
+package config.remotecc.server;
 
 import jakarta.enterprise.context.ApplicationScoped;
+
 import java.io.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -469,12 +475,12 @@ public class TmuxService {
         var pb = new ProcessBuilder("tmux", "list-sessions", "-F", "#{session_name}");
         pb.redirectErrorStream(true);
         var process = pb.start();
-        int exit = process.waitFor();
+        int exit    = process.waitFor();
         if (exit != 0) return List.of(); // no sessions running
         try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             return reader.lines()
-                    .filter(l -> !l.isBlank())
-                    .collect(Collectors.toList());
+                         .filter(l -> !l.isBlank())
+                         .collect(Collectors.toList());
         }
     }
 
@@ -514,12 +520,12 @@ public class TmuxService {
 
     public boolean sessionExists(String name) throws IOException, InterruptedException {
         return new ProcessBuilder("tmux", "has-session", "-t", name)
-                .start().waitFor() == 0;
+                       .start().waitFor() == 0;
     }
 
     public String tmuxVersion() throws IOException, InterruptedException {
         var pb = new ProcessBuilder("tmux", "-V");
-        var p = pb.start();
+        var p  = pb.start();
         p.waitFor();
         return new String(p.getInputStream().readAllBytes()).trim();
     }
@@ -552,14 +558,16 @@ git commit -m "feat: add TmuxService wrapping tmux via ProcessBuilder"
 - [ ] **Step 1: Write failing tests**
 
 ```java
-package dev.remotecc.server;
+package config.remotecc.server;
 
-import dev.remotecc.server.model.Session;
-import dev.remotecc.server.model.SessionStatus;
+import config.remotecc.server.model.Session;
+import config.remotecc.server.model.SessionStatus;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.*;
+
 import java.time.Instant;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
@@ -580,7 +588,7 @@ class SessionRegistryTest {
 
     @Test
     void registerAndFindSession() {
-        var now = Instant.now();
+        var now     = Instant.now();
         var session = new Session("id-1", "proj", "/tmp", "claude", SessionStatus.IDLE, now, now);
         registry.register(session);
 
@@ -629,11 +637,12 @@ Expected: FAIL — `SessionRegistry` not found.
 - [ ] **Step 3: Create SessionRegistry.java**
 
 ```java
-package dev.remotecc.server;
+package config.remotecc.server;
 
-import dev.remotecc.server.model.Session;
-import dev.remotecc.server.model.SessionStatus;
+import config.remotecc.server.model.Session;
+import config.remotecc.server.model.SessionStatus;
 import jakarta.enterprise.context.ApplicationScoped;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -690,11 +699,12 @@ git commit -m "feat: add in-memory SessionRegistry with thread-safe ConcurrentHa
 - [ ] **Step 1: Write failing test**
 
 ```java
-package dev.remotecc.server;
+package config.remotecc.server;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
@@ -711,14 +721,14 @@ class ServerStartupTest {
         // Sessions already running in tmux (even if zero) should be reflected
         var tmuxNames = tmux.listSessionNames();
         var registryIds = registry.all().stream()
-                .map(s -> s.name())
-                .toList();
+                                  .map(s -> s.name())
+                                  .toList();
         // Every tmux session with our prefix should be in the registry
         tmuxNames.stream()
-                .filter(n -> n.startsWith("remotecc-"))
-                .forEach(name ->
-                    assertTrue(registryIds.contains(name),
-                        "Expected registry to contain tmux session: " + name));
+                 .filter(n -> n.startsWith("remotecc-"))
+                 .forEach(name ->
+                                  assertTrue(registryIds.contains(name),
+                                             "Expected registry to contain tmux session: " + name));
     }
 }
 ```
@@ -734,16 +744,17 @@ Expected: FAIL — bootstrap not implemented, registry is empty.
 - [ ] **Step 3: Create ServerStartup.java**
 
 ```java
-package dev.remotecc.server;
+package config.remotecc.server;
 
-import dev.remotecc.config.RemoteCCConfig;
-import dev.remotecc.server.model.Session;
-import dev.remotecc.server.model.SessionStatus;
+import config.remotecc.config.RemoteCCConfig;
+import config.remotecc.server.model.Session;
+import config.remotecc.server.model.SessionStatus;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -752,9 +763,12 @@ public class ServerStartup {
 
     private static final Logger LOG = Logger.getLogger(ServerStartup.class);
 
-    @Inject RemoteCCConfig config;
-    @Inject TmuxService tmux;
-    @Inject SessionRegistry registry;
+    @Inject
+    RemoteCCConfig  config;
+    @Inject
+    TmuxService     tmux;
+    @Inject
+    SessionRegistry registry;
 
     void onStart(@Observes StartupEvent event) {
         if (!config.isServerMode()) return;
@@ -764,7 +778,7 @@ public class ServerStartup {
 
         LOG.infof("RemoteCC Server ready — http://%s:%d", config.bind(), config.port());
         LOG.infof("MCP endpoint — configure Agent to point to http://%s:%d/api",
-                config.bind(), config.port());
+                  config.bind(), config.port());
     }
 
     private void checkTmux() {
@@ -773,15 +787,15 @@ public class ServerStartup {
             LOG.infof("tmux found: %s", version);
         } catch (Exception e) {
             throw new IllegalStateException(
-                "tmux not found on PATH. Install with: brew install tmux", e);
+                    "tmux not found on PATH. Install with: brew install tmux", e);
         }
     }
 
     private void bootstrapRegistry() {
         try {
-            var names = tmux.listSessionNames();
+            var names  = tmux.listSessionNames();
             var prefix = config.tmuxPrefix();
-            int count = 0;
+            int count  = 0;
             for (var name : names) {
                 if (!name.startsWith(prefix)) continue;
                 var now = Instant.now();
@@ -831,11 +845,12 @@ git commit -m "feat: bootstrap SessionRegistry from running tmux sessions on sta
 - [ ] **Step 1: Write failing tests**
 
 ```java
-package dev.remotecc.server;
+package config.remotecc.server;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.*;
 import jakarta.inject.Inject;
+
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
@@ -843,14 +858,16 @@ import static org.hamcrest.Matchers.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class SessionResourceTest {
 
-    @Inject SessionRegistry registry;
-    @Inject TmuxService tmux;
+    @Inject
+    SessionRegistry registry;
+    @Inject
+    TmuxService     tmux;
 
     @AfterEach
     void cleanup() throws Exception {
         registry.all().forEach(s -> {
             registry.remove(s.id());
-            try { tmux.killSession(s.name()); } catch (Exception ignored) {}
+            try {tmux.killSession(s.name());} catch (Exception ignored) {}
         });
     }
 
@@ -858,78 +875,78 @@ class SessionResourceTest {
     @Order(1)
     void listSessionsReturnsEmptyArray() {
         given()
-            .when().get("/api/sessions")
-            .then()
-            .statusCode(200)
-            .body("$", hasSize(0));
+                .when().get("/api/sessions")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(0));
     }
 
     @Test
     @Order(2)
     void createSessionReturns201WithSessionId() {
         given()
-            .contentType("application/json")
-            .body("""
-                {
-                  "name": "test-remotecc-api",
-                  "workingDir": "/tmp",
-                  "command": "echo hello"
-                }
-                """)
-            .when().post("/api/sessions")
-            .then()
-            .statusCode(201)
-            .body("id", notNullValue())
-            .body("name", equalTo("test-remotecc-api"))
-            .body("status", equalTo("IDLE"));
+                .contentType("application/json")
+                .body("""
+                      {
+                        "name": "test-remotecc-api",
+                        "workingDir": "/tmp",
+                        "command": "echo hello"
+                      }
+                      """)
+                .when().post("/api/sessions")
+                .then()
+                .statusCode(201)
+                .body("id", notNullValue())
+                .body("name", equalTo("test-remotecc-api"))
+                .body("status", equalTo("IDLE"));
     }
 
     @Test
     @Order(3)
     void getSessionById() {
         var id = given()
-            .contentType("application/json")
-            .body("""
-                {"name":"test-remotecc-get","workingDir":"/tmp","command":"echo hi"}
-                """)
-            .when().post("/api/sessions")
-            .then().statusCode(201)
-            .extract().path("id");
+                         .contentType("application/json")
+                         .body("""
+                               {"name":"test-remotecc-get","workingDir":"/tmp","command":"echo hi"}
+                               """)
+                         .when().post("/api/sessions")
+                         .then().statusCode(201)
+                         .extract().path("id");
 
         given()
-            .when().get("/api/sessions/" + id)
-            .then()
-            .statusCode(200)
-            .body("id", equalTo(id));
+                .when().get("/api/sessions/" + id)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo(id));
     }
 
     @Test
     @Order(4)
     void deleteSessionReturns204() {
         var id = given()
-            .contentType("application/json")
-            .body("""
-                {"name":"test-remotecc-del","workingDir":"/tmp","command":"echo bye"}
-                """)
-            .when().post("/api/sessions")
-            .then().statusCode(201)
-            .extract().path("id");
+                         .contentType("application/json")
+                         .body("""
+                               {"name":"test-remotecc-del","workingDir":"/tmp","command":"echo bye"}
+                               """)
+                         .when().post("/api/sessions")
+                         .then().statusCode(201)
+                         .extract().path("id");
 
         given()
-            .when().delete("/api/sessions/" + id)
-            .then().statusCode(204);
+                .when().delete("/api/sessions/" + id)
+                .then().statusCode(204);
 
         given()
-            .when().get("/api/sessions/" + id)
-            .then().statusCode(404);
+                .when().get("/api/sessions/" + id)
+                .then().statusCode(404);
     }
 
     @Test
     @Order(5)
     void getUnknownSessionReturns404() {
         given()
-            .when().get("/api/sessions/does-not-exist")
-            .then().statusCode(404);
+                .when().get("/api/sessions/does-not-exist")
+                .then().statusCode(404);
     }
 }
 ```
@@ -945,7 +962,7 @@ Expected: FAIL — `SessionResource` not found.
 - [ ] **Step 3: Create CreateSessionRequest.java**
 
 ```java
-package dev.remotecc.server.model;
+package config.remotecc.server.model;
 
 public record CreateSessionRequest(
         String name,
@@ -961,7 +978,7 @@ public record CreateSessionRequest(
 - [ ] **Step 4: Create SessionResponse.java**
 
 ```java
-package dev.remotecc.server.model;
+package config.remotecc.server.model;
 
 import java.time.Instant;
 
@@ -994,14 +1011,15 @@ public record SessionResponse(
 - [ ] **Step 5: Create SessionResource.java**
 
 ```java
-package dev.remotecc.server;
+package config.remotecc.server;
 
-import dev.remotecc.config.RemoteCCConfig;
-import dev.remotecc.server.model.*;
+import config.remotecc.config.RemoteCCConfig;
+import config.remotecc.server.model.*;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import org.jboss.logging.Logger;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -1012,45 +1030,48 @@ public class SessionResource {
 
     private static final Logger LOG = Logger.getLogger(SessionResource.class);
 
-    @Inject RemoteCCConfig config;
-    @Inject SessionRegistry registry;
-    @Inject TmuxService tmux;
+    @Inject
+    RemoteCCConfig  config;
+    @Inject
+    SessionRegistry registry;
+    @Inject
+    TmuxService     tmux;
 
     @GET
     public java.util.List<SessionResponse> list() {
         return registry.all().stream()
-                .map(s -> SessionResponse.from(s, config.port()))
-                .toList();
+                       .map(s -> SessionResponse.from(s, config.port()))
+                       .toList();
     }
 
     @GET
     @Path("/{id}")
     public Response get(@PathParam("id") String id) {
         return registry.find(id)
-                .map(s -> Response.ok(SessionResponse.from(s, config.port())).build())
-                .orElse(Response.status(404).build());
+                       .map(s -> Response.ok(SessionResponse.from(s, config.port())).build())
+                       .orElse(Response.status(404).build());
     }
 
     @POST
     public Response create(CreateSessionRequest req) {
-        var id = UUID.randomUUID().toString();
-        var name = config.tmuxPrefix() + req.name();
+        var id      = UUID.randomUUID().toString();
+        var name    = config.tmuxPrefix() + req.name();
         var command = req.effectiveCommand(config.claudeCommand());
-        var now = Instant.now();
+        var now     = Instant.now();
         var session = new Session(id, name, req.workingDir(), command,
-                SessionStatus.IDLE, now, now);
+                                  SessionStatus.IDLE, now, now);
         try {
             tmux.createSession(name, req.workingDir(), command);
             registry.register(session);
             LOG.infof("Created session '%s' (id=%s)", name, id);
             return Response.status(201)
-                    .entity(SessionResponse.from(session, config.port()))
-                    .build();
+                           .entity(SessionResponse.from(session, config.port()))
+                           .build();
         } catch (Exception e) {
             LOG.errorf("Failed to create session '%s': %s", name, e.getMessage());
             return Response.serverError()
-                    .entity("{\"error\":\"" + e.getMessage() + "\"}")
-                    .build();
+                           .entity("{\"error\":\"" + e.getMessage() + "\"}")
+                           .build();
         }
     }
 
@@ -1079,7 +1100,7 @@ public class SessionResource {
                 new ProcessBuilder("tmux", "rename-session", "-t", session.name(), newTmuxName)
                         .start().waitFor();
                 var renamed = new Session(id, newTmuxName, session.workingDir(),
-                        session.command(), session.status(), session.createdAt(), Instant.now());
+                                          session.command(), session.status(), session.createdAt(), Instant.now());
                 registry.register(renamed);
                 return Response.ok(SessionResponse.from(renamed, config.port())).build();
             } catch (Exception e) {
@@ -1118,18 +1139,21 @@ Note: WebSocket tests use Quarkus's built-in WebSocket test client. The terminal
 - [ ] **Step 1: Write failing test**
 
 ```java
-package dev.remotecc.server;
+package config.remotecc.server;
 
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.websocket.*;
 import org.junit.jupiter.api.*;
+
 import java.net.URI;
 import java.util.concurrent.*;
-import dev.remotecc.server.model.*;
+
+import config.remotecc.server.model.*;
+
 import java.time.Instant;
-import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
@@ -1138,8 +1162,10 @@ class TerminalWebSocketTest {
     @TestHTTPResource("/ws/")
     URI wsBaseUri;
 
-    @Inject SessionRegistry registry;
-    @Inject TmuxService tmux;
+    @Inject
+    SessionRegistry registry;
+    @Inject
+    TmuxService     tmux;
 
     private static final String TEST_SESSION_NAME = "test-remotecc-ws";
 
@@ -1148,8 +1174,8 @@ class TerminalWebSocketTest {
         tmux.createSession(TEST_SESSION_NAME, System.getProperty("user.home"), "echo ws-test-marker");
         var now = Instant.now();
         var session = new Session(
-            "ws-test-id", TEST_SESSION_NAME, System.getProperty("user.home"),
-            "echo ws-test-marker", SessionStatus.IDLE, now, now);
+                "ws-test-id", TEST_SESSION_NAME, System.getProperty("user.home"),
+                "echo ws-test-marker", SessionStatus.IDLE, now, now);
         registry.register(session);
         Thread.sleep(200); // let echo run
     }
@@ -1181,17 +1207,18 @@ class TerminalWebSocketTest {
 
     @Test
     void connectToUnknownSessionCloses() throws Exception {
-        var closed = new CountDownLatch(1);
+        var closed    = new CountDownLatch(1);
         var container = ContainerProvider.getWebSocketContainer();
         var session = container.connectToServer(new Endpoint() {
             @Override
             public void onOpen(Session s, EndpointConfig c) {}
+
             @Override
-            public void onClose(Session s, CloseReason r) { closed.countDown(); }
+            public void onClose(Session s, CloseReason r) {closed.countDown();}
         }, URI.create(wsBaseUri + "unknown-id"));
 
         assertTrue(closed.await(2, TimeUnit.SECONDS),
-            "Expected WebSocket to close for unknown session");
+                   "Expected WebSocket to close for unknown session");
     }
 }
 ```
@@ -1207,11 +1234,12 @@ Expected: FAIL — `TerminalWebSocket` not found.
 - [ ] **Step 3: Create TerminalWebSocket.java**
 
 ```java
-package dev.remotecc.server;
+package config.remotecc.server;
 
 import io.quarkus.websockets.next.*;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
+
 import java.io.*;
 import java.util.concurrent.*;
 
@@ -1220,7 +1248,8 @@ public class TerminalWebSocket {
 
     private static final Logger LOG = Logger.getLogger(TerminalWebSocket.class);
 
-    @Inject SessionRegistry registry;
+    @Inject
+    SessionRegistry registry;
 
     // Maps connection ID → attached tmux process
     private final ConcurrentHashMap<String, Process> processes = new ConcurrentHashMap<>();
@@ -1228,7 +1257,7 @@ public class TerminalWebSocket {
     @OnOpen
     public void onOpen(WebSocketConnection connection) {
         var sessionId = connection.pathParam("id");
-        var session = registry.find(sessionId);
+        var session   = registry.find(sessionId);
 
         if (session.isEmpty()) {
             LOG.warnf("WebSocket open for unknown session id=%s — closing", sessionId);
@@ -1241,8 +1270,8 @@ public class TerminalWebSocket {
 
         try {
             var process = new ProcessBuilder("tmux", "attach-session", "-t", tmuxName)
-                    .redirectErrorStream(true)
-                    .start();
+                                  .redirectErrorStream(true)
+                                  .start();
             processes.put(connection.id(), process);
 
             // Virtual thread: pipe process stdout → WebSocket

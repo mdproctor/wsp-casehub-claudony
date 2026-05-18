@@ -37,10 +37,10 @@
 Create `claudony-app/src/test/java/dev/claudony/server/SessionLineageResourceTest.java`:
 
 ```java
-package dev.claudony.server;
+package config.claudony.server;
 
-import dev.claudony.server.model.Session;
-import dev.claudony.server.model.SessionStatus;
+import config.claudony.server.model.Session;
+import config.claudony.server.model.SessionStatus;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
@@ -57,7 +57,8 @@ import static org.hamcrest.Matchers.*;
 @TestSecurity(user = "test", roles = "user")
 class SessionLineageResourceTest {
 
-    @Inject SessionRegistry registry;
+    @Inject
+    SessionRegistry registry;
 
     @AfterEach
     void cleanup() {
@@ -70,13 +71,13 @@ class SessionLineageResourceTest {
     void sessionWithCaseId_returns200WithList() {
         var now = Instant.now();
         registry.register(new Session("lin-s1", "claudony-lin-s1", "/tmp", "claude",
-                SessionStatus.IDLE, now, now, Optional.empty(),
-                Optional.of("550e8400-e29b-41d4-a716-446655440000"), Optional.of("researcher")));
+                                      SessionStatus.IDLE, now, now, Optional.empty(),
+                                      Optional.of("550e8400-e29b-41d4-a716-446655440000"), Optional.of("researcher")));
 
         given().when().get("/api/sessions/lin-s1/lineage")
-                .then()
-                .statusCode(200)
-                .body("$", hasSize(0));          // EmptyCaseLineageQuery returns []
+               .then()
+               .statusCode(200)
+               .body("$", hasSize(0));          // EmptyCaseLineageQuery returns []
     }
 
     // ── No caseId: session without caseId → 200 empty list
@@ -85,13 +86,13 @@ class SessionLineageResourceTest {
     void sessionWithoutCaseId_returns200EmptyList() {
         var now = Instant.now();
         registry.register(new Session("lin-s2", "claudony-lin-s2", "/tmp", "claude",
-                SessionStatus.IDLE, now, now, Optional.empty(),
-                Optional.empty(), Optional.empty()));
+                                      SessionStatus.IDLE, now, now, Optional.empty(),
+                                      Optional.empty(), Optional.empty()));
 
         given().when().get("/api/sessions/lin-s2/lineage")
-                .then()
-                .statusCode(200)
-                .body("$", hasSize(0));
+               .then()
+               .statusCode(200)
+               .body("$", hasSize(0));
     }
 
     // ── 404: unknown session id
@@ -99,8 +100,8 @@ class SessionLineageResourceTest {
     @Test
     void unknownSession_returns404() {
         given().when().get("/api/sessions/does-not-exist/lineage")
-                .then()
-                .statusCode(404);
+               .then()
+               .statusCode(404);
     }
 
     // ── Robustness: non-UUID caseId stored in session → 200 empty list, not 500
@@ -109,13 +110,13 @@ class SessionLineageResourceTest {
     void nonUuidCaseId_returns200EmptyListNotError() {
         var now = Instant.now();
         registry.register(new Session("lin-s3", "claudony-lin-s3", "/tmp", "claude",
-                SessionStatus.IDLE, now, now, Optional.empty(),
-                Optional.of("not-a-uuid"), Optional.of("analyst")));
+                                      SessionStatus.IDLE, now, now, Optional.empty(),
+                                      Optional.of("not-a-uuid"), Optional.of("analyst")));
 
         given().when().get("/api/sessions/lin-s3/lineage")
-                .then()
-                .statusCode(200)
-                .body("$", hasSize(0));
+               .then()
+               .statusCode(200)
+               .body("$", hasSize(0));
     }
 }
 ```
@@ -133,8 +134,9 @@ Expected: compilation error — `GET /api/sessions/{id}/lineage` does not exist 
 In `claudony-app/src/main/java/dev/claudony/server/SessionResource.java`:
 
 Add the import:
+
 ```java
-import dev.claudony.casehub.CaseLineageQuery;
+import config.claudony.casehub.CaseLineageQuery;
 ```
 
 Add the field (alongside existing `@Inject` fields):
@@ -317,12 +319,12 @@ Refs #77"
 Create `claudony-app/src/test/java/dev/claudony/e2e/CaseContextPanelE2ETest.java`:
 
 ```java
-package dev.claudony.e2e;
+package config.claudony.e2e;
 
 import com.microsoft.playwright.Locator;
-import dev.claudony.server.SessionRegistry;
-import dev.claudony.server.model.Session;
-import dev.claudony.server.model.SessionStatus;
+import config.claudony.server.SessionRegistry;
+import config.claudony.server.model.Session;
+import config.claudony.server.model.SessionStatus;
 import io.casehub.qhorus.runtime.mcp.QhorusMcpTools;
 import io.casehub.qhorus.testing.InMemoryChannelStore;
 import io.casehub.qhorus.testing.InMemoryMessageStore;
@@ -348,10 +350,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @QuarkusTest
 class CaseContextPanelE2ETest extends PlaywrightBase {
 
-    @Inject SessionRegistry registry;
-    @Inject QhorusMcpTools tools;
-    @Inject InMemoryChannelStore channelStore;
-    @Inject InMemoryMessageStore messageStore;
+    @Inject
+    SessionRegistry      registry;
+    @Inject
+    QhorusMcpTools       tools;
+    @Inject
+    InMemoryChannelStore channelStore;
+    @Inject
+    InMemoryMessageStore messageStore;
 
     private static final String CASE_ID = "550e8400-e29b-41d4-a716-446655440001";
 
@@ -360,13 +366,13 @@ class CaseContextPanelE2ETest extends PlaywrightBase {
         var now = Instant.now();
         // CaseHub session — has caseId and roleName
         registry.register(new Session("ctx-case-session", "claudony-ctx-case", "/tmp", "claude",
-                SessionStatus.ACTIVE, now.minusSeconds(600), now, Optional.empty(),
-                Optional.of(CASE_ID), Optional.of("researcher")));
+                                      SessionStatus.ACTIVE, now.minusSeconds(600), now, Optional.empty(),
+                                      Optional.of(CASE_ID), Optional.of("researcher")));
 
         // Standalone session — no caseId
         registry.register(new Session("ctx-standalone", "claudony-ctx-standalone", "/tmp", "claude",
-                SessionStatus.IDLE, now, now, Optional.empty(),
-                Optional.empty(), Optional.empty()));
+                                      SessionStatus.IDLE, now, now, Optional.empty(),
+                                      Optional.empty(), Optional.empty()));
     }
 
     @AfterEach
