@@ -59,7 +59,7 @@
 - **#118** — multi-node fleet channel delivery
 - **#113** — `CaseHub.startCase()` IO-thread blocker (blocked on engine)
 - **#105** — MCP endpoint separation
-- **#99 epic** — blocked on qhorus#131
+- **#99 epic** — channel gateway integration maturity (qhorus#131 now closed — reassess blockers)
 
 *Full list: `gh issue list --repo casehubio/claudony --state open`*
 
