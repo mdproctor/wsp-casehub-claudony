@@ -3,6 +3,7 @@
 | Entry | Date | Summary |
 |---|---|---|
 | [2026-05-16-mdp01-five-problems-before-assertion.md](2026-05-16-mdp01-five-problems-before-assertion.md) | 2026-05-16 | Five infrastructure problems before the engine round-trip test could be written: JAX-RS/CDI exclusion gap, jar application.properties scan, abstract CDI indexing, QuarkusTestProfile config replacement |
+| [2026-05-19-mdp01-what-the-mock-was-hiding.md](2026-05-19-mdp01-what-the-mock-was-hiding.md) | 2026-05-19 | Removing @InjectMock from CaseEngineRoundTripTest — the architecture session behind a one-line fix |
 | [2026-05-13-mdp01-silent-annotation-and-sse-causality.md](2026-05-13-mdp01-silent-annotation-and-sse-causality.md) | 2026-05-13 | @TestSecurity silently ignored on CDI-only QuarkusTest classes; AtomicInteger snapshotFn to prove SSE causality not just count |
 | [2026-05-05-mdp01-sse-two-silent-failures.md](2026-05-05-mdp01-sse-two-silent-failures.md) | 2026-05-05 | Replacing the 3-second poll with SSE: the CDI bridge for circular module deps, and two silent failures that only E2E caught |
 | [2026-04-13-mdp01-going-public.md](2026-04-13-mdp01-going-public.md) | 2026-04-13 | The name, the colony concept, and the visual identity behind Claudony |
