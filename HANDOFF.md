@@ -1,53 +1,65 @@
-# Handover — 2026-05-16
+# Handover — 2026-05-19
 
-**Head commit (project):** `79ede97` — fix(test): review nits — workerId assertion, @DefaultBean on NoOpWorkloadProvider, #115 link  
-**Branch:** `main` — 479 tests passing, zero failures
+**Head commit (project):** `bb72fc0` — docs(claude): sync test conventions after #115  
+**Branch:** `main` — #115 closed, epic-io-thread-safety merged
 
 ---
 
 ## What happened this session
 
-**Epics closed:** #86 (agent mesh infrastructure — all child issues done)  
-**Issues closed:** #92 (engine round-trip test), #112 (reactive=false workaround removal)  
-**Issues filed:** #113 (CaseHub.startCase() IO-thread blocker), #114 (style nits), #115 (ClaudonyWorkerContextProvider.buildContext on IO thread)
+**Issue closed:** #115 — `ClaudonyWorkerContextProvider.buildContext()` called on Vert.x IO thread  
+**Epic closed:** `epic-io-thread-safety` — merged to main via Option 1 (local merge)
 
-**Core work — engine integration test:**
-- Replaced CDI-event stub `CaseEngineRoundTripTest` with real engine pipeline test: `CONTEXT_CHANGED` → `CaseContextChangedEventHandler.tryProvision()` → `ClaudonyWorkerProvisioner.provision()` (TmuxService mocked) → `WorkflowExecutionCompleted` → `ClaudonyLedgerEventCapture` → `findCompletedWorkers()`
-- Added `casehub-testing` + `casehub-engine` as test deps with CDI isolation
-- New support beans: `TestResearcherCase` (@ApplicationScoped CaseHub subclass), `NoOpWorkloadProvider` (@DefaultBean)
-- `CasehubEnabledProfile` overrides `quarkus.arc.exclude-types` to re-include engine beans — replaces (not extends) the `%test.` prefixed config
-- Removed `@TestSecurity` from 3 CDI-only tests (PP-20260513-7c227e)
+**Core work — reactive SPI migration:**
+- `CaseLineageQuery` → `Uni<List<WorkerSummary>>`; `JpaCaseLineageQuery` uses CDI self-injection + virtual-thread offload for `@Transactional`
+- New `ClaudonyReactiveCaseChannelProvider` implements `ReactiveCaseChannelProvider` — injects `ReactiveChannelService` + `ReactiveMessageService` directly (not via `QhorusMcpTools`)
+- New `ClaudonyReactiveWorkerContextProvider` implements `ReactiveWorkerContextProvider` — parallel `Uni.combine().all()` for lineage + channels
+- New `ClaudonyReactiveWorkerProvisioner` implements `ReactiveWorkerProvisioner` — tmux offloaded to worker pool
+- `quarkus.datasource.qhorus.reactive=true` + `quarkus-reactive-h2-client` activated in app
+- `CaseContextChangedEventHandler.tryProvision()` in casehub-engine now returns `Uni<Void>`, injects reactive SPIs — committed and installed locally
 
-**Unblocked by upstream fixes:**
-- engine#257 — `@DefaultBean` on no-op SPIs (CDI ambiguity resolved)
-- qhorus#141 — A2A duplicate route fix (`ExcludedTypeBuildItem` does NOT gate JAX-RS; `@IfBuildProperty` required on resource class itself)
+**Acceptance criterion met:** `CaseEngineRoundTripTest` removes `@InjectMock` — real `ClaudonyReactiveWorkerContextProvider` exercised. Test passes.
 
-**Known limitation (#113):** `CaseHub.startCase()` not called — `CaseStartedEventHandler` calls `SchedulerService` which blocks on Quartz/JTA from Vert.x IO thread.
+**Architecture decisions during brainstorming:**
+- No parallel blocking stacks in Claudony (unlike qhorus ADR-0003 which is for a foundation layer)
+- `H2's limitations do not drive architecture` — one reactive implementation, `quarkus-reactive-h2-client` for tests
+- `ClaudonyChannelBackend` (inbound display) and `ClaudonyReactiveCaseChannelProvider` (outbound management) are orthogonal concerns
+- Multi-node fleet channel delivery is a separate problem (claudony#118)
 
-**Skill/workflow fixes:**
-- `work-start` — hard gate enforced: session must stop (not "all clear") when both repos on main with no epic
-- `prompt-snippets.md` in cc-praxis — epic/worktree requirement added explicitly
-- `working-style.md` — corrected skill edit direction: cc-praxis first → sync-local
+**Platform docs updated:** `PLATFORM.md` (ChannelBackend/MessageObserver rows + 3 boundary rules), qhorus `messaging-architecture.md` (topology guidance: LOCAL vs CLUSTER vs fleet)
 
-**Garden:** 4 entries — JAX-RS CDI exclusion gap, jar application.properties scan, abstract CDI bean indexing, QuarkusTestProfile config override replaces `%test.` entirely  
-**Protocol:** `PP-20260514-engine-spi-noops-defaultbean` in parent repo
+**Issues filed this session:**
+- claudony#116 — verify reactive PostgreSQL path
+- claudony#117 — `ClaudonyChannelBackend` for conversation panel
+- claudony#118 — multi-node fleet channel delivery
+- claudony#119 — `MeshResource` Uni<T> refactoring (replace `@Blocking` with proper return types)
+- claudony#120 — `openChannel` race condition in `ClaudonyReactiveCaseChannelProvider`
+- qhorus#141 — updated: add `quarkus-reactive-h2-client` investigation
+- qhorus#161 — `ReactiveChannelService.findByNamePrefix()` for efficient per-case listing
+- qhorus#168 — reduce `selected-alternatives` maintenance burden
+
+**Garden:** 3 new entries (CDI self-injection @Transactional, RESTEasy Reactive .await() without @Blocking, virtual-thread offload technique) + REVISE to GE-20260417-c59817  
+**Protocol:** PP-20260519-5f6d9f — `claudony-reactive-spi-variants.md`  
+**Blog:** `2026-05-19-mdp01-what-the-mock-was-hiding.md`
 
 ---
 
 ## Test count
 
-**479 passing, 0 failures.** 4 core + 134 casehub + 341 app.
+**130 in claudony-casehub, 4 in claudony-core — confirmed passing.** Full app module count pending `JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test` from user terminal (requires tmux on PATH). Previous baseline: 479 (2026-05-15).
 
 ---
 
 ## Open issues
 
-- **#113** — CaseHub.startCase() into the test (engine Quartz/JTA IO-thread fix needed)
-- **#114** — style nits (UserTransaction helper, exclude-types ordering, timeouts)
-- **#115** — ClaudonyWorkerContextProvider.buildContext() called from IO thread (production bug)
-- **#99 epic** (#98, #100, #101, #102) — blocked on Qhorus #131
-- **#94** — causal chain (blocked on engine)
+- **#119** — `MeshResource` Uni<T> refactoring (currently uses `@Blocking` as stopgap)
+- **#120** — `openChannel` concurrent init race condition
+- **#116** — reactive PostgreSQL path verification
+- **#117** — `ClaudonyChannelBackend` for conversation panel display (blocked on qhorus#153)
+- **#118** — multi-node fleet channel delivery
+- **#113** — `CaseHub.startCase()` IO-thread blocker (blocked on engine)
 - **#105** — MCP endpoint separation
+- **#99 epic** — blocked on qhorus#131
 
 *Full list: `gh issue list --repo casehubio/claudony --state open`*
 
@@ -55,15 +67,17 @@
 
 ## Immediate next
 
-Pick up any of: #115 (production IO-thread bug, self-contained), or wait for upstream unblocking on #94/#99.
+1. **Run full test suite from terminal** — `JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test` — get app count, update CLAUDE.md
+2. **Pick up next issue** — #119 (Uni<T> refactoring for MeshResource, self-contained) or wait for upstream unblocking on #113/#99
 
-**Before starting:** invoke `work-start` — if no active epic, invoke `/epic begin` first. Never implement on main.
+**Before starting:** invoke `work-start` — if no active epic, invoke `/epic begin` first.
 
 ---
 
 ## Key references
 
-- Spec: `specs/2026-05-15-casehub-startcase-roundtrip.md`
-- Plan: `plans/2026-05-15-casehub-startcase-roundtrip.md`
-- Blog: `blog/2026-05-16-mdp01-five-problems-before-assertion.md`
-- Garden: `GE-20260516-4bf0dc`, `GE-20260516-8375d5`, `GE-20260516-2805b7`, `GE-20260516-e137f6`
+- Plan: `plans/2026-05-18-io-thread-safety.md`
+- Spec: `specs/epic-io-thread-safety/2026-05-18-io-thread-safety-design.md`
+- Blog: `blog/2026-05-19-mdp01-what-the-mock-was-hiding.md`
+- Protocol: `docs/protocols/casehub/claudony-reactive-spi-variants.md` (parent repo)
+- Garden: GE-20260518-069f64, GE-20260518-e4fa52, GE-20260518-bee1b3
