@@ -1,0 +1,21 @@
+epic: epic-gateway-reliability
+project-sha: bb72fc0ee595548cad9b51da9a2bd3f6e4283a7e
+date: 2026-05-19
+issue: 100 101 102
+flyway-next-v: none
+design-section-hashes:
+  29e93738 ## Overview
+  563faafc ## Component Structure
+  a09ceb07 ## Architecture
+  c6149f5d ## Authentication
+  77e4e0d2 ## Data Flows
+  c24b0b80 ## Technology Stack
+  540697d1 ## Directory Conventions
+  7c5a1a82 ## Key Constraints
+  89a659e7 ## Key Design Decisions
+  75800be3 ## Persistence — Named Datasource for Qhorus
+  ed32a094 ## Testing
+  09589096 ## Next Steps
+  3def480d ## Ecosystem Integration
+  a7c65ff2 ## Open Questions
+  c554c079 ## Related Documents
