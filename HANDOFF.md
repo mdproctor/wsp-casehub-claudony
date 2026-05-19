@@ -55,7 +55,7 @@
 - **#119** — `MeshResource` Uni<T> refactoring (currently uses `@Blocking` as stopgap)
 - **#120** — `openChannel` concurrent init race condition
 - **#116** — reactive PostgreSQL path verification
-- **#117** — `ClaudonyChannelBackend` for conversation panel display (blocked on qhorus#153)
+- **#117** — `ClaudonyChannelBackend` (HumanParticipatingChannelBackend) — **fully unblocked** (qhorus#131 + qhorus#153 both closed)
 - **#118** — multi-node fleet channel delivery
 - **#113** — `CaseHub.startCase()` IO-thread blocker (blocked on engine)
 - **#105** — MCP endpoint separation
