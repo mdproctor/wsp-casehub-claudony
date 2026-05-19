@@ -19,3 +19,4 @@
 | [2026-04-29-mdp01-panel-knows-its-case.md](2026-04-29-mdp01-panel-knows-its-case.md) | 2026-04-29 | Adding caseId + roleName to Session record, the 20+ construction sites, false-alarm ChannelPanelE2ETest regression, PlaywrightBase random-port fix |
 | [2026-05-01-mdp01-what-polling-was-hiding.md](2026-05-01-mdp01-what-polling-was-hiding.md) | 2026-05-01 | Stress-testing the Qhorus push model from Claudony's side — restart registration, identity loss through proxy, and the SPI that can't express intent |
 | [2026-05-01-mdp02-case-panel-and-mcp-cliff.md](2026-05-01-mdp02-case-panel-and-mcp-cliff.md) | 2026-05-01 | Case context panel shipped — plus three upstream API migrations, a silent 50-tool MCP pagination cap, and messaging convention fixes |
+| [2026-05-19-mdp02-debugging-test-baseline.md](2026-05-19-mdp02-debugging-test-baseline.md) | 2026-05-19 | Debugging Qhorus version drift and reactive migration gaps to restore a clean test baseline |
