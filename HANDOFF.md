@@ -1,49 +1,44 @@
-# Handover — 2026-05-19
+# Handover — 2026-05-21
 
-**Head commit (project):** `0d90c54` — fix(sessions): add @Blocking to getLineage() and await CaseLineageQuery Uni
-**Branch:** `epic-gateway-reliability` (both repos)
-
----
-
-## What happened this session
-
-**Bug fixed:** `SessionResource.getLineage()` was passing a raw `Uni<List<WorkerSummary>>` to
-`Response.ok()` after the #115 reactive SPI migration — RESTEasy can't serialize a Uni, 500 at
-runtime. Fix: `@Blocking` + `.await().indefinitely()`.
-
-**Test baseline restored:** 475 passing, 0 failures (4 core + 130 casehub + 341 app).
-
-**Qhorus#173** filed (getChannelTimeline() bypasses MessageStore abstraction) and fixed within the
-session. Tool count updated 60→58 (8 Claudony + 50 Qhorus). `MeshResourceInterjectionTest` setup
-rewritten to use `InMemoryChannelStore.put()` directly — `ReactiveChannelService.create()` now
-wraps in `Panache.withTransaction()` requiring a Vert.x duplicated context unavailable on test thread.
-
-**4 garden entries submitted:** Panache duplicated context, CDI delegate separation, RESTEasy Uni in
-Response.ok(), reactive service blocking bypass.
+**Head commit (project):** `ce55226` — docs(claude): update Qhorus test cleanup note for #119  
+**Branch:** `main` — both repos. Epic `epic-gateway-reliability` **paused** (`.paused` on workspace main).
 
 ---
 
-## Immediate next
+## Last Session
 
-Run `work-start` and pick up #119 (MeshResource Uni<T> refactoring — replace `@Blocking` stopgap
-with proper reactive return types). Self-contained, no upstream deps.
+Completed and closed claudony#119 — `MeshResource` reactive refactor. Added `QhorusDashboardService` to Qhorus as the correct consumer integration tier (between entity services and MCP dispatch), simplified `MeshResource` to inject only it, fixed two CDI gotchas (`@Alternative @IfBuildProperty` interaction; `Panache.withTransaction()` named PU). PLATFORM.md boundary rule updated. Protocol `qhorus-consumer-integration-pattern.md` added. 475 tests, 0 failures.
+
+## Immediate Next Step
+
+The epic is paused. To resume: `work-resume` (switches both repos back to `epic-gateway-reliability`). Then `work-start` and pick up one of #100, #101, #102 below.
 
 ---
 
-## Open issues
+## What's Left
 
-*Unchanged — `git show HEAD~1:HANDOFF.md`*
+- **claudony#123** — test coverage for `/api/mesh/feed` and `/api/mesh/events` (filed this session) · S · Low
+- **qhorus#175** — move `ChannelView`, `InstanceView`, `HumanMessageResult` DTOs to `casehub-qhorus-api` · M · Low
+- **qhorus#176** — extract `toTimelineEntry`/`toChannelDetail` to shared `QhorusEntityMapper` · S · Low
+- **qhorus#177** — align `Panache.withTransaction("qhorus", ...)` across all Qhorus reactive services · M · Low
 
 ---
 
 ## What's Next
 
-*Unchanged — `git show HEAD~1:HANDOFF.md`*
+| # | Description | Scale | Complexity | Notes |
+|---|-------------|-------|------------|-------|
+| #100 | Channel panel catch-up on reconnect — poll `?after=lastId` on rejoin | M | Med | Core epic work |
+| #101 | Re-register `ClaudonyChannelBackend` for all open-case channels on server restart | M | Med | Core epic work |
+| #102 | Fleet-aware channel backend registration — push messages to all active nodes | L | High | Core epic work |
+| #117 | `ClaudonyChannelBackend` — HumanParticipatingChannelBackend | M | Med | Fully unblocked (qhorus#131 + #153 closed) |
 
 ---
 
 ## Key references
 
-- Blog: `blog/2026-05-19-mdp02-debugging-test-baseline.md`
-- Garden: GE-20260519-4a42e6, GE-20260519-f9624b, GE-20260519-d32fc0, GE-20260519-f33c66
-- Journal: `design/JOURNAL.md` (workspace)
+- Blog: `blog/2026-05-21-mdp01-when-the-rule-is-right-but.md`
+- Protocol (new): `docs/protocols/casehub/qhorus-consumer-integration-pattern.md` (parent repo)
+- Garden: GE-20260521-0bd1e6, GE-20260521-d72294, GE-20260521-2b82e7, GE-20260521-49e7fd
+- Test baseline: 4 core + 130 casehub + 341 app = 475 (2026-05-21)
+- Qhorus tool count: 58 (8 Claudony + 50 Qhorus)
