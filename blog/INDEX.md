@@ -2,6 +2,7 @@
 
 | Entry | Date | Summary |
 |---|---|---|
+| [2026-05-22-mdp01-what-the-sse-stream-was-hiding.md](2026-05-22-mdp01-what-the-sse-stream-was-hiding.md) | 2026-05-22 | RESTEasy double-frame SSE bug that looked like a working stream; ConcurrentHashMap.remove() TOCTOU via equals(); Commitment tracking wired for COMMAND messages |
 | [2026-05-21-mdp01-when-the-rule-is-right-but.md](2026-05-21-mdp01-when-the-rule-is-right-but.md) | 2026-05-21 | Replacing ReactiveQhorusMcpTools with QhorusDashboardService — the rule that correctly diagnosed the problem but prescribed the wrong fix, and two CDI gotchas caught in review |
 | [2026-05-16-mdp01-five-problems-before-assertion.md](2026-05-16-mdp01-five-problems-before-assertion.md) | 2026-05-16 | Five infrastructure problems before the engine round-trip test could be written: JAX-RS/CDI exclusion gap, jar application.properties scan, abstract CDI indexing, QuarkusTestProfile config replacement |
 | [2026-05-19-mdp01-what-the-mock-was-hiding.md](2026-05-19-mdp01-what-the-mock-was-hiding.md) | 2026-05-19 | Removing @InjectMock from CaseEngineRoundTripTest — the architecture session behind a one-line fix |
