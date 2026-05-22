@@ -1,0 +1,8 @@
+branch: issue-138-qhorus-184-cleanup
+project-sha: e3ec65f4af3f2db47228917d6070921f56226676
+date: 2026-05-22
+issue: 138
+issue-repo: casehubio/claudony
+flyway-next-v: none
+design-repo: workspace
+design-section-hashes:
