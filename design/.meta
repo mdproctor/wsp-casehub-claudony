@@ -1,0 +1,7 @@
+branch: issue-122-commitment-quality-batch
+project-sha: a213af5531907a0ade0dfd822e77a83157f3abbc
+date: 2026-05-22
+issue: 122
+flyway-next-v: none
+design-repo: workspace
+design-section-hashes: 7337f3d0:## Overview|e0533f48:## Component Structure|a7e56472:## Architecture|df96773c:## Authentication|19ad57be:## Data Flows|c2438b98:## Technology Stack|ac954f01:## Directory Conventions|03a50f0e:## Key Constraints|47572aa5:## Key Design Decisions|a8b9bc07:## Persistence — Named Datasource for Qhorus|58c0e453:## Testing|94792dd5:## Next Steps|750a68aa:## Ecosystem Integration|3cb18856:## Open Questions|4aef14b0:## Related Documents|
