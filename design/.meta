@@ -1,0 +1,8 @@
+branch: issue-136-test-cleanup
+project-sha: 92f7d267e58b0414565dff3312b428e58afed32d
+date: 2026-05-22
+issue: 136
+issue-repo: casehubio/claudony
+flyway-next-v: none
+design-repo: workspace
+design-section-hashes:
