@@ -5,7 +5,7 @@ date: 2026-05-22
 type: phase-update
 entry_type: note
 subtype: log
-projects: [Claudony]
+projects: [claudony]
 tags: [quarkus, github, housekeeping]
 ---
 
