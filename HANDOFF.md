@@ -1,34 +1,32 @@
-# Handover — 2026-05-22
+# Handover — 2026-05-23
 
-**Head commit (project):** `e3ec65f` — docs(claude): add Name field for write-blog project tagging
-**Branch:** `main` — both repos. Clean close.
+**Head commit (project):** `8000e35` — refactor(casehub): use first-class correlationId and deadline SPI params — Closes #135
+**Branch:** `main` — both repos. Clean close (branch `issue-138-qhorus-184-cleanup` marked closed, deletion due 2026-06-06).
 
 ---
 
 ## Last Session
 
-Closed #136 and #137: test cleanup on `MeshResourceTest` (comment accuracy, catch
-block parity, ObjectMapper injection, stronger multi-channel assertion). Discovered
-Qhorus #184 mid-migration had broken Claudony test compilation via a stale runtime
-jar; fixed with a test-scope `MessageResult` stub tracked by #138. Added
-`**Name:** claudony` to workspace CLAUDE.md and fixed a capitalisation bug in one
-blog entry; all 20 workspace blog entries are now published to mdproctor.github.io.
-507 tests passing.
+Closed #138, #124, and #135 on a single branch. #138: removed MessageResult stub
+and fixed sendMessage() call sites after Qhorus #184 migration. #124: redesigned
+getFeed() from per-channel bucketing to global DESC scan — found and fixed
+JpaMessageStore SQL LIMIT OOM bug (Panache .list() vs .find().page()), added V11
+composite index on message(channel_id, id). #135: added correlationId and deadline
+as first-class params to postToChannel() SPI (cross-repo: engine#343 + qhorus#192),
+eliminating content-coupling JSON parse. Squashed 12 → 5 commits. 508 tests passing.
 
 ## Immediate Next Step
 
-Both repos on `main`. Pick next issue: #102 (fleet-aware backend registration)
-or #117 (`HumanParticipatingChannelBackend`) — both recommended by previous handover.
+Both repos on `main`. CI "Build and Publish" is failing on `casehub-testing:0.2-SNAPSHOT`
+not found in GitHub Packages — engine CI is deploying now. Once engine CI is green,
+re-trigger Claudony CI: `gh workflow run maven.yml --repo casehubio/claudony`. Verify green.
 
 ---
 
 ## What's Left
 
-- **#124** — feed cursor `?after=<id>` support — deferred, needs Qhorus `getFeed()` change · S · Low
 - **#125** — SSE `Last-Event-ID` reconnect for `/api/mesh/events` · M · Med
 - **#131** — ChannelEventBus-driven true push (replace 500ms tick) · M · Med
-- **#135** — Add `correlationId` param to `postToChannel()` SPI in casehub-engine · S · Med · cross-repo
-- **#138** — Remove `MessageResult` stub once Qhorus #184 migration completes · XS · Low
 - **qhorus#175–177** — DTO/mapper/transaction cleanup · M · Low
 - **qhorus#181** — ChannelGateway not re-initialized on restart · M · Med
 
@@ -36,13 +34,18 @@ or #117 (`HumanParticipatingChannelBackend`) — both recommended by previous ha
 
 ## What's Next
 
-*Unchanged — `git show HEAD~1:HANDOFF.md`*
+| # | Description | Scale | Complexity | Notes |
+|---|-------------|-------|------------|-------|
+| #102 | Fleet-aware channel backend registration — push to all active nodes | L | High | Core epic follow-on; new branch |
+| #117 | `HumanParticipatingChannelBackend` — bidirectional channel posting via backend | M | Med | Fully unblocked |
+| #131 | ChannelEventBus-driven true push (replace 500ms tick in channelEvents) | M | Med | Investigation needed: cross-thread emit fix |
 
 ---
 
 ## Key references
 
-- ADRs: `docs/adr/0006-channel-backend-registration-timing.md`, `0007-sse-channel-delivery-mechanism.md`
-- Garden: GE-20260522-e6eb70 (Maven phantom class compile error from deleted peer-repo class)
-- Test baseline: 4 core + 134 casehub + 369 app = 507 (2026-05-22)
-- Blog: `blog/2026-05-22-mdp07-three-fixes-phantom-class.md`
+- Specs: `docs/specs/2026-05-22-feed-desc-global-scan-design.md`, `docs/specs/2026-05-23-postToChannel-correlationId-deadline-design.md`
+- Garden: GE-20260523-06e8b6 (Panache .list() OOM — SQL LIMIT not applied)
+- BUGS-AND-ODDITIES: #21 (casehub-engine jar self-indexes via embedded application.properties)
+- Test baseline: 4 core + 133 casehub + 371 app = 508 (2026-05-23)
+- Blog: `2026-05-23-mdp03-feed-that-couldnt-show-new-messages.md`
