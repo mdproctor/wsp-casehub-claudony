@@ -1,0 +1,8 @@
+branch: issue-batch-xs-s-cleanup
+project-sha: 272166dff8be0378dba97afee4e48bf7f8473c3f
+date: 2026-05-25
+issue: 114,112,127,120,129
+issue-repo: casehubio/claudony
+flyway-next-v: none
+design-repo: workspace
+design-section-hashes:
