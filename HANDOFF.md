@@ -1,16 +1,16 @@
-# Handover — 2026-05-24
+# Handover — 2026-05-25
 
-**Head commit (project):** `4711555` — fix(deps): rename casehub-testing to casehub-engine-testing — fixes CI
+**Head commit (project):** `03e4b9e` — docs: sync test baseline to 510 (4+135+371) after #114, #120, #127
 **Branch:** `main` — both repos. CI green.
 
 ---
 
 ## Last Session
 
-Fixed CI: `casehub-testing` (parent repo module, never published) renamed to
-`casehub-engine-testing` (identical jar, published by engine CI). Also resolved
-local test failure from casehub-ledger Merkle frontier beans — coordinated
-`@DefaultBean` no-op fix with ledger session. CI green, 508 tests passing.
+Batch of S/XS issues. Fixed openChannel concurrent init race (#120) via
+`computeIfAbsent` + `Uni.memoize().indefinitely()` with failure eviction.
+Fixed channel cursor accumulation on worker switch (#127). Test style cleanup
+(#114). Closed #112 as already resolved. #129 blocked on qhorus#201.
 
 ## Immediate Next Step
 
@@ -18,29 +18,23 @@ Both repos on `main`, CI green. Pick up any item from What's Next — all unbloc
 
 ---
 
-## Closed Branches (all work incorporated — deletion due 2026-06-07)
+## Closed Branches (all work incorporated)
 
-**Project repo:**
-- `epic-gateway-reliability` — merged
-- `feat/rename-to-claudony` — diverged but rename complete (no remotecc refs remain)
-- `issue-122-commitment-quality-batch` — merged
-- `issue-126-remove-selected-alternatives` — merged
-- `issue-136-test-cleanup` — merged
-- `issue-138-qhorus-184-cleanup` — squashed to main; backup/pre-squash-main-20260523 preserves pre-squash state
-- `issue-6-sla-propagation` — merged
-- 9x `worktree-agent-*` — all work incorporated
-- `backup/pre-squash-main-20260508` — past 14-day retention
-- `backup/pre-squash-v1-main-20260508` — past 14-day retention
+*Unchanged — `git show HEAD~1:HANDOFF.md`*
 
-**Workspace:** `epic-gateway-reliability`, `issue-122-*`, `issue-126-*`, `issue-136-*`, `issue-138-*` — mirrors of project branches, all merged.
-
-**Keep:** `backup/pre-squash-main-20260523` — 2 days old, deletion due 2026-06-06.
+Also closed this session:
+- `issue-batch-xs-s-cleanup` — merged, stamped closed, deletion due 2026-06-08
 
 ---
 
 ## What's Left
 
-*Unchanged — `git show HEAD~1:HANDOFF.md`*
+- **#125** — SSE `Last-Event-ID` reconnect for `/api/mesh/events` · M · Med
+- **#129** — Replace ChannelView/InstanceView with canonical API types · S · Low · blocked on qhorus#201
+- **#131** — ChannelEventBus-driven true push (replace 500ms tick) · M · Med
+- **qhorus#175–177** — DTO/mapper/transaction cleanup · M · Low
+- **qhorus#181** — ChannelGateway not re-initialized on restart · M · Med
+- **qhorus#201** — QhorusDashboardService return canonical API types · S · Low · unblocks #129
 
 ---
 
@@ -54,4 +48,4 @@ Both repos on `main`, CI green. Pick up any item from What's Next — all unbloc
 
 - Garden: GE-20260524-c1e573 (Quarkus exclude-types silently fails for extension beans)
 - Blog: `2026-05-24-mdp01-dependency-that-didnt-exist.md`
-- Test baseline: 4 core + 133 casehub + 371 app = 508 (2026-05-24)
+- Test baseline: 4 core + 135 casehub + 371 app = 510 (2026-05-25)
