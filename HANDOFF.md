@@ -1,24 +1,17 @@
 # Handover — 2026-05-26
 
-**Head commit (project):** `435805e` — chore(#129): replace ChannelView/InstanceView with canonical api types
-**Branch:** `issue-113-start-case-entry-point` — open, needs PR
+**Head commit (project):** `b1af048` — chore(#139): use CaseChannel.channelName() — engine-api owns case channel naming format
+**Branch:** `main` — XS/S batch closed and merged
 
 ---
 
 ## Last Session
 
-*(Previous 2026-05-25: S/XS batch — #120 openChannel race, #127 cursor accumulation, #114 test cleanup.)*
-
-**Parent session (2026-05-26) made two commits on `issue-113-start-case-entry-point`:**
-
-- **#113** (commit `edbc82e`): `CaseEngineRoundTripTest` now calls `researcherCase.startCase()` as the true engine entry point. `CaseStartedEventHandler` and `SchedulerService` un-excluded from test profile; `quarkus.quartz.store-type=ram` added. Requires engine#367 (`blocking=true`) to be merged and published before the test fully runs.
-- **#129** (commit `435805e`): `MeshResource` uses `ChannelDetail` and `InstanceInfo` from `casehub-qhorus-api` instead of `QhorusDashboardService.ChannelView`/`InstanceView`. Explicit `casehub-qhorus-api` dep added to `app/pom.xml`. Coordinated with qhorus branch `issue-201-canonical-dashboard-types` (qhorus#201 — also closed).
-
-Both issues closed. IntelliJ confirms zero errors.
+Completed the XS/S batch (`issue-113-139-xs-batch`): #113 adapted tests to engine#349 changes (CaseLifecycleEvent traceId, QhorusMessageSignalBridge exclusion, NoOpJobScheduler @DefaultBean); #139 replaced local `CHANNEL_PREFIX = "case-"` with `CaseChannel.channelName()` / `CaseChannel.CASE_CHANNEL_PREFIX`. 3 commits squashed to 2, pushed to casehubio/claudony/main. #122 and #135 were already closed. 510 tests pass.
 
 ## Immediate Next Step
 
-**PR branch `issue-113-start-case-entry-point`** — 3 files changed across 2 commits. Test (#113) will fully pass once engine#367 is merged and published.
+Pick up the next open item — the only remaining XS/S is gone; next is **#125** (SSE Last-Event-ID reconnect, M · Med) or **#131** (ChannelEventBus true push, M · Med), both in What's Left. Open branches: `epic-gateway-reliability`, `issue-126-remove-selected-alternatives`, `issue-136-test-cleanup`, `issue-138-qhorus-184-cleanup`, `issue-batch-xs-s-cleanup` (32h ago) — check pause stack before starting new work.
 
 ---
 
@@ -37,9 +30,5 @@ Both issues closed. IntelliJ confirms zero errors.
 
 ## Key references
 
-- Open branch: `issue-113-start-case-entry-point` (project repo — needs PR)
-- Coordinated: qhorus `issue-201-canonical-dashboard-types` (qhorus#201)
-- Engine dependency: `issue-367-350-332-engine-xs-batch` must merge first for #113 test to pass
-- Garden: GE-20260524-c1e573 (Quarkus exclude-types silently fails for extension beans)
-- Blog: `2026-05-24-mdp01-dependency-that-didnt-exist.md`
-- Test baseline: 4 core + 135 casehub + 371 app = 510 (2026-05-25)
+- Garden: GE-20260526-34a4c4 (scheduler-quartz CDI cascade), GE-20260526-2ee43b (engine bean SmokeTest failure)
+- Test baseline: 4 core + 135 casehub + 371 app = 510 (2026-05-26)
