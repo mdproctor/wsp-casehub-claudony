@@ -1,0 +1,8 @@
+branch: issue-113-139-xs-batch
+project-sha: 435805e651cfb6760fb07b5f46c51be17ec64388
+date: 2026-05-26
+issue: 113 139 122 135
+issue-repo: casehubio/claudony
+flyway-next-v: none
+design-repo: workspace
+design-section-hashes:
