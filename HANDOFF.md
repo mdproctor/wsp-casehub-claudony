@@ -1,42 +1,33 @@
-# Handover — 2026-05-25
+# Handover — 2026-05-26
 
-**Head commit (project):** `03e4b9e` — docs: sync test baseline to 510 (4+135+371) after #114, #120, #127
-**Branch:** `main` — both repos. CI green.
+**Head commit (project):** `435805e` — chore(#129): replace ChannelView/InstanceView with canonical api types
+**Branch:** `issue-113-start-case-entry-point` — open, needs PR
 
 ---
 
 ## Last Session
 
-Batch of S/XS issues. Fixed openChannel concurrent init race (#120) via
-`computeIfAbsent` + `Uni.memoize().indefinitely()` with failure eviction.
-Fixed channel cursor accumulation on worker switch (#127). Test style cleanup
-(#114). Closed #112 as already resolved. #129 blocked on qhorus#201.
+*(Previous 2026-05-25: S/XS batch — #120 openChannel race, #127 cursor accumulation, #114 test cleanup.)*
+
+**Parent session (2026-05-26) made two commits on `issue-113-start-case-entry-point`:**
+
+- **#113** (commit `edbc82e`): `CaseEngineRoundTripTest` now calls `researcherCase.startCase()` as the true engine entry point. `CaseStartedEventHandler` and `SchedulerService` un-excluded from test profile; `quarkus.quartz.store-type=ram` added. Requires engine#367 (`blocking=true`) to be merged and published before the test fully runs.
+- **#129** (commit `435805e`): `MeshResource` uses `ChannelDetail` and `InstanceInfo` from `casehub-qhorus-api` instead of `QhorusDashboardService.ChannelView`/`InstanceView`. Explicit `casehub-qhorus-api` dep added to `app/pom.xml`. Coordinated with qhorus branch `issue-201-canonical-dashboard-types` (qhorus#201 — also closed).
+
+Both issues closed. IntelliJ confirms zero errors.
 
 ## Immediate Next Step
 
-Both repos on `main`, CI green. Pick up any item from What's Next — all unblocked.
-
----
-
-## Closed Branches (all work incorporated)
-
-*Unchanged — `git show HEAD~1:HANDOFF.md`*
-
-Also closed this session:
-- `issue-batch-xs-s-cleanup` — merged, stamped closed, deletion due 2026-06-08
+**PR branch `issue-113-start-case-entry-point`** — 3 files changed across 2 commits. Test (#113) will fully pass once engine#367 is merged and published.
 
 ---
 
 ## What's Left
 
 - **#125** — SSE `Last-Event-ID` reconnect for `/api/mesh/events` · M · Med
-- **#129** — Replace ChannelView/InstanceView with canonical API types · S · Low · blocked on qhorus#201
 - **#131** — ChannelEventBus-driven true push (replace 500ms tick) · M · Med
 - **qhorus#175–177** — DTO/mapper/transaction cleanup · M · Low
 - **qhorus#181** — ChannelGateway not re-initialized on restart · M · Med
-- **qhorus#201** — QhorusDashboardService return canonical API types · S · Low · unblocks #129
-
----
 
 ## What's Next
 
@@ -46,6 +37,9 @@ Also closed this session:
 
 ## Key references
 
+- Open branch: `issue-113-start-case-entry-point` (project repo — needs PR)
+- Coordinated: qhorus `issue-201-canonical-dashboard-types` (qhorus#201)
+- Engine dependency: `issue-367-350-332-engine-xs-batch` must merge first for #113 test to pass
 - Garden: GE-20260524-c1e573 (Quarkus exclude-types silently fails for extension beans)
 - Blog: `2026-05-24-mdp01-dependency-that-didnt-exist.md`
 - Test baseline: 4 core + 135 casehub + 371 app = 510 (2026-05-25)
