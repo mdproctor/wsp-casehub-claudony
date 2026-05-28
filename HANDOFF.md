@@ -1,26 +1,34 @@
-# Handover — 2026-05-26
+# Handover — 2026-05-28
 
-**Head commit (project):** `b1af048` — chore(#139): use CaseChannel.channelName() — engine-api owns case channel naming format
-**Branch:** `main` — XS/S batch closed and merged
+**Head commit (project):** `cc314d0` — docs(design): apply journal — ChannelEventBus push pipeline replaces 500ms tick (#131)
+**Branch:** `main` — #131 closed and merged
 
 ---
 
 ## Last Session
 
-Completed the XS/S batch (`issue-113-139-xs-batch`): #113 adapted tests to engine#349 changes (CaseLifecycleEvent traceId, QhorusMessageSignalBridge exclusion, NoOpJobScheduler @DefaultBean); #139 replaced local `CHANNEL_PREFIX = "case-"` with `CaseChannel.channelName()` / `CaseChannel.CASE_CHANNEL_PREFIX`. 3 commits squashed to 2, pushed to casehubio/claudony/main. #122 and #135 were already closed. 510 tests pass.
+Completed #131: replaced 500ms SSE polling tick in `MeshResource.channelEvents()` with a
+merged-signals push pipeline — `ChannelEventBus` push events (`emitOn(workerPool)` to fix
+cross-context Vert.x frame drops) and a 30s preference-driven heartbeat emitting `"[]"`.
+Single `transformToUniAndConcatenate` across the merged stream prevents concurrent
+`getTimeline()` calls and duplicate frames. `ChannelHeartbeatInterval` preference key added.
+`MeshResource` now `@ApplicationScoped`. 520 tests pass.
 
 ## Immediate Next Step
 
-Pick up the next open item — the only remaining XS/S is gone; next is **#125** (SSE Last-Event-ID reconnect, M · Med) or **#131** (ChannelEventBus true push, M · Med), both in What's Left. Open branches: `epic-gateway-reliability`, `issue-126-remove-selected-alternatives`, `issue-136-test-cleanup`, `issue-138-qhorus-184-cleanup`, `issue-batch-xs-s-cleanup` (32h ago) — check pause stack before starting new work.
+Pick up next issue from What's Left. Both repos on `main`, clean state.
+Start with `/work` — pause stack should be empty after work-end.
 
 ---
 
 ## What's Left
 
 - **#125** — SSE `Last-Event-ID` reconnect for `/api/mesh/events` · M · Med
-- **#131** — ChannelEventBus-driven true push (replace 500ms tick) · M · Med
+- **#102** — Fleet-aware channel backend registration (all nodes) · M · Med — #98 now confirmed clean
+- **#116** — Reactive Qhorus stack for PostgreSQL · M · Low — both qhorus blockers (qhorus#141, qhorus#161) closed
 - **qhorus#175–177** — DTO/mapper/transaction cleanup · M · Low
 - **qhorus#181** — ChannelGateway not re-initialized on restart · M · Med
+- **parent#81** — PLATFORM.md: ClaudonyChannelBackend uses SSE not WebSocket · XS · Low
 
 ## What's Next
 
@@ -30,5 +38,7 @@ Pick up the next open item — the only remaining XS/S is gone; next is **#125**
 
 ## Key references
 
-- Garden: GE-20260526-34a4c4 (scheduler-quartz CDI cascade), GE-20260526-2ee43b (engine bean SmokeTest failure)
-- Test baseline: 4 core + 135 casehub + 371 app = 510 (2026-05-26)
+- Garden: GE-20260522-daca26 (revised — Vert.x cross-context SSE, both solutions documented), GE-20260527-8c3ff5 (concurrent transformToUniAndConcatenate → duplicate frames)
+- Protocol: PP-20260527-d95fed (claudony SSE timing params → PreferenceKey, not ClaudonyConfig)
+- qhorus#204 filed: gateway human_observer deduplication (tracked for removing channelRegistrationLocks sync)
+- Test baseline: 4 core + 135 casehub + 381 app = 520 (2026-05-28, after #131)
