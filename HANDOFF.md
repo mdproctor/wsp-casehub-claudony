@@ -1,31 +1,26 @@
-# Handover — 2026-05-28
+# Handover — 2026-05-29
 
-**Head commit (project):** `cc314d0` — docs(design): apply journal — ChannelEventBus push pipeline replaces 500ms tick (#131)
-**Branch:** `main` — #131 closed and merged
+**Head commit (project):** `692e6c7` — docs(#116): sync CLAUDE.md
+**Branch:** `main` — #116 closed and merged
 
 ---
 
 ## Last Session
 
-Completed #131: replaced 500ms SSE polling tick in `MeshResource.channelEvents()` with a
-merged-signals push pipeline — `ChannelEventBus` push events (`emitOn(workerPool)` to fix
-cross-context Vert.x frame drops) and a 30s preference-driven heartbeat emitting `"[]"`.
-Single `transformToUniAndConcatenate` across the merged stream prevents concurrent
-`getTimeline()` calls and duplicate frames. `ChannelHeartbeatInterval` preference key added.
-`MeshResource` now `@ApplicationScoped`. 520 tests pass.
+Completed #116: `listChannels()` swapped from `listAll()` + client-side filter to `findByNamePrefix()` (server-side). PostgreSQL reactive IT added — 4 tests against a real `postgres:17-alpine` container via `QuarkusTestResource` (required because `getConfigProfile()` replaces `%test` entirely, making production H2 URL active; Dev Services can't override it). `@RunOnVertxContext + UniAsserter` required for test methods calling Panache directly. Engine package refactoring (`internal.*` → `common.*`) fixed as chore. #94 (causedByEntryId) filed as engine#389 — blocked on engine firing `WorkerStarted` lifecycle event. 520 tests pass.
 
 ## Immediate Next Step
 
-Pick up next issue from What's Left. Both repos on `main`, clean state.
-Start with `/work` — pause stack should be empty after work-end.
+`/work` — pause stack empty, both repos on `main`. Pick next from What's Left.
 
 ---
 
 ## What's Left
 
 - **#125** — SSE `Last-Event-ID` reconnect for `/api/mesh/events` · M · Med
-- **#102** — Fleet-aware channel backend registration (all nodes) · M · Med — #98 now confirmed clean
-- **#116** — Reactive Qhorus stack for PostgreSQL · M · Low — both qhorus blockers (qhorus#141, qhorus#161) closed
+- **#102** — Fleet-aware channel backend registration (all nodes) · M · Med
+- **#118** — Fleet channel delivery (CLUSTER MessageObserver) · L · High — blocked on #102
+- **#94** — causedByEntryId causal chain · M · Med — blocked on engine#389
 - **qhorus#175–177** — DTO/mapper/transaction cleanup · M · Low
 - **qhorus#181** — ChannelGateway not re-initialized on restart · M · Med
 - **parent#81** — PLATFORM.md: ClaudonyChannelBackend uses SSE not WebSocket · XS · Low
@@ -38,7 +33,7 @@ Start with `/work` — pause stack should be empty after work-end.
 
 ## Key references
 
-- Garden: GE-20260522-daca26 (revised — Vert.x cross-context SSE, both solutions documented), GE-20260527-8c3ff5 (concurrent transformToUniAndConcatenate → duplicate frames)
-- Protocol: PP-20260527-d95fed (claudony SSE timing params → PreferenceKey, not ClaudonyConfig)
-- qhorus#204 filed: gateway human_observer deduplication (tracked for removing channelRegistrationLocks sync)
-- Test baseline: 4 core + 135 casehub + 381 app = 520 (2026-05-28, after #131)
+- Garden: GE-20260529-18fc5f (QuarkusTestProfile.getConfigProfile() replaces %test — Dev Services config priority), GE-20260529-78ecb9 (@RunOnVertxContext + UniAsserter for Panache @QuarkusTest)
+- Protocol: PP-20260528-ac6d93 (reactive-pg Dev Services named-datasource profile)
+- engine#389 filed: WorkerStarted lifecycle event + causedByEntryId for causal chain (#94)
+- Test baseline: 4 core + 135 casehub + 381 app = 520 (2026-05-29, after #116)
