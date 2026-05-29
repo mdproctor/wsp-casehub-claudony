@@ -1,7 +1,7 @@
 branch: issue-94-116-causal-chain-pg-reactive
 project-sha: cc314d0f9bc29315953e25fe3f22a8c8181080cd
 date: 2026-05-28
-issue: 94
+issue: 116
 issue-repo: casehubio/claudony
 flyway-next-v: none
 design-repo: workspace
