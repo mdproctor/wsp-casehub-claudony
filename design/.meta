@@ -1,0 +1,8 @@
+branch: issue-118-cluster-message-observer
+project-sha: 3624f7b5ceaf26ea400d8a3a341ab56b8d612e0e
+date: 2026-05-29
+issue: 118
+issue-repo: casehubio/claudony
+flyway-next-v: none
+design-repo: workspace
+design-section-hashes:
