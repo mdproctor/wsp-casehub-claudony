@@ -1,0 +1,8 @@
+branch: issue-102-fleet-channel-backend
+project-sha: 692e6c71bc44fb329060c50ede58f750e90012d2
+date: 2026-05-29
+issue: 102
+issue-repo: casehubio/claudony
+flyway-next-v: none
+design-repo: workspace
+design-section-hashes:
