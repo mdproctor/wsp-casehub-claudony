@@ -22,3 +22,4 @@
 | [2026-05-01-mdp01-what-polling-was-hiding.md](2026-05-01-mdp01-what-polling-was-hiding.md) | 2026-05-01 | Stress-testing the Qhorus push model from Claudony's side — restart registration, identity loss through proxy, and the SPI that can't express intent |
 | [2026-05-01-mdp02-case-panel-and-mcp-cliff.md](2026-05-01-mdp02-case-panel-and-mcp-cliff.md) | 2026-05-01 | Case context panel shipped — plus three upstream API migrations, a silent 50-tool MCP pagination cap, and messaging convention fixes |
 | [2026-05-22-mdp02-dead-config-live-redirects.md](2026-05-22-mdp02-dead-config-live-redirects.md) | 2026-05-22 | Removed stale selected-alternatives config; discovered GitHub repo-move push redirect |
+| [2026-05-29-mdp01-profile-wasnt-test.md](2026-05-29-mdp01-profile-wasnt-test.md) | 2026-05-29 | Three failed Dev Services attempts before finding QuarkusTestResource for the PostgreSQL reactive IT |
