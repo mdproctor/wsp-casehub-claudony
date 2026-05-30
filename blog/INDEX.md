@@ -2,6 +2,7 @@
 
 | Entry | Date | Summary |
 |---|---|---|
+| [2026-05-30-mdp01-when-the-browser-is-on-the-other-node.md](2026-05-30-mdp01-when-the-browser-is-on-the-other-node.md) | 2026-05-30 | Fleet CLUSTER MessageObserver: tick-only relay to peers, shared PG requirement, loop invariant. Build stabilisation: Set.of NPE, AbstractMethodError from SNAPSHOT skew, tmux Await.until fix |
 | [2026-05-22-mdp01-what-the-sse-stream-was-hiding.md](2026-05-22-mdp01-what-the-sse-stream-was-hiding.md) | 2026-05-22 | RESTEasy double-frame SSE bug that looked like a working stream; ConcurrentHashMap.remove() TOCTOU via equals(); Commitment tracking wired for COMMAND messages |
 | [2026-05-21-mdp01-when-the-rule-is-right-but.md](2026-05-21-mdp01-when-the-rule-is-right-but.md) | 2026-05-21 | Replacing ReactiveQhorusMcpTools with QhorusDashboardService — the rule that correctly diagnosed the problem but prescribed the wrong fix, and two CDI gotchas caught in review |
 | [2026-05-16-mdp01-five-problems-before-assertion.md](2026-05-16-mdp01-five-problems-before-assertion.md) | 2026-05-16 | Five infrastructure problems before the engine round-trip test could be written: JAX-RS/CDI exclusion gap, jar application.properties scan, abstract CDI indexing, QuarkusTestProfile config replacement |
