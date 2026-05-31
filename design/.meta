@@ -1,0 +1,8 @@
+branch: issue-140-125-causal-sse
+project-sha: c11a03e16a442413244bfd32ad368e5af0fe50cb
+date: 2026-05-31
+issue: 140
+issue-repo: casehubio/claudony
+flyway-next-v: none
+design-repo: workspace
+design-section-hashes:
