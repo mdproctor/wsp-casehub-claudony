@@ -1,27 +1,26 @@
-# Handover — 2026-05-29
+# Handover — 2026-05-30
 
-**Head commit (project):** `3624f7b` — adr: 0008 fleet-channel-backend-registration
-**Branch:** `main` — #102 closed and merged
+**Head commit (project):** `8d12d42` — fix: adapt to qhorus snapshot
+**Branch:** `main` — #118 closed and merged
 
 ---
 
 ## Last Session
 
-Completed #102: fleet-aware channel backend delivery. Core change: `ClaudonyChannelBackend` gains `@Observes ChannelInitialisedEvent` observer — the only registration path, replacing three explicit call sites. `createQhorusChannel()` calls `gateway.initChannel()` after channel creation (fires the event), then fires `CaseChannelCreatedEvent`. New `ChannelFleetBroadcaster` observes sync and calls `POST /api/internal/channels/sync` on each healthy peer. `ApiKeyAuthMechanism` fleet key now grants `fleet` role (not `user`), gating `ChannelSyncResource`. Pre-existing infra bugs fixed: stale `NoOpWorkloadProvider`, `WorkerDecisionEventCapture` CDI gap, engine#390 compat. 520 tests pass (4 + 137 + 379). ADR-0008 + 3 protocols captured.
+Completed #118: CLUSTER-scoped `MessageObserver` fleet tick relay. `FleetMessageRelayObserver` observes every Qhorus message dispatch and POSTs `ChannelNotifyRequest{channelName}` to each healthy fleet peer; peers call `ChannelEventBus.emit()` directly (no Qhorus re-dispatch — loop invariant). Requires shared PostgreSQL Qhorus for multi-node fleet. 525 tests pass (4 + 137 + 384). Also fixed two pre-existing build failures: `CaseMemoryObserver` CDI exclusion (`Set.of().contains(null)` NPE) and `StatusAwareExpiryPolicyTest` timing race (→ `Await.until()`). Post-close: adapted to new Qhorus snapshot (`ChannelInitialisedEvent.recovered` field, `createChannel` 13-param signature, `WorkerDecisionEventCapture` production exclusion).
 
 ## Immediate Next Step
 
-`/work` — both repos on `main`, pause stack empty. Pick next from What's Left.
+`/work` — both repos on `main`, pause stack empty. Pick from What's Left.
 
 ---
 
 ## What's Left
 
-- **#118** — Fleet channel delivery (CLUSTER MessageObserver) · L · High — unblocked (was blocked on #102)
 - **#125** — SSE `Last-Event-ID` reconnect for `/api/mesh/events` · M · Med
-- **#94** — causedByEntryId causal chain · M · Med — blocked on engine#389
+- **#94** — causedByEntryId causal chain · M · Med — blocked on engine#389 (still open)
 - **qhorus#175–177** — DTO/mapper/transaction cleanup · M · Low
-- **parent#81** — PLATFORM.md: ClaudonyChannelBackend uses SSE not WebSocket · XS · Low *(fix: it now fires `ChannelInitialisedEvent` — diagram may need update)*
+- **parent#117** — PLATFORM.md + claudony.md deep-dive: FleetMessageRelayObserver, test count 525 · XS · Low
 
 ## What's Next
 
@@ -31,8 +30,8 @@ Completed #102: fleet-aware channel backend delivery. Core change: `ClaudonyChan
 
 ## Key references
 
-- Garden: GE-20260529-baf565 (`@ObservesAsync` silently skipped when source uses `Event.fire()` — use `@Observes` + `Thread.ofVirtual()`)
-- Protocols: PP-20260529-457e5f (channel backend via ChannelInitialisedEvent only), PP-20260529-68c422 (fleet clients `.register()` not `@RegisterProvider`), PP-20260529-e418f0 (fleet key = `fleet` role)
-- ADR: `docs/adr/0008-fleet-channel-backend-registration-via-channel-initialised-event.md`
-- Diary: `blog/2026-05-29-mdp02-one-way-to-register-a-backend.md`
-- Test baseline: 4 core + 137 casehub + 379 app = 520 (2026-05-29, after #102)
+- Garden: GE-20260530-1ce875 (`Set.of().contains(null)` throws NPE), GE-20260530-4359ee (`AbstractMethodError` from SNAPSHOT skew), GE-20260531-70e07c (`%test.quarkus.arc.exclude-types` ≠ production augmentation)
+- Protocols: PP-20260530-ffa77a (tmux tests: `Await.until()` not `Thread.sleep()`), PP-20260530-9d18a0 (fleet notify endpoint must call `ChannelEventBus.emit()` directly)
+- Diary: `blog/2026-05-30-mdp01-when-the-browser-is-on-the-other-node.md`
+- Test baseline: 4 core + 137 casehub + 384 app = 525 (2026-05-30, after #118)
+- Backup branch: `backup/pre-squash-main-20260530` (deletion: 2026-06-13)
