@@ -1,0 +1,8 @@
+branch: issue-142-oversight-channel-allowedtypes
+project-sha: 2afda1e8a59c761ad17421242672a0cf40796f66
+date: 2026-06-01
+issue: 142
+issue-repo: casehubio/claudony
+flyway-next-v: none
+design-repo: workspace
+design-section-hashes:
