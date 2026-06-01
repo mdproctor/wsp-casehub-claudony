@@ -1,0 +1,8 @@
+branch: issue-144-round-trip-cross-tenant-fix
+project-sha: 2f0dbf0
+date: 2026-06-01
+issue: 144
+issue-repo: casehubio/claudony
+flyway-next-v: none
+design-repo: workspace
+design-section-hashes:
