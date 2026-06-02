@@ -40,9 +40,9 @@ A new obligation-carrying type added to Qhorus's `MessageType` enum is automatic
 
 ### Why `deniedTypes` over channel roles (Option 3)
 
-Option 3 would define `GOVERNANCE` as a Qhorus concept with a built-in type mapping. This is the wrong layer: Qhorus is a generic message substrate that should not model domain semantics. The `deniedTypes = {EVENT}` on oversight is Claudony's statement about its governance model. Qhorus enforces it without needing to understand it. A different consumer with a different governance model can have different `deniedTypes` — Option 3 would prevent this without an override mechanism, which collapses back into the same field.
+Option 3 would define `GOVERNANCE` as a Qhorus concept with a built-in type mapping. **This is the wrong layer.** Qhorus is a generic message substrate — it should not model domain semantics like "governance." `deniedTypes = {EVENT}` is a filter mechanism with no domain meaning; Claudony decides what goes in it, and Qhorus enforces it without understanding why. A different consumer with a different governance model gets a different `deniedTypes` set. Under Option 3, any consumer needing a different policy must add an override mechanism — which collapses back into `deniedTypes`. The right place for governance semantics is in Claudony; the right role for Qhorus is enforcement.
 
-**Forward-compatibility caveat:** if Qhorus adds a second telemetry type (e.g., `HEARTBEAT`) with no commitment effect, it would slip through `deniedTypes = {EVENT}` and appear on oversight. However, `MessageType` is a Qhorus API enum — any addition is a deliberate major change requiring a Qhorus release, at which point all consumers re-evaluate their type sets. This is not a silent failure.
+**Forward-compatibility caveat:** if Qhorus adds a future type with no commitment effect (e.g. `HEARTBEAT`), it would slip through `deniedTypes = {EVENT}` and appear on oversight. `MessageType` is a Qhorus API enum — any addition is a deliberate change requiring a Qhorus release, not a silent one. But "deliberate" alone doesn't prevent it being missed. The obligation is mechanical: when a new `MessageType` is added, any type with no commitment effect must be added to `deniedTypes` on all governance channels. To make this traceable, the `NormativeChannelLayout` constant must carry a comment naming this obligation explicitly (see implementation §3).
 
 ### Why EVENT is excluded from oversight
 
@@ -106,7 +106,7 @@ This targets channels by name pattern. Existing oversight channels created befor
 
 **`StoredMessageTypePolicy`:**
 - Check `deniedTypes` after `allowedTypes`. Denied types are rejected regardless of `allowedTypes`. Priority: denial always wins.
-- Creation-time validation: `create_channel` must reject configurations where `allowedTypes` and `deniedTypes` are non-null and intersect. A type cannot be simultaneously allowed and denied; callers must not create this state and the API must return an error if they do.
+- Creation-time validation: `create_channel` must **reject with an error** (HTTP 400 / exception) when `allowedTypes` and `deniedTypes` are both non-null and intersect. The channel is not created. A log warning without rejection adds nothing — "deny wins" is already the runtime behaviour; the validation's only purpose is to prevent a misconfigured channel from being persisted in the first place. Callers are responsible for never constructing an overlapping set; the API enforces this as a hard invariant, not a best-effort check.
 
 **`ReactiveChannelService.create()` — Java API change:**
 The existing 9-parameter signature gains `deniedTypes` as a 10th parameter (String, nullable, comma-separated). This is the primary integration point for Claudony and must be updated before any Claudony changes can compile.
@@ -145,15 +145,17 @@ This changes the canonical constructor from 4-argument to 5-argument. Every cons
 **`NormativeChannelLayout`:**
 ```java
 new ChannelSpec("oversight", ChannelSemantic.APPEND,
-    null,                          // allowedTypes: open
-    Set.of(MessageType.EVENT),     // deniedTypes: no telemetry
+    null,                          // allowedTypes: open — all obligation-carrying types permitted
+    // If a new MessageType is added to Qhorus with no commitment effect (like EVENT),
+    // add it here. This comment is the mechanical anchor for that obligation.
+    Set.of(MessageType.EVENT),     // deniedTypes: no telemetry on the governance channel
     "Human governance — all obligation-carrying types; no telemetry"),
 new ChannelSpec("work", ChannelSemantic.APPEND,
     null, null,
     "Primary coordination — all obligation-carrying message types"),
 new ChannelSpec("observe", ChannelSemantic.APPEND,
     Set.of(MessageType.EVENT),
-    null,                          // deniedTypes null on observe is a no-op: EVENT is the only allowed type anyway
+    null,                          // deniedTypes null: EVENT is already the only allowed type, denial is redundant
     "Telemetry — EVENT only, no obligations created")
 ```
 
