@@ -98,7 +98,7 @@ COMMAND, QUERY, RESPONSE, DONE, DECLINE, FAILURE, STATUS, HANDOFF
 | Channel | Invariant | Expression |
 |---------|-----------|-----------|
 | `observe` | No obligations created | `allowedTypes = EVENT` |
-| `oversight` | No pure telemetry | `allowedTypes = COMMAND,QUERY,RESPONSE,DONE,DECLINE,FAILURE,STATUS,HANDOFF` |
+| `oversight` | No pure telemetry | `deniedTypes = EVENT` (Option 2 — chosen) |
 | `work` | No constraint | `allowedTypes = null` |
 
 The observe and oversight constraints are **reciprocal**:
