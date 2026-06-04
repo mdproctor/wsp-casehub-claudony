@@ -1,38 +1,39 @@
 # Handover — 2026-06-04
 
-**Head commit (project):** `d088c8a` — docs(claude): update git workflow — repo transferred to casehubio/claudony, fork model gone
+**Head commit (project):** `0d7f1a3` — chore(test): update Qhorus tool count 60→62 (8 Claudony + 54 Qhorus)
 **Branch:** main (workspace + project)
 
 ---
 
 ## Last Session
 
-Housekeeping: closed `issue-144-round-trip-cross-tenant-fix` (promoted missed spec `2026-05-15-casehub-startcase-roundtrip-design.md`, stamped branch), updated `origin` remote to `casehubio/claudony.git` (repo transferred; fork model gone), updated CLAUDE.md git workflow section. Garden entry submitted: GE-20260604-3aed8c (GitHub repo transfer silent redirect gotcha). Note: #142 (oversight `deniedTypes`) was completed in an unrecorded session — handover was stale for three days.
+Short maintenance session. Resumed handover, found CI red (Build and Publish) on `d088c8a`. Root cause: Qhorus shipped 2 new tools; `McpServerIntegrationTest.toolsList_includesQhorusTools` asserted `equalTo(60)` but got 62. Fixed assertion and CLAUDE.md count reference, verified 538/538 locally, pushed — CI green. Garden entry submitted: GE-20260604-8b199c (hardcoded MCP tool-count assertion breaks silently on embedded library update). Epic hygiene surfaced ~10 unstamped merged branches.
 
 ## Immediate Next Step
 
-Start **Critical Path item 1**: WorkerExecutionManager tmux exit watcher. Nothing in `ClaudonyReactiveWorkerProvisioner` watches for tmux exit to fire `WorkflowExecutionCompleted`. Create an issue, then implement a virtual thread watcher in the provisioner.
+Start **Critical Path item 1**: WorkerExecutionManager tmux exit watcher. Create an issue, then implement a virtual thread watcher in `ClaudonyReactiveWorkerProvisioner` that polls `tmux has-session` and publishes `WorkflowExecutionCompleted` on exit.
 
 ---
 
 ## Critical Path to Real-World Examples
 
-*Unchanged — `git show HEAD~1:HANDOFF.md`*
+*Unchanged — `git show 8889362:HANDOFF.md`*
 
 ---
 
 ## What's Left
 
-- **qhorus#175–177** — DTO/mapper/transaction cleanup · M · Low
-- **parent#117** — PLATFORM.md + claudony.md: FleetMessageRelayObserver, test count 538, engine SNAPSHOT note · XS · Low
 - **engine#231** — `triggerChannelId`/`triggerCorrelationId` through `ProvisionContext` (gates causedByEntryId) · S · Low
+- **Unstamped branches** — ~10 completed branches missing `chore: branch closed` stamp (epic hygiene) · XS · Low
 
 ## What's Next
 
-*Unchanged — `git show HEAD~1:HANDOFF.md`*
+*Unchanged — `git show 8889362:HANDOFF.md`*
 
 ---
 
 ## Key references
 
-*Unchanged — `git show HEAD~1:HANDOFF.md`*
+- Garden: GE-20260604-8b199c (MCP tool-count assertion gotcha), GE-20260604-3aed8c (GitHub repo transfer redirect)
+- Test baseline: 4 core + 147 casehub + 387 app = **538 total, all passing** (2026-06-04, after tool count fix)
+- Backup branch: `backup/pre-squash-main-20260604` (deletion: 2026-06-18)
