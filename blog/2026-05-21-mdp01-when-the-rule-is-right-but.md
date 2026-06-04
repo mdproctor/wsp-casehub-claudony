@@ -4,7 +4,7 @@ title: "When the Rule Is Right but the Fix Is Wrong"
 date: 2026-05-21
 type: phase-update
 entry_type: note
-subtype: log
+subtype: diary
 projects: [claudony]
 tags: [qhorus, cdi, architecture, reactive]
 ---

@@ -4,7 +4,7 @@ title: "What the SSE Stream Was Hiding"
 date: 2026-05-22
 type: phase-update
 entry_type: note
-subtype: log
+subtype: diary
 projects: [claudony]
 tags: [qhorus, sse, concurrency, resteasy]
 ---
