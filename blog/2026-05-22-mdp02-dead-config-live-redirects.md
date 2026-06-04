@@ -4,7 +4,7 @@ title: "Dead config and live redirects"
 date: 2026-05-22
 type: phase-update
 entry_type: note
-subtype: log
+subtype: diary
 projects: [claudony]
 tags: [quarkus, github, housekeeping]
 ---
