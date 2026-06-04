@@ -2,6 +2,7 @@
 
 | Entry | Date | Summary |
 |---|---|---|
+| [2026-06-04-mdp01-a-denial-is-not-a-restriction.md](2026-06-04-mdp01-a-denial-is-not-a-restriction.md) | 2026-06-04 | oversight channel allowedTypes redesign — null was wrong, deniedTypes=EVENT is right; Qhorus substrate principle; reactive path validation bypass found in spec review |
 | [2026-05-31-mdp01-the-handler-that-never-fired.md](2026-05-31-mdp01-the-handler-that-never-fired.md) | 2026-05-31 | SseMeshStrategy's addEventListener('mesh-update') was silently dead; SSE reconnect cursor via _eventId + ?after param; causedByEntryId ConcurrentHashMap bridge scaffold; engine SNAPSHOT tenancyId adaptation |
 | [2026-06-01-mdp01-three-layers-to-one-line.md](2026-06-01-mdp01-three-layers-to-one-line.md) | 2026-06-01 | Engine round-trip NPE misdiagnosed as PlanExecutionContext; tenancyId null mismatch in findByUuid; CrossTenantCaseInstanceRepository fix; 532/532; critical path to real examples |
 | [2026-05-30-mdp01-when-the-browser-is-on-the-other-node.md](2026-05-30-mdp01-when-the-browser-is-on-the-other-node.md) | 2026-05-30 | Fleet CLUSTER MessageObserver: tick-only relay to peers, shared PG requirement, loop invariant. Build stabilisation: Set.of NPE, AbstractMethodError from SNAPSHOT skew, tmux Await.until fix |
