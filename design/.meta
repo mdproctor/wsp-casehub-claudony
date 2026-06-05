@@ -1,0 +1,9 @@
+branch: issue-148-researcher-case
+project-sha: ee1a45e3006747f64aa6517238b509f96882c679
+date: 2026-06-05
+issue: 148
+issue-repo: casehubio/claudony
+covers: 148,143,147
+flyway-next-v: none
+design-repo: project
+design-section-hashes:
