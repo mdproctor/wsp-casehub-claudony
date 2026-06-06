@@ -2,7 +2,7 @@
 
 **Branch:** `issue-148-researcher-case`  
 **Covers:** #148 (ResearcherCase + exit signalling), #143 (tenancyId tests), #147 (bootstrapCasehubWatchers tests)  
-**Date:** 2026-06-06 (revised after code review)
+**Date:** 2026-06-06 (rev 3)
 
 ---
 
@@ -14,27 +14,25 @@ Claudony has no production case definition. `TestResearcherCase` is test-only an
 
 ## Architecture: Exit Signalling via `CaseHubRuntime.signal()`
 
-`CaseHubRuntime.signal(caseId, path, value)` is a **direct context patch** using dot-notation paths. `CaseContextImpl.applyAndDiff(path, value)` splits `path` on `.` and creates nested maps. After patching, the engine fires `CONTEXT_CHANGED`, which evaluates goals and completion criteria.
+`CaseHubRuntime.signal(caseId, path, value)` is a **direct context patch** using dot-notation paths. `CaseContextImpl.applyAndDiff(path, value)` (confirmed from source) splits `path` on `.` and creates nested maps, then fires `CONTEXT_CHANGED`. This triggers goal evaluation.
 
-`signal(caseId, "workers.researcher.exited", true)` produces:
-
-```json
-{ "workers": { "researcher": { "exited": true } } }
-```
-
-…satisfying `.workers.researcher.exited == true` and triggering case completion — with zero changes to Claude's workflow. Multiple workers compose cleanly: each role writes under `workers.<roleName>.exited` without conflict.
+`signal(caseId, "workers.researcher.exited", true)` produces `{ "workers": { "researcher": { "exited": true } } }`, satisfying `.workers.researcher.exited == true` — with zero changes to Claude's workflow. Multiple workers compose cleanly under `workers.<roleName>.exited`.
 
 ### Signal ordering: `drainExitSignal` pattern
 
-`CaseHubRuntime.signal()` calls `CaseHubReactor.signal()` → `eventBus.publish(SIGNAL_RECEIVED, ...)` — it is **not** synchronous; it dispatches to the Vert.x event bus and returns. Placing the signal call in the exit watcher thread immediately after `eventBus.send(WORKER_EXECUTION_FINISHED, ...)` creates a race: `SIGNAL_RECEIVED` may be processed by `SignalReceivedEventHandler` before `WorkflowExecutionCompletedHandler` has updated engine state.
+**Correctness guarantee:** The goal `.workers.researcher.exited == true` can only be satisfied by the signal's `CONTEXT_CHANGED` — there is no other code path that sets this key. The first `CONTEXT_CHANGED` (fired by `WorkflowExecutionCompletedHandler` after applying worker output) evaluates the goal and finds it false. The second `CONTEXT_CHANGED` (fired by `SignalReceivedEventHandler` after `drainExitSignal`) finds it true and completes the case. The signal can race with the handler's remaining work, but since the condition cannot be true until the signal fires, no race produces an incorrect completion.
 
-**Fix: `drainExitSignal` — same pattern as `drainCausalContext`.**
+**Engine contract dependency:** This assumes `WorkflowExecutionCompletedHandler` fires the CDI lifecycle event only after committing its own engine state updates (event log, context, worker status). Claudony depends on this ordering being upheld by the engine. If the handler fires early (mid-update), the signal could race with uncommitted state.
 
-`ClaudonyWorkerExecutionManager` stores `pendingExitSignals: ConcurrentHashMap<UUID, String>` (caseId → roleName). When the watcher wins `registry.remove()`:
-1. `pendingExitSignals.put(instance.getUuid(), worker.getName())` — stored before the event bus send
-2. `eventBus.send(WORKER_EXECUTION_FINISHED, new WorkflowExecutionCompleted(...))` — existing
+**Implementation:** `ClaudonyWorkerExecutionManager` stores `pendingExitSignals: ConcurrentHashMap<UUID, String>` (caseId → roleName). When the watcher wins `registry.remove()`:
 
-`ClaudonyLedgerEventCapture.onCaseLifecycleEvent()` drains the signal when it observes `WorkerExecutionCompleted` — which fires **inside the reactive chain of `WorkflowExecutionCompletedHandler`**, after the handler has applied worker output, appended the event log, and notified `WorkerStatusListener`. This guarantees the signal fires after engine state is fully updated. The signal then fires its own `CONTEXT_CHANGED`, which evaluates the goal condition and completes the case.
+```java
+pendingExitSignals.put(instance.getUuid(), worker.getName());
+eventBus.send(EventBusAddresses.WORKER_EXECUTION_FINISHED,
+        new WorkflowExecutionCompleted(instance, worker, idempotencyKey, Map.of()));
+```
+
+`ClaudonyLedgerEventCapture` drains the signal on `WorkerExecutionCompleted` — which fires as a CDI async event from within `WorkflowExecutionCompletedHandler`'s reactive chain, after all engine state updates are committed.
 
 `ClaudonyWorkerExecutionManager` exposes:
 ```java
@@ -43,11 +41,15 @@ public String drainExitSignal(UUID caseId) {
 }
 ```
 
-**No constructor change** to `ClaudonyWorkerExecutionManager`. The `pendingExitSignals` map and `drainExitSignal()` are added internally. Existing 11 tests in `ClaudonyWorkerExecutionManagerTest` are unaffected.
+**No constructor change.** The `pendingExitSignals` map and `drainExitSignal()` are internal additions. Existing 11 tests in `ClaudonyWorkerExecutionManagerTest` are unaffected.
+
+**`shutdown()` — no explicit clear.** `pendingExitSignals` is not cleared in `shutdown()`. The map is GC'd with the bean. Clearing it would race with in-flight event bus messages: if the event was already queued but `clear()` runs before `drainExitSignal()` is called, the signal is lost and the case stays RUNNING. Omitting the clear eliminates this race. Note: if the server shuts down while a `WorkflowExecutionCompleted` event is in-flight on the Vert.x event bus, the signal may be lost and the case stays RUNNING. Recovery requires restart (watcher bootstrap handles session recovery, but context signal must be re-fired manually).
+
+**Interrupt path — no leak window.** `pendingExitSignals.put()` and `eventBus.send()` are both non-blocking, non-interruptible operations. The thread interrupt flag does not prevent either from executing — they always run as a sequential pair before any interrupt check can take effect. The watcher's interrupt checks occur only at the top of the poll loop and inside blocking operations (`Thread.sleep()`, `sessionExists()`). No meaningful gap exists between put() and send() where an interrupt could cause put() to succeed and send() to fail. The watcher's `finally` block does not touch `pendingExitSignals`.
 
 ### Signal convention — known limitation
 
-The `workers.<roleName>.exited` convention is baked into `ClaudonyLedgerEventCapture`. Case definitions that want different exit semantics (or no auto-completion signal) cannot opt out. Future work: add an `onExitSignal` field to `Capability` in the case definition, allowing case authors to configure or suppress the signal path.
+The `workers.<roleName>.exited` convention is baked into `ClaudonyLedgerEventCapture`. Case definitions that want different exit semantics cannot opt out. Future work: add `onExitSignal` to `Capability`, allowing case authors to configure or suppress the signal path.
 
 ---
 
@@ -64,7 +66,7 @@ public class ResearcherCase extends YamlCaseHub {
 }
 ```
 
-Extends `YamlCaseHub` (platform protocol for production case definitions; YAML loaded lazily via `CaseDefinitionYamlMapper.load()`). When CaseHub is disabled (`CaseHubRuntime` absent), the bean exists in CDI but `startCase()` is never called — no breakage.
+Extends `YamlCaseHub` (platform protocol; YAML loaded lazily via `CaseDefinitionYamlMapper.load()`). When `CaseHubRuntime` is absent, the bean exists in CDI but `startCase()` is never called.
 
 **`claudony-casehub/src/main/resources/casehub/researcher.yaml`**
 
@@ -96,32 +98,24 @@ spec:
         - research-complete
 ```
 
-`inputSchema: "{}"` and `outputSchema: "{}"` match `TestResearcherCase`. `inputSchema` is intentionally minimal — Claudony workers receive context via the system prompt from `ClaudonyWorkerContextProvider`, not via the engine's structured input mapping. The populated inputSchema in YAML examples (`{ topic: .topic }`) would map data into the worker's input payload, which Claudony's provisioner ignores. Using `"{}"` avoids confusion and aligns test and production definitions.
+`inputSchema: "{}"` matches `TestResearcherCase`. Note: Claudony workers receive context via the system prompt from `ClaudonyWorkerContextProvider`, not via the engine's input mapping. `inputSchema` is intentionally minimal — a populated schema would map context to input data that the provisioner ignores.
 
 ### Changes to `ClaudonyWorkerExecutionManager`
 
 Add `private final ConcurrentHashMap<UUID, String> pendingExitSignals = new ConcurrentHashMap<>()`.
 
 In `watcherRunnable`, after `registry.remove(sessionId) != null` wins:
-
 ```java
-pendingExitSignals.put(instance.getUuid(), worker.getName());  // before send — drain on lifecycle event
+pendingExitSignals.put(instance.getUuid(), worker.getName());
 eventBus.send(EventBusAddresses.WORKER_EXECUTION_FINISHED,
         new WorkflowExecutionCompleted(instance, worker, idempotencyKey, Map.of()));
 ```
 
-In `shutdown()`: `pendingExitSignals.clear()` (after `watchers.clear()`, before `sessionToRole.clear()`).
-
-Expose:
-```java
-public String drainExitSignal(UUID caseId) {
-    return pendingExitSignals.remove(caseId);
-}
-```
+Expose `drainExitSignal(UUID)` (public, no annotation). No changes to constructor or `shutdown()`.
 
 ### Changes to `ClaudonyLedgerEventCapture`
 
-Inject `ClaudonyWorkerExecutionManager execManager` (alongside existing `ClaudonyReactiveWorkerProvisioner provisioner`) and `Instance<CaseHubRuntime> caseHubRuntime`.
+Add two injections to constructor: `ClaudonyWorkerExecutionManager execManager` (alongside existing `ClaudonyReactiveWorkerProvisioner provisioner`) and `Instance<CaseHubRuntime> caseHubRuntime`.
 
 In `onCaseLifecycleEvent()`, add after the existing `WorkerStarted` causal-context drain:
 
@@ -137,83 +131,116 @@ if ("WorkerExecutionCompleted".equals(event.eventType())) {
 
 No circular dependency: `ClaudonyWorkerExecutionManager` does not inject `ClaudonyLedgerEventCapture`.
 
-### Relationship to `WorkflowExecutionCompleted` + signal ordering — analysis
+### `CasehubEnabledProfile` — add `ResearcherCase` to exclude-types
 
-`WorkflowExecutionCompletedHandler` fires `CaseLifecycleEvent("WorkerExecutionCompleted")` with `actorId = "system"`, `actorRole = "SYSTEM"` — worker name is absent. After the lifecycle event fires, the handler publishes `CONTEXT_CHANGED`. The CDI observer (`ClaudonyLedgerEventCapture`) runs asynchronously; its `signal()` call dispatches `SIGNAL_RECEIVED` to the event bus, which then fires a second `CONTEXT_CHANGED`. The sequence for goal evaluation:
-
-1. First `CONTEXT_CHANGED` (from handler): `.workers.researcher.exited` not yet set → goal not met → case stays RUNNING
-2. `SIGNAL_RECEIVED` processed: `applyAndDiff("workers.researcher.exited", true)` → second `CONTEXT_CHANGED`
-3. Second `CONTEXT_CHANGED`: goal `.workers.researcher.exited == true` → met → case COMPLETED
-
-`WorkflowExecutionCompleted` was processed at step 0; by the time the case completes at step 3, the engine has already updated all worker state. No stale-event problem.
-
-### CasehubEnabledProfile — exclude `ResearcherCase`
-
-`ResearcherCase` is `@ApplicationScoped` and will be discovered by the engine at startup. `CaseEngineRoundTripTest` uses `TestResearcherCase` explicitly. Both beans would be active in `CasehubEnabledProfile`, creating two active case definitions. The engine does not name-collide (different `namespace:name`) but the test's `.topic != null` trigger would also fire on `ResearcherCase` if started.
-
-Fix: add `io.casehub.claudony.casehub.ResearcherCase` to `CasehubEnabledProfile.quarkus.arc.exclude-types` in `CaseEngineRoundTripTest`. The production YAML (`researcher.yaml`) IS on the test classpath — `claudony-casehub` is a compile dependency of `claudony-app`, so its `src/main/resources/` is visible in tests.
+`CaseEngineRoundTripTest.CasehubEnabledProfile` must add `io.casehub.claudony.casehub.ResearcherCase` to its `quarkus.arc.exclude-types` string. The production `ResearcherCase` and `TestResearcherCase` would otherwise both be active — they have different `namespace:name` identifiers but the `.topic != null` binding would fire on both. The YAML is on the test classpath since `claudony-casehub` is a compile dep of `claudony-app`.
 
 ### New tests
 
-**`ResearcherCaseStartupTest`** — default profile (no engine required, just classpath + YAML parsing):
+**`ResearcherCaseStartupTest`** — default profile (no engine required):
+
+Inject `ResearcherCase researcherCase`. Assert on `researcherCase.getDefinition()`:
 
 ```java
-@Inject ResearcherCase researcherCase;
-
-@Test void yamlLoads_withExpectedMetadata() {
-    var def = researcherCase.getDefinition();
-    assertThat(def).isNotNull();
-    assertThat(def.name()).isEqualTo("researcher");
-    assertThat(def.namespace()).isEqualTo("io.casehub.claudony");
-    assertThat(def.getCapabilities()).anyMatch(c -> "researcher".equals(c.getName()));
-    assertThat(def.getBindings()).anyMatch(b ->
-        b.getTrigger() != null && b.getTrigger().getContextChange() != null
-        && ".topic != null".equals(b.getTrigger().getContextChange().getFilter()));
-}
+var def = researcherCase.getDefinition();
+assertThat(def.name()).isEqualTo("researcher");
+assertThat(def.namespace()).isEqualTo("io.casehub.claudony");
+assertThat(def.getCapabilities()).anyMatch(c -> "researcher".equals(c.getName()));
+// Binding API (verified against decompiled jar):
+// Binding.getOn() returns Trigger; ContextChangeTrigger.getFilter() returns ExpressionEvaluator;
+// JQExpressionEvaluator.expression() returns the expression String.
+assertThat(def.getBindings()).anyMatch(b ->
+    b.getOn() instanceof ContextChangeTrigger ctx
+    && ctx.getFilter() instanceof JQExpressionEvaluator jq
+    && ".topic != null".equals(jq.expression()));
 ```
 
-**`ResearcherCaseCompletionTest`** — new `ResearcherCaseCasehubProfile` (enables CaseHub, includes `ResearcherCase`, excludes `TestResearcherCase`):
+**`ResearcherCaseCompletionTest`** — new `ResearcherCaseCasehubProfile`:
 
-- Starts a case with `Map.of("topic", "test-topic")`
-- Mocks `TmuxService` to make `sessionExists()` return false immediately (simulating exit)
-- Awaits that `caseInstanceRepository.findByUuid(caseId).getState() == COMPLETED`
-- This is the definitive E2E proof that the signal mechanism works
+Profile config: same as `CasehubEnabledProfile` with two differences:
+1. `TestResearcherCase` added to `quarkus.arc.exclude-types` (`io.casehub.claudony.TestResearcherCase`)
+2. `SignalReceivedEventHandler` **removed** from `quarkus.arc.exclude-types` — it is excluded in `CasehubEnabledProfile` but is required here to process the `workers.researcher.exited` signal that completes the case. `WorkOrchestrator` remains excluded.
+
+Test pattern (follows `CaseEngineRoundTripTest`):
+
+```java
+@InjectMock TmuxService tmuxService;
+@Inject ResearcherCase researcherCase;
+@Inject SessionRegistry sessionRegistry;
+@Inject CrossTenantCaseInstanceRepository caseInstanceRepository;
+@Inject ClaudonyWorkerExecutionManager execManager;
+@Inject Event<CaseLifecycleEvent> lifecycleEvents;
+
+// Start case
+UUID caseId = researcherCase.startCase(Map.of("topic", "test-topic"))
+    .toCompletableFuture().get(10, TimeUnit.SECONDS);
+
+// Wait for provision (createWorkerSession called by ClaudonyReactiveWorkerProvisioner)
+Awaitility.await().atMost(Duration.ofSeconds(10))
+    .untilAsserted(() -> verify(tmuxService, atLeastOnce())
+        .createWorkerSession(anyString(), anyString(), anyString()));
+
+// WorkOrchestrator excluded — start watcher manually (same as CaseEngineRoundTripTest)
+var session = sessionRegistry.findByCaseId(caseId.toString()).get(0);
+var instance = caseInstanceRepository.findByUuid(caseId).await().atMost(Duration.ofSeconds(5));
+var cap = new Capability("researcher", "{}", "{}");
+var worker = new Worker("researcher", List.of(cap), ctx -> Map.of());
+
+// Fire WorkerExecutionStarted so lineage resolves correctly
+lifecycleEvents.fireAsync(new CaseLifecycleEvent(
+    caseId, null, "ExecuteWorker", "WorkerExecutionStarted", "ACTIVE",
+    "researcher", "WORKER", null)).toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+// Trigger watcher exit detection
+when(tmuxService.sessionExists(anyString())).thenReturn(false);
+execManager.watch(session.id(), session.name(), instance, worker);
+
+// Assert case reaches COMPLETED (CaseInstance.getState() returns CaseStatus)
+Awaitility.await()
+    .atMost(Duration.ofSeconds(10))
+    .pollInterval(Duration.ofMillis(200))
+    .untilAsserted(() -> {
+        CaseInstance updated = caseInstanceRepository.findByUuid(caseId)
+            .await().atMost(Duration.ofSeconds(5));
+        assertThat(updated.getState()).isEqualTo(CaseStatus.COMPLETED);
+    });
+```
+
+`NoOpWorkerExecutionManager` is `@DefaultBean @ApplicationScoped` and yields automatically to `ClaudonyWorkerExecutionManager` — no conflict, no exclusion needed.
 
 **`ClaudonyWorkerExecutionManagerTest` additions:**
 
-- `workerExit_storesPendingExitSignal` — after watcher detects tmux exit, assert `drainExitSignal(caseId)` returns the role name and a second call returns null (drained)
-- `drainExitSignal_unknownCaseId_returnsNull` — sanity test for the drain
+- `workerExit_storesPendingExitSignal` — trigger the exit path via mock `TmuxService`, assert `drainExitSignal(caseId)` returns the role name, second call returns null
+- `drainExitSignal_unknownCaseId_returnsNull` — sanity guard
 
 **`ClaudonyLedgerEventCaptureTest` additions:**
 
-- `workerExecutionCompleted_withPendingSignal_firesContextSignal` — seed `execManager.pendingExitSignals.put(caseId, "researcher")` (or seed via a test method), fire `CaseLifecycleEvent("WorkerExecutionCompleted")`, assert `caseHubRuntime.signal(caseId, "workers.researcher.exited", true)` was called (mock runtime)
-- `workerExecutionCompleted_noPendingSignal_doesNotFireSignal` — drain is empty, signal not called
+Mock `ClaudonyWorkerExecutionManager` is already injected via `@InjectMock` (same as existing `provisioner`). Corrected seeding — use Mockito stub, not direct field access (`pendingExitSignals` is private):
+
+- `workerExecutionCompleted_withPendingSignal_firesContextSignal`: `when(execManager.drainExitSignal(caseId)).thenReturn("researcher")`; fire `CaseLifecycleEvent("WorkerExecutionCompleted")`; assert `caseHubRuntime.signal(caseId, "workers.researcher.exited", true)` called (mock runtime injected via `@InjectMock`)
+- `workerExecutionCompleted_noPendingSignal_doesNotFireSignal`: drain returns null; assert signal not called
 
 ---
 
 ## #143 — tenancyId test additions
 
-`ClaudonyLedgerEventCapture` already reads `event.tenancyId()` and stores `"default"` when null. Installed engine SNAPSHOT has `tenancyId` as second record component. `CrossTenantCaseInstanceRepository.findByUuid(UUID)` is single-arg — confirmed from decompiled SNAPSHOT class; existing code is not stale.
+`ClaudonyLedgerEventCapture` already handles `tenancyId` correctly. `CrossTenantCaseInstanceRepository.findByUuid(UUID)` is single-arg (confirmed from decompiled SNAPSHOT class). No production code changes.
 
 Two additions to `ClaudonyLedgerEventCaptureTest`:
 
-1. **In `happyPath_singleEvent_writesLedgerEntry`:** add `assertThat(entry.tenancyId).isEqualTo("default")`. `CaseLedgerEntry.tenancyId` is a public field — direct field access, matching `ClaudonyLedgerEventCapture`'s own `entry.tenancyId = ...` assignment.
+1. **In `happyPath_singleEvent_writesLedgerEntry`:** add `assertThat(entry.tenancyId).isEqualTo("default")`. `CaseLedgerEntry.tenancyId` is a public field — direct access matches `ClaudonyLedgerEventCapture`'s own `entry.tenancyId = ...` assignment style.
 
 2. **New test `tenancyId_nonNull_storedAsIs`:** fire with second constructor arg `"tenant-1"`, assert `entry.tenancyId.equals("tenant-1")`.
 
-No production code changes. Closes #143.
+Closes #143.
 
 ---
 
 ## #147 — `bootstrapCasehubWatchers` test coverage
 
-### `CrossTenantCaseInstanceRepository.findByUuid` — confirmed single-arg
+### Extraction to `CasehubStartupService`
 
-`CrossTenantCaseInstanceRepository.findByUuid(UUID): Uni<CaseInstance>` — single parameter. The `CaseInstanceRepository.findByUuid(UUID, String)` two-arg variant is a different interface. Existing `bootstrapCasehubWatchers()` code is correct.
-
-### Extraction
-
-Extract loop body from `ServerStartup.bootstrapCasehubWatchers()` into `CasehubStartupService` in package `io.casehub.claudony.server` (alongside `ServerStartup`):
+Package: `io.casehub.claudony.server`. Plain Java, no CDI annotations — tests instantiate directly.
 
 ```java
 class CasehubStartupService {
@@ -221,45 +248,31 @@ class CasehubStartupService {
     private final CrossTenantCaseInstanceRepository caseInstanceRepo;
     private final ClaudonyWorkerExecutionManager execManager;
 
-    CasehubStartupService(
-            SessionRegistry registry,
-            CrossTenantCaseInstanceRepository caseInstanceRepo,
-            ClaudonyWorkerExecutionManager execManager) { ... }
+    CasehubStartupService(SessionRegistry registry,
+                          CrossTenantCaseInstanceRepository caseInstanceRepo,
+                          ClaudonyWorkerExecutionManager execManager) { ... }
 
     int bootstrapWatchers() { /* moved loop from ServerStartup */ }
 }
 ```
 
-Plain Java, no CDI annotations — tests instantiate directly without Quarkus context.
+`ServerStartup.bootstrapCasehubWatchers()` becomes a thin wrapper that constructs `CasehubStartupService` after the `Instance<>` guard.
 
-`ServerStartup.bootstrapCasehubWatchers()` becomes:
+### Tests — correct reactive mock types
 
-```java
-private void bootstrapCasehubWatchers() {
-    if (caseInstanceRepo.isUnsatisfied() || workerExecManager.isUnsatisfied()) {
-        LOG.debug("...");
-        return;
-    }
-    int started = new CasehubStartupService(
-            registry, caseInstanceRepo.get(), workerExecManager.get())
-        .bootstrapWatchers();
-    LOG.infof("Started %d casehub watcher(s) for recovered sessions", started);
-}
-```
+`CasehubStartupServiceTest` — 3 plain JUnit/Mockito unit tests. `CrossTenantCaseInstanceRepository.findByUuid(UUID)` returns `Uni<CaseInstance>` — mocks must return `Uni`:
 
-### Tests — reactive mock types
+1. **`invalidCaseId_logsWarnAndSkips`** — session with `caseId = Optional.of("not-a-uuid")`; `findByUuid` never called; assert returns 0, `execManager.watch()` never called.
 
-`CasehubStartupServiceTest` — 3 plain JUnit/Mockito unit tests. `CrossTenantCaseInstanceRepository.findByUuid()` returns `Uni<CaseInstance>` — mocks must return `Uni`, not bare values:
+2. **`nullCaseInstance_logsInfoAndSkips`** — valid UUID; `when(caseInstanceRepo.findByUuid(any())).thenReturn(Uni.createFrom().item((CaseInstance) null))`; assert watcher not started, returns 0.
 
-1. **`invalidCaseId_logsWarnAndSkips`** — session with `caseId = Optional.of("not-a-uuid")`; mock `findByUuid` never called; assert `bootstrapWatchers()` returns 0, `execManager.watch()` never called.
-
-2. **`nullCaseInstance_logsInfoAndSkips`** — valid UUID caseId; `when(caseInstanceRepo.findByUuid(any())).thenReturn(Uni.createFrom().item((CaseInstance) null))`; assert watcher not started, returns 0.
-
-3. **`absentRoleName_fallsBackToWorker`** — session with valid UUID and no `roleName`; `when(caseInstanceRepo.findByUuid(any())).thenReturn(Uni.createFrom().item(mockCaseInstance))`; assert `execManager.watch()` called with `Worker` whose `getName()` returns `"worker"`.
+3. **`absentRoleName_fallsBackToWorker`** — no `roleName` on session; `when(caseInstanceRepo.findByUuid(any())).thenReturn(Uni.createFrom().item(mockCaseInstance))`; assert `execManager.watch()` called with `Worker` whose `getName()` returns `"worker"`.
 
 ### `WorkerExitRecoveryIntegrationTest` — unaffected
 
-`ClaudonyWorkerExecutionManager` constructor does not change. `@Inject ClaudonyWorkerExecutionManager` in the default profile continues to work. `drainExitSignal()` in the default profile (no `CaseHubRuntime`) returns null (empty map) — the `isUnsatisfied()` guard in `ClaudonyLedgerEventCapture` ensures no signal call. Confirmed safe.
+No constructor change to `ClaudonyWorkerExecutionManager`. `@Inject` in default profile works as before. `drainExitSignal()` returns null (empty map) in tests where no exit was detected — `caseHubRuntime.isUnsatisfied()` guard in `ClaudonyLedgerEventCapture` ensures no signal call anyway.
+
+Closes #147.
 
 ---
 
@@ -267,6 +280,6 @@ private void bootstrapCasehubWatchers() {
 
 - **Right repo:** all changes in Claudony (`claudony-casehub`, `claudony-app`). No cross-repo concern.
 - **Pattern compliance:** `ResearcherCase extends YamlCaseHub` follows platform protocol.
-- **Signal convention:** `workers.<roleName>.exited` uses dot-notation nested paths supported by `CaseContextImpl.applyAndDiff()` (confirmed from source). Limitation documented — no per-capability opt-out today.
+- **Signal convention:** `workers.<roleName>.exited` uses dot-notation paths confirmed by `CaseContextImpl.applyAndDiff()` source. Limitation acknowledged.
 - **No Flyway:** no schema changes.
-- **`CrossTenantCaseInstanceRepository.findByUuid(UUID)`:** single-arg — confirmed clean.
+- **`CrossTenantCaseInstanceRepository.findByUuid(UUID)`:** single-arg confirmed — existing code clean.
