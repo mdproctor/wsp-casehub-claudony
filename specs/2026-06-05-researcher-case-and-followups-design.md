@@ -32,7 +32,7 @@ eventBus.send(EventBusAddresses.WORKER_EXECUTION_FINISHED,
         new WorkflowExecutionCompleted(instance, worker, idempotencyKey, Map.of()));
 ```
 
-`ClaudonyLedgerEventCapture` drains the signal on `WorkerExecutionCompleted` — which fires as a CDI async event from within `WorkflowExecutionCompletedHandler`'s reactive chain, after all engine state updates are committed.
+`ClaudonyLedgerEventCapture` drains the signal on `WorkerExecutionCompleted` — which fires as a CDI async event after `WorkflowExecutionCompletedHandler` commits engine state.
 
 `ClaudonyWorkerExecutionManager` exposes:
 ```java
@@ -115,7 +115,7 @@ Expose `drainExitSignal(UUID)` (public, no annotation). No changes to constructo
 
 ### Changes to `ClaudonyLedgerEventCapture`
 
-Add two injections to constructor: `ClaudonyWorkerExecutionManager execManager` (alongside existing `ClaudonyReactiveWorkerProvisioner provisioner`) and `Instance<CaseHubRuntime> caseHubRuntime`.
+Add two `@Inject` fields — `ClaudonyWorkerExecutionManager execManager` and `Instance<CaseHubRuntime> caseHubRuntime` — matching the existing field injection style in `ClaudonyLedgerEventCapture` (which already uses `@Inject` fields for `em`, `provisioner`, etc.).
 
 In `onCaseLifecycleEvent()`, add after the existing `WorkerStarted` causal-context drain:
 
@@ -262,7 +262,7 @@ class CasehubStartupService {
 
 `CasehubStartupServiceTest` — 3 plain JUnit/Mockito unit tests. `CrossTenantCaseInstanceRepository.findByUuid(UUID)` returns `Uni<CaseInstance>` — mocks must return `Uni`:
 
-1. **`invalidCaseId_logsWarnAndSkips`** — session with `caseId = Optional.of("not-a-uuid")`; `findByUuid` never called; assert returns 0, `execManager.watch()` never called.
+1. **`invalidCaseId_logsWarnAndSkips`** — session with `caseId = Optional.of("not-a-uuid")`; assert returns 0, `execManager.watch()` never called.
 
 2. **`nullCaseInstance_logsInfoAndSkips`** — valid UUID; `when(caseInstanceRepo.findByUuid(any())).thenReturn(Uni.createFrom().item((CaseInstance) null))`; assert watcher not started, returns 0.
 
