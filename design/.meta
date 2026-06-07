@@ -1,0 +1,9 @@
+branch: issue-149-dev-mode-researcher-validation
+project-sha: eee457574744ded25ef002555e4312bad3c3a1e8
+date: 2026-06-07
+issue: 149
+issue-repo: casehubio/claudony
+covers: 149
+flyway-next-v: none
+design-repo: project
+design-section-hashes:
