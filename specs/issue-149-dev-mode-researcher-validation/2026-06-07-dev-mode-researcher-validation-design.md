@@ -3,7 +3,7 @@
 **Issue:** #149  
 **Branch:** issue-149-dev-mode-researcher-validation  
 **Date:** 2026-06-07  
-**Revised:** 2026-06-07 (post code review)
+**Revised:** 2026-06-07 (post code review, second iteration)
 
 ---
 
@@ -35,14 +35,28 @@ filter therefore fires unconditionally on every `contextChange` event.
 whether any initial context was provided — so calling `startCase()` (no args) triggers the
 null-filter binding immediately on case creation.
 
-**Note on re-firing:** A null-filter binding also fires on every subsequent context change
-(e.g., when `signal("workers.researcher.exited", true)` is called later). This is not a
-problem because `WorkOrchestrator`'s `LoopControl` prevents double-provisioning for a binding
-that has already been satisfied. The design relies on this engine guarantee.
+**The `when` guard is required.** A null-filter binding fires on every `contextChange` event,
+including the one published when `signal("workers.researcher.exited", true)` patches the
+context. `ChoreographyLoopControl` (the active default) performs no dedup — its `select()`
+checks only `caseStatus == RUNNING` and passes all eligible bindings through. At the point
+the exit signal fires, the case is still `RUNNING` (the goal and completion transition happen
+asynchronously in the next Vert.x iteration). Without a guard, a second researcher session is
+provisioned before the case reaches `COMPLETED`.
+
+The engine's `when` field (evaluated by `CaseContextChangedEventHandler.rules()` after the
+trigger filter) is designed for exactly this constraint. `CaseDefinitionYamlMapper` reads
+`getWhen()` from the YAML binding and converts it to a `JQExpressionEvaluator` (bytecode
+confirmed: offset 179 `getWhen()`, offset 197 `Builder.when(ExpressionEvaluator)`).
+`Binding.Builder` also exposes `when(String)` as a convenience.
+
+Guard expression: `.workers.researcher.exited != true`
+- Initial context (empty): `.workers.researcher.exited` → `null` → `null != true` → `true` → binding fires, session provisioned.
+- After exit signal: `.workers.researcher.exited` → `true` → `true != true` → `false` → binding skipped.
 
 Changes:
 - Binding name: `start-researcher-on-topic` → `start-session-on-init`
 - Remove the `filter:` field entirely (no filter → fires unconditionally on context change)
+- Add `when: ".workers.researcher.exited != true"` guard
 - Caller change: `startCase()` with no args (no sentinel context needed)
 
 The capability naming (`researcher`) is addressed in #150.
@@ -132,7 +146,9 @@ assertThat(def.getBindings())
     .anyMatch(b ->
         "start-session-on-init".equals(b.getName())
         && b.getOn() instanceof ContextChangeTrigger ctx
-        && ctx.getFilter() == null);
+        && ctx.getFilter() == null
+        && b.getWhen() instanceof JQExpressionEvaluator jq
+        && ".workers.researcher.exited != true".equals(jq.expression()));
 ```
 
 **Updated: `ResearcherCaseCompletionTest`**
@@ -144,7 +160,8 @@ fires on the initial `CaseContextChangedEvent` regardless of context content.
 
 Aligns test bean with production YAML. Change:
 - Binding name: `start-researcher-on-topic` → `start-session-on-init`
-- Remove `new ContextChangeTrigger(".topic != null")` → `new ContextChangeTrigger((ExpressionEvaluator) null)`
+- Replace `new ContextChangeTrigger(".topic != null")` → `new ContextChangeTrigger((ExpressionEvaluator) null)`
+- Add `.when(".workers.researcher.exited != true")` to the binding builder (convenience `when(String)` method confirmed on `Binding.Builder`)
 - Also update `CaseEngineRoundTripTest` call: `startCase(Map.of("topic", "test-topic"))` → `startCase()`
 
 **New: `CasehubResourceTest`**
@@ -165,12 +182,12 @@ criteria.
 
 | File | Change |
 |------|--------|
-| `casehub/src/main/resources/casehub/researcher.yaml` | Rename binding, remove filter |
+| `casehub/src/main/resources/casehub/researcher.yaml` | Rename binding, remove filter, add `when` guard |
 | `app/src/main/resources/application.properties` | `%dev` exclusion override + casehub config |
 | `app/src/main/java/io/casehub/claudony/server/CasehubResource.java` | New REST resource |
-| `app/src/test/java/io/casehub/claudony/casehub/ResearcherCaseStartupTest.java` | Update binding assertion (null filter, new name) |
+| `app/src/test/java/io/casehub/claudony/casehub/ResearcherCaseStartupTest.java` | Update binding assertion (null filter, new name, `when` guard) |
 | `app/src/test/java/io/casehub/claudony/ResearcherCaseCompletionTest.java` | `startCase()` — no topic arg |
-| `app/src/test/java/io/casehub/claudony/TestResearcherCase.java` | Null filter, renamed binding |
+| `app/src/test/java/io/casehub/claudony/TestResearcherCase.java` | Null filter, renamed binding, add `when` guard |
 | `app/src/test/java/io/casehub/claudony/CaseEngineRoundTripTest.java` | `startCase()` — no topic arg |
 | `app/src/test/java/io/casehub/claudony/server/CasehubResourceTest.java` | New test class |
 
