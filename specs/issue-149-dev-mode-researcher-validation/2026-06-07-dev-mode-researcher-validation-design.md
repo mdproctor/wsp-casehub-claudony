@@ -128,8 +128,8 @@ public CompletionStage<Response> startResearcher() {
 }
 ```
 
-Class annotations: `@Path("/api/casehub")`, `@Produces(APPLICATION_JSON)`,
-`@Consumes(APPLICATION_JSON)`, `@Authenticated`.
+Class annotations: `@Path("/api/casehub")`, `@Produces(APPLICATION_JSON)`, `@Authenticated`.
+(`@Consumes` omitted — the POST method takes no body.)
 
 Response model: inline record `record CaseStartedResponse(UUID caseId)`.
 
@@ -197,7 +197,7 @@ criteria.
 
 ```bash
 # Run new and updated tests
-JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test -Dtest=CasehubResourceTest,ResearcherCaseStartupTest,ResearcherCaseCompletionTest -pl claudony-app
+JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test -Dtest=CasehubResourceTest,ResearcherCaseStartupTest,ResearcherCaseCompletionTest,CaseEngineRoundTripTest -pl claudony-app
 
 # Full test suite (regression check)
 JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test
