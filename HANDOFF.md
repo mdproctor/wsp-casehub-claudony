@@ -11,20 +11,25 @@ Critical path item 2 complete (#148): `ResearcherCase extends YamlCaseHub` with 
 
 ## Immediate Next Step
 
-Run a real researcher case end-to-end in a running server:
-1. Start server: `JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn quarkus:dev -Dclaudony.mode=server -Dclaudony.casehub.enabled=true`
-2. Trigger: `curl -X POST http://localhost:7777/api/cases/researcher -H 'Content-Type: application/json' -d '{"topic":"test"}'`
-3. Watch case complete: `curl http://localhost:7777/api/sessions?caseId=<UUID>` shows status COMPLETED
+Open an issue for Critical Path item 3 then start a branch. Three sub-tasks:
+- **3a** — `%dev.quarkus.arc.exclude-types` without `ResearcherCase` (so it registers in dev mode)
+- **3b** — `POST /api/cases/researcher` REST endpoint → calls `researcherCase.startCase(body)`
+- **3c** — `%dev.claudony.casehub.workers.commands.researcher=claude` in application.properties
 
-This is Critical Path item 3 — real-world validation that the signal chain works outside tests.
+Then validate: `mvn quarkus:dev -Dclaudony.mode=server` → trigger endpoint → see COMPLETED in dashboard.
 
 ---
 
 ## Critical Path to Real-World Examples
 
-Item 1 ✅ exit watcher (#146, 2026-06-05).
-Item 2 ✅ ResearcherCase + auto-completion (#148, 2026-06-07).
-Item 3 → real server validation (no issue yet).
+| # | Item | Status |
+|---|------|--------|
+| 1 | Exit watcher — detect when tmux session ends | ✅ Done (#146) |
+| 2 | ResearcherCase — signal chain proven in tests | ✅ Done (#148) |
+| 3 | Dev mode validation — run it live, not just in tests | → Next (~2-3h) |
+| 4 | Production JAR — move `casehub-engine` to compile scope | Deferred (design needed) |
+
+**Note on item 3:** `casehub-engine` is test-scope — it IS on the classpath in `mvn quarkus:dev` (dev mode includes test deps), so the engine works there. The remaining gaps are: `ResearcherCase` excluded from dev CDI (our production CDI fix), no REST trigger endpoint, and missing dev profile config.
 
 ---
 
