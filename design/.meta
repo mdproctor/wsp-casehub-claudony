@@ -1,0 +1,9 @@
+branch: issue-151-engine-compile-scope
+project-sha: 2dd30dbe1b0241ffee9dc1c6f626bd6848425fba
+date: 2026-06-08
+issue: 151
+issue-repo: casehubio/claudony
+covers: 151
+flyway-next-v: none
+design-repo: project
+design-section-hashes:
