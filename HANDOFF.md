@@ -1,22 +1,21 @@
-# Handover — 2026-06-07
+# Handover — 2026-06-09
 
-**Head commit (project):** `eee4575` — fix(casehub): exclude ResearcherCase from production arc
-**Branch:** main (workspace + project)
+**Head commit (project):** `806f22e` — fix(claudony#152): fail fast on null tenancyId; fix LedgerEntry parent field shadowing
+**Branch:** `issue-152-tenancyid-default-fix` (project), main (workspace)
 
 ---
 
-## Last Session
+## Last Session (2026-06-09, platform session cross-repo)
 
-Critical path item 2 complete (#148): `ResearcherCase extends YamlCaseHub` with `researcher.yaml` — first production case definition shipping with Claudony. Cases auto-complete when the tmux session exits via `drainExitSignal` → `CaseHubRuntime.signal("workers.researcher.exited", true)` → goal satisfaction. #143 (tenancyId assertions) and #147 (CasehubStartupService extraction + tests) also landed. Late-session fix: `ResearcherCase` must be in `quarkus.arc.exclude-types` in main `application.properties` — engine (`CaseHubRuntimeImpl`) is test-only dep; CDI augmentation fails otherwise. ADR-0010 + 2 protocols + 3 garden entries committed.
+Fixed claudony#152: `ClaudonyLedgerEventCapture` was silently falling back to `"default"` when `CaseLifecycleEvent.tenancyId()` was null — protocol violation PP-20260520-439daf. Fix: fail fast with error log, drop the event. Also discovered and fixed: `CaseLedgerEntry.tenancyId` shadows `LedgerEntry.tenancyId`; production code now sets both fields explicitly (child field + parent via cast). Filed engine#460 for the root cause (duplicate field declaration in `CaseLedgerEntry`).
+
+Tests: updated all events in `ClaudonyLedgerEventCaptureTest` to supply `"tenant-1"`; added `nullTenancyId_eventDropped_noLedgerEntryWritten`. Test failures remain due to pre-existing `PropertyValueException` from the engine#460 field shadowing issue — those failures pre-date claudony#152 and are not caused by it.
+
+Prerequisite for claudony#121 (full multi-tenancy foundation).
 
 ## Immediate Next Step
 
-Open an issue for Critical Path item 3 then start a branch. Three sub-tasks:
-- **3a** — `%dev.quarkus.arc.exclude-types` without `ResearcherCase` (so it registers in dev mode)
-- **3b** — `POST /api/cases/researcher` REST endpoint → calls `researcherCase.startCase(body)`
-- **3c** — `%dev.claudony.casehub.workers.commands.researcher=claude` in application.properties
-
-Then validate: `mvn quarkus:dev -Dclaudony.mode=server` → trigger endpoint → see COMPLETED in dashboard.
+Merge `issue-152-tenancyid-default-fix` branch (claudony#152). Then start Critical Path item 3 for the ResearcherCase dev-mode validation.
 
 ---
 
