@@ -2,6 +2,7 @@
 
 | Entry | Date | Summary |
 |---|---|---|
+| [2026-06-12-mdp01-when-the-ledger-enforces-its-own-rules.md](2026-06-12-mdp01-when-the-ledger-enforces-its-own-rules.md) | 2026-06-12 | SNAPSHOT ecosystem drift: tokenise() API change, em.persist() blocked by ledger pre-persist validation, rebuild order |
 | [2026-06-08-mdp01-what-tests-dont-prove.md](2026-06-08-mdp01-what-tests-dont-prove.md) | 2026-06-08 | ResearcherCase live: ChoreographyLoopControl has no binding dedup; when: guard required; contextChange: {} not bare form; Instance<T> + CompletionStage<Response> endpoint pattern |
 | [2026-06-05-mdp01-the-shell-that-outlived-the-worker.md](2026-06-05-mdp01-the-shell-that-outlived-the-worker.md) | 2026-06-05 | tmux exit watcher — shell-based sessions don't close on command exit; atomic registry gate for concurrent terminate/exit; @Blocking on startup observer breaks augmentation |
 | [2026-06-04-mdp01-a-denial-is-not-a-restriction.md](2026-06-04-mdp01-a-denial-is-not-a-restriction.md) | 2026-06-04 | oversight channel allowedTypes redesign — null was wrong, deniedTypes=EVENT is right; Qhorus substrate principle; reactive path validation bypass found in spec review |
