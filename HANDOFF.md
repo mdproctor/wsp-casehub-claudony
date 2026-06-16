@@ -1,62 +1,50 @@
-# Handover — 2026-06-13
+# Handover — 2026-06-16
 
-**Head commit (project):** `d415f2e` — chore: add session permissions (main)
-**Branch:** main (project), issue-151-engine-compile-scope (workspace)
+**Head commit (project):** `4f2ba73` — chore: pre-push hook classification-based (main)
+**Branch:** main (project and workspace)
 
 ---
 
 ## Last Session
 
-Two issues landed (#149, #152) plus a blocked start on #151 (engine compile scope).
+Three issues landed (#151, #153, #94) plus a pre-push hook improvement to cc-praxis.
 
-**#149 — Dev mode validation:** Landed. ResearcherCase registered in CDI, REST endpoint created (`POST /api/casehub/cases/researcher`), dev profile config added. Server starts and endpoint returns 202. Full COMPLETED validation blocked on engine CDI cascade issues (multiple workers provisioned, SNAPSHOT instability).
+**#151 — Engine compile scope / production case orchestration:** Closed. Engine moved to compile scope. `ClaudonyWorkerExecutionManager.startWatcherForSession()` added — provisions workers and starts the watcher. `@WithSession("qhorus")` added to `listChannels()` (required by engine event loop). CDI exclude-types aligned (`WorkerScheduleEventHandler` removed from exclusions to unblock the watcher chain). SNAPSHOT API changes absorbed (ChannelCreateRequest, terminate(String,String), Worker sealed interface, DispatchResult 13-field). Live JAR test confirmed the provision chain fires: CaseStarted → WorkerStarted → WorkflowExecutionCompleted → signal. COMPLETED blocked by engine#493 (see below).
 
-**#151 — Engine compile scope:** Started but BLOCKED. Engine moved to compile scope, in-memory persistence added. Server CDI deploys but case completion fails — root cause: SNAPSHOT ecosystem drift (tokenise API, em.persist blockade, MockCurrentPrincipal null tenancyId). Left on `issue-151-engine-compile-scope` branch, not closed.
+**#153 — ResearcherCaseStartupTest:** Closed. Bypass CDI ObjectMapper by loading YAML via `CaseDefinitionYamlMapper.load(InputStream)` — no CDI context required in the plain JUnit path.
 
-**#152 — tenancyId SNAPSHOT alignment:** Landed and closed. Fixed CI across 20 files: LedgerEntryRepository migration, tokenise(String,ActorType) updates in Qhorus, engine CDI exclude-types, ledger_subject_sequence SQL script. 2 test failures remain (#153, #154).
+**#94 — causedByEntryId at provisioning time:** Closed. `QhorusCausalLinkResolver` added — `@ApplicationScoped` bean with `@WithSession("qhorus")`, resolves Qhorus `MessageLedgerEntry` UUID from `triggerChannelId`/`triggerCorrelationId`. Wired via `Uni.combine()` parallel chain in `provision()`: blocking setup on worker pool + reactive DB lookup on event loop run simultaneously. Critical constraint: `@WithSession` must be intercepted on the event loop, not after `runSubscriptionOn(workerPool)` — the Uni is constructed on the event loop, capturing the right context. `.emitOn(workerPool)` added before `startWatcher()` to prevent event-loop deadlock (watcher calls `.await()`).
 
-## Immediate Next Step
+Two new protocols captured:
+- `PP-20260616-fc862e` — causalContext ConcurrentHashMap is the permanent side-channel; CaseLifecycleEvent must never carry causedByEntryId (engine#389 design constraint)
+- `PP-20260616-d32bc3` — @WithSession calls must be pre-constructed on event loop, not chained after runSubscriptionOn(workerPool)
 
-Wait for SNAPSHOT ecosystem to stabilize across casehub repos (ledger, platform, qhorus, engine must all be at a consistent commit). Then resume issue-151 (`git checkout issue-151-engine-compile-scope` on project), run `mvn test`, fix remaining CDI issues.
-
----
-
-## Critical Path to Real-World Examples
-
-| # | Item | Status |
-|---|------|--------|
-| 1 | Exit watcher | ✅ Done (#146) |
-| 2 | ResearcherCase signal chain | ✅ Done (#148) |
-| 3 | Dev mode live validation | ⚡ Partial (#149) — endpoint works, COMPLETED blocked by SNAPSHOT |
-| 4 | Production JAR — engine to compile scope | ⚡ In-progress (#151) — BLOCKED on SNAPSHOT stability |
+**Pre-push hook:** cc-praxis git-squash hook updated — removed `^fix\(ci\):` from coarse filter (too broad, fires on substantial SNAPSHOT API fixes). Hook now passes silently when all commits are KEEP-worthy. claudony `.githooks/pre-push` updated from "always block" to classification-based. Synced and committed.
 
 ---
 
-## What's Left
+## Blocked / Open Upstream
 
-- **#153** — `ResearcherCaseStartupTest` NPE: `YamlCaseHub.getDefinition()` needs CDI ObjectMapper (SNAPSHOT broke plain JUnit) · S · Low
-- **#154** — `ResearcherCaseCompletionTest` timeout: multiple workers created by `signalStarted()` timing race in test context · S · Med
-- **#150** — Rename `ResearcherCase` + `researcher` capability to neutral names · S · Low
-- **engine#231** — `triggerChannelId`/`triggerCorrelationId` through `ProvisionContext` · S · Low
-- **casehubio/parent#186** — claudony.md deep-dive sync · XS · Low
-
-## What's Next
-
-| # | Description | Scale | Complexity | Notes |
-|---|-------------|-------|------------|-------|
-| 151 | Engine compile scope — resume when SNAPSHOT stable | L | High | Blocked on casehub ecosystem SNAPSHOT consistency |
-| 150 | Rename ResearcherCase/researcher to neutral names | S | Low | |
-| 153 | Fix ResearcherCaseStartupTest — CDI ObjectMapper | S | Low | SNAPSHOT breaking change |
-| 154 | Fix ResearcherCaseCompletionTest — signalStarted timing | S | Med | Test timing race in mocked context |
-| 121 | Multi-tenancy foundation | XL | High | Hold until critical path done |
+| Issue | Repo | What it blocks |
+|-------|------|----------------|
+| **engine#493** | casehub-engine | `SignalReceivedEventHandler` does not fire `CaseContextChangedEvent` after signal — ResearcherCase stays at RUNNING after exited signal. `ResearcherCaseCompletionTest` is a known failing test. |
+| **qhorus#280** | casehub-qhorus | `MessageLedgerEntryTestFactory` needs to move to `casehub-qhorus-testing` — then `QhorusCausalLinkResolverTest` can add a real Panache integration test instead of the hand-written stub. |
+| **engine#500** | casehub-engine | `triggerTenancyId` missing from `ProvisionContext` — multi-tenant accuracy for causal link resolution. |
+| **parent#260** | casehub-parent | Sync claudony deep-dive for `QhorusCausalLinkResolver` and engine compile scope change. |
 
 ---
 
-## Key references
+## Test Baseline
 
-- Diary: `blog/2026-06-12-mdp01-when-the-ledger-enforces-its-own-rules.md`
-- Protocols: PP-20260612-d6e7ec (CDI exclude-types sync), PP-20260608-365c92 (binding when-guard)
-- Garden (session): GE-20260612-17c161 (em.persist blocked), GE-20260612-8e925b (sql-load-script named PU), GE-20260612-b20b51 (YamlCaseHub CDI ObjectMapper)
-- Test baseline: 6 core + 162 casehub + 408 app = **576 total; 3 failures** (MeshResourceInterjectionTest pre-existing, #153, #154)
-- Backup: `backup/pre-squash-issue-152-tenancyid-default-fix-20260612` (delete after 2026-06-26)
-- Issue-151 project branch: `issue-151-engine-compile-scope` (open, BLOCKED)
+**586 total, 584 passing.** Known failing:
+- `MeshResourceInterjectionTest.postMessage_eventType_isValid` — Qhorus SNAPSHOT: EVENT dispatch now requires gateway registration (pre-existing)
+- `ResearcherCaseCompletionTest` — blocked by engine#493
+
+---
+
+## Next Session
+
+Main branch is clean. Next priorities:
+1. Watch for engine#493 fix — once landed, `ResearcherCaseCompletionTest` should pass
+2. Watch for qhorus#280 — then promote the QhorusCausalLinkResolver integration test
+3. Consider closing #154 (TestCompletionCase investigation is parked — root cause is engine#493, not Claudony)
