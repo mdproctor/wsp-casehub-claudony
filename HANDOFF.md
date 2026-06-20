@@ -1,46 +1,42 @@
-# Handover — 2026-06-17
+# Handoff — 2026-06-21
 
-**Head commit (project):** `ffaafbf` — docs: update CLAUDE.md (main)
-**Branch:** main (project and workspace)
+**Head commit (project):** `061c013` — chore(claudony#150,#154): rename researcher→agent; close #154
 
----
+## What landed this session
 
-## Last Session
+### claudony#151 — Context.isOnEventLoopThread() threading fix
 
-CI fix session following the branch close for issue #151 / #94.
+Engine `a6620c03` added `@ConsumeEvent(blocking=true)` to `CaseContextChangedEventHandler`. Vert.x `executeBlocking` workers inherit the parent event loop Context, so `isEventLoopContext()` incorrectly returns `true` for them. `@WithSession`'s `runSubscriptionOn` uses Hibernate Reactive's `VertxContext.execute()` which asserts the actual thread — throws HR000068 on executeBlocking workers.
 
-**What shipped:**
+Fix: `Context.isOnEventLoopThread()` (public Vert.x 4.x static API) in:
+- `ClaudonyReactiveCaseChannelProvider.listChannels()` — guards `doListChannels()` (@WithSession)
+- `JpaCaseLineageQuery.findCompletedWorkers()` — avoids `runSubscriptionOn(workerPool)` on worker threads
+- `ClaudonyReactiveWorkerContextProvider.buildContext()` — `emitOn(stableEventLoopContext)` guard
 
-CI was failing with 11 test errors across four root causes after the branch merge. All new failures fixed in two pushes:
+Protocol PP-20260620-cb7137 captures this. All 587 tests green, CI confirmed.
 
-1. **Worker.builder().function()** — engine SNAPSHOT removed the lambda constructor; three call sites updated
-2. **QuartzRetryService CDI exclusion** — new engine SNAPSHOT bean with unsatisfied deps; added to all test profile exclude-types
-3. **SystemPromptIntegrationTest / SilentProfileTest** — `@WithSession("qhorus")` fires from plain JUnit thread; fixed with `@RunOnVertxContext` + `UniAsserter`
-4. **CaseEngineRoundTripTest — provision loop** — the deeper fix took two pushes:
-   - First fix: `sessionExists()=true` before `startCase()`, fast poll (200ms); passed locally but failed in CI with "Expected size: 1 but was: 186"
-   - 186 ledger entries revealed the signal() API mismatch: remote CI jar has `void signal()`, local has `CompletionStage<Void>`. catch(Throwable) silently swallowed the NoSuchMethodError, signal never sent, when-guard never cleared → 93 provision cycles
-   - Fix: `CaseHubRuntimeCompat.signal()` — reflection-based shim handles both return types
-   - Fix: Re-included `SignalReceivedEventHandler` in `CasehubEnabledProfile` (was excluded for engine#493); without it, `casehub.signal.received` has no Vert.x event bus handler → `NO_HANDLERS,-1`
-   - Added `NoOpWorkerExecutionRecoveryService` `@DefaultBean` for SignalReceivedEventHandler's new dep
-   - `.gitignore` anchored `io/` → `/io/` (was hiding source paths from git)
-5. **Two new protocols:** PP-20260617-52285f (signal compat shim required) and PP-20260617-10cf10 (SignalReceivedEventHandler must stay in CasehubEnabledProfile)
+### claudony#150 — researcher→agent rename
 
-**CI status:** Green on `ffaafbf`. 6 pre-existing `MeshResourceInterjectionTest` failures (Qhorus SNAPSHOT issue #155) + `ResearcherCaseCompletionTest` (engine#493) remain at baseline.
+`researcher` implied academic research; actual capability is generic tmux session management. Renamed:
+- `researcher.yaml` → `agent.yaml`; context paths `.workers.researcher.*` → `.workers.agent.*`
+- `ResearcherCase` → `AgentCase`; REST: `/api/casehub/cases/agent`; config: `...workers.commands.agent`
+- 46 files changed; all test classes renamed; 587 tests all green
 
----
+### claudony#154 — ResearcherCaseCompletionTest (closed, no code change)
 
-## Known Open Issues
+Was already passing after #151 fix. Renamed to `AgentCaseCompletionTest` as part of #150.
 
-| Issue | Repo | Status |
-|-------|------|--------|
-| **#155** | casehubio/claudony | MeshResourceInterjectionTest 6/9 failing — Qhorus SNAPSHOT `updateLastActivity` JPQL positional-param bug |
-| **engine#493** | casehub-engine | SignalReceivedEventHandler doesn't fire CONTEXT_CHANGED after signal; ResearcherCaseCompletionTest blocked |
-| **qhorus#280** | casehub-qhorus | MessageLedgerEntryTestFactory needs to move to qhorus-testing |
-| **engine#500** | casehub-engine | triggerTenancyId missing from ProvisionContext |
-| **parent#260** | casehubio/parent | Sync claudony deep-dive for QhorusCausalLinkResolver and engine compile scope |
+## Open threads
 
----
+- **parent#291**: `docs/repos/claudony.md` deep-dive needs REST path + capability name updated for #150. Must be done in a parent repo session.
+- CI queued for `061c013` — expected green (verified locally).
 
-## Next Session
+## State
 
-Main branch is clean. CI at baseline. When Qhorus SNAPSHOT gets a new build that fixes `updateLastActivity`, run `MeshResourceInterjectionTest` and close #155 if green.
+- main: `061c013`
+- All 587 tests pass locally
+- Branch `issue-154-155-sweep` stamped closed
+
+## Next candidates
+
+No more S/XS issues open. Next M-scale: #105 (separate Claudony/Qhorus MCP endpoints, Phase A architecture).
