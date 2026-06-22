@@ -120,7 +120,17 @@ The full §9 entry requires:
 
 Per the Arc42Stories spec: only decisions not captured inline elsewhere. Should be sparse.
 
-🔲 Cross-cutting decisions — complete in dedicated session.
+### 2026-06-22 · CaseChannelLayout + MeshParticipationStrategy extracted to engine-api (claudony#159, parent#93)
+
+`CaseChannelLayout`, `NormativeChannelLayout`, `SimpleLayout`, `MeshParticipationStrategy`, and the three standard participation strategy implementations were extracted from `claudony-casehub` to `io.casehub.api.spi.mesh` in `casehub-engine-api`. Claudony was the wrong owner — these are platform primitives used by any agent implementation (openclaw duplicated `NormativeChannelLayout` as `OpenClawNormativeLayout` before the extraction).
+
+Claudony now imports these from engine-api and uses `CaseChannelLayout.named(config.channelLayout())` and `MeshParticipationStrategy.named(config.meshParticipation())` factory methods.
+
+Also fixed: `strategyFor(String workerId, UUID caseId)` signature corrected from `strategyFor(String workerId, WorkerContext context)` — context was always null at the call site (DESIGN.md line 540 Outstanding). caseId is now passed directly per `spi-case-id-parameter.md` protocol.
+
+*claudony commit: 7be4f61 — refactor(#159)*
+
+🔲 Additional cross-cutting decisions — complete in dedicated session.
 
 ---
 
