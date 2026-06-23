@@ -1,29 +1,29 @@
-# Handoff — 2026-06-22
+# Handoff — 2026-06-23
 
-**Head commit (project):** `7be4f61` — refactor(#159): migrate CaseChannelLayout + MeshParticipationStrategy to casehub-engine-api
+**Head commit (project):** `c72fb24` — docs(#145): add ARC42STORIES.MD — integration-tier record
 
 ## What landed this session
 
-### claudony#159 — Migrate CaseChannelLayout + MeshParticipationStrategy to engine-api (parent#93)
+### claudony#145 — ARC42STORIES.MD complete
 
-Deleted 10 files (7 production types + 3 test classes) that moved to `io.casehub.api.spi.mesh` in engine-api.
+Full Arc42Stories architecture record written from scratch: 3 Journeys, 9 Chapters across the full delivery arc (Core Session Engine → Auth → Fleet → Agent/MCP → Qhorus → CaseHub SPIs → Agent Mesh → Case Worker Panel → Production Orchestration), 9 Layer entries each with Key files, Gotchas (Symptom→Cause→Fix), and Pattern-to-replicate sections.
 
-Key changes:
-- `ClaudonyReactiveCaseChannelProvider` — import update only
-- `ClaudonyReactiveWorkerContextProvider` — delete `selectStrategy()`; use `MeshParticipationStrategy.named()`; fix `strategyFor(workerId, null)` → `strategyFor(workerId, caseId)` (resolves design lie documented in DESIGN.md line 540)
-- `MeshSystemPromptTemplate` — import updates
-- Tests: import updates for `ActiveParticipationStrategy`, `NormativeChannelLayout` etc.
-- `docs/DESIGN.md` line 540: removed null-context Outstanding clause; shared-data keys / epic#86 clause preserved
+Quality gate caught: stale class names in DESIGN.md (`McpServer` → `ClaudonyMcpTools`, `ClaudonyWorkerProvisioner` → `ClaudonyReactiveWorkerProvisioner`, `WebAuthnPatcher`/`LenientNoneAttestation` removed in Quarkus upgrade); issue #93 body described a pending fix already implemented in db61484. All corrected before commit. Tier label corrected to Integration. File placed in project repo per PP-20260603-33c84c.
 
-143 tests green.
+DESIGN.md redirect header added. CLAUDE.md updated to declare ARC42STORIES.MD as primary architecture record.
+
+CI: 587 tests green, pushed to casehubio/claudony main.
 
 ## State
 
-- main: `7be4f61` (merged from `issue-159-mesh-spi-migration`)
-- Branch `issue-159-mesh-spi-migration` stamped closed
-- Issue claudony#159 closed
+- main: `c72fb24`
+- All 587 tests pass locally and on CI
+- #145 closed, branch stamped
 
 ## Next candidates
 
-- claudony#160 — update ARC42STORIES.MD for mesh SPI migration
-- claudony#105 — separate Claudony/Qhorus MCP endpoints (M-scale, Phase A architecture)
+| # | Description | Scale | Complexity | Notes |
+|---|-------------|-------|------------|-------|
+| #105 | Separate Claudony/Qhorus MCP endpoints (Phase A architecture) | M | Med | No blockers; next discrete work |
+| #157 | Migrate Worker imports to casehub-worker-api | S | Low | Refactor only |
+| parent#291 | Update docs/repos/claudony.md for researcher→agent rename (#150) | XS | Low | Requires parent repo session |
