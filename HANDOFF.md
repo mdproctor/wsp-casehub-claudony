@@ -1,5 +1,7 @@
 # Handoff — 2026-06-23
 
+*Updated: parent#291 closed — removed from backlog.*
+
 **Head commit (project):** `c72fb24` — docs(#145): add ARC42STORIES.MD — integration-tier record
 
 ## What landed this session
@@ -26,4 +28,3 @@ CI: 587 tests green, pushed to casehubio/claudony main.
 |---|-------------|-------|------------|-------|
 | #105 | Separate Claudony/Qhorus MCP endpoints (Phase A architecture) | M | Med | No blockers; next discrete work |
 | #157 | Migrate Worker imports to casehub-worker-api | S | Low | Refactor only |
-| parent#291 | Update docs/repos/claudony.md for researcher→agent rename (#150) | XS | Low | Requires parent repo session |
