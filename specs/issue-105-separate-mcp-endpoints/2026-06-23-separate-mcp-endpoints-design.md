@@ -45,11 +45,22 @@ Both Server mode (port 7777) and Agent mode (port 7778) serve both endpoints —
 | Server (7777) | `http://localhost:7777/mcp` | `http://localhost:7777/qhorus` |
 | Agent (7778) | `http://localhost:7778/mcp` | `http://localhost:7778/qhorus` |
 
-A controller Claude connecting to the Agent needs both URLs:
-- `http://localhost:7778/mcp` — session management
-- `http://localhost:7778/qhorus` — agent mesh
+### MCP Sessions Are Server-Scoped
 
-A non-Claudony Claude connects to Qhorus directly at `/qhorus` (or wherever the standalone deployment configures it).
+Each named server is a fully independent MCP server instance with separate session management. A session ID obtained from `/mcp` is NOT valid at `/qhorus` — `StreamableHttpMcpConnection` is created per server name. Clients must establish separate MCP connections to each server.
+
+A controller Claude connecting to the Agent needs two `mcpServers` entries:
+
+```json
+{
+  "mcpServers": {
+    "claudony": {"url": "http://localhost:7778/mcp"},
+    "qhorus": {"url": "http://localhost:7778/qhorus"}
+  }
+}
+```
+
+This is the right design — independent connections align with Phase A's eventual process separation. A non-Claudony Claude connects to Qhorus directly at `/qhorus` with a single `mcpServers` entry.
 
 ### Why the Annotation Goes in Qhorus, Not Claudony
 
@@ -109,7 +120,10 @@ Claudony sets `casehub.qhorus.reactive.enabled=true` → `ReactiveQhorusMcpTools
    - Remove the stale `// Phase 8` comment block at end of file
 3. Update CLAUDE.md:
    - Key URLs: add both `http://localhost:7777/qhorus` (Server) and `http://localhost:7778/qhorus` (Agent)
-   - Test count: update tool-count assertion documentation
+   - **Rewrite the Qhorus tool-count paragraph.** The current text is entirely about the unified endpoint problem:
+     > `McpServerIntegrationTest.toolsList_includesQhorusTools asserts exactly 62 tools (8 Claudony + 54 Qhorus) — update this assertion and the count here when Qhorus ships new tools; the count changes with each Qhorus release. quarkus.mcp.server.tools.page-size=0 in application.properties disables the default 50-tool pagination cap; the long-term fix (separate endpoints) is tracked in #105.`
+
+     Replace with: test name is now `qhorusToolsAvailableAtSeparateEndpoint`; Claudony asserts exactly 8 tools at `/mcp`; Qhorus tools verified at `/qhorus` with flexible count; `page-size=0` removed (Qhorus ships its own default); #105 is the resolution, not a forward reference.
    - Configuration: document `quarkus.mcp.server.qhorus.*` override capability
 4. Update ARC42STORIES.MD — the following sections reference the unified `/mcp` endpoint:
    - §6 Scenario 2 (line 256): `Agent → POST /mcp → ClaudonyMcpTools → QhorusMcpTools.sendMessage()` — after split, Qhorus tools are at `/qhorus`
@@ -119,15 +133,18 @@ Claudony sets `casehub.qhorus.reactive.enabled=true` → `ReactiveQhorusMcpTools
 
 ### Cross-Repo Propagation (deferred issues)
 
-Each Qhorus consumer that exposes MCP endpoints needs its MCP client configs updated to reference `/qhorus` for mesh tools. File issues in:
+Qhorus tools move from the default server to `/qhorus` automatically (via `microprofile-config.properties`). The consumer-side change depends on whether the consumer has Claude clients configured to reach Qhorus tools:
+
+- **Consumers with Claude MCP clients that previously connected to a unified endpoint** (both session and mesh tools at `/mcp`) → add a SECOND `mcpServers` entry for `qhorus` at `/qhorus`. The existing entry continues to serve the consumer's own tools on the default server.
+- **Consumers that only embed Qhorus for internal CDI services** (no external Claude MCP clients) → no change needed. Qhorus tools appear at `/qhorus` automatically; no client to update.
 
 | Repo | Issue scope |
 |------|------------|
 | `casehubio/qhorus` | Add `@McpServer("qhorus")` + default config + `tools.page-size=0` |
-| `casehubio/devtown` | Update MCP client config for `/qhorus` |
-| `casehubio/openclaw` | Update MCP client config for `/qhorus` |
-| `casehubio/casehub-drafthouse` | Update MCP client config for `/qhorus` |
-| `casehubio/casehub-life` | Update MCP client config for `/qhorus` |
+| `casehubio/devtown` | Has MCP tools + Claude clients → add second `mcpServers` entry for `/qhorus` |
+| `casehubio/openclaw` | Has MCP tools + Claude/OpenClaw clients → add second `mcpServers` entry for `/qhorus` |
+| `casehubio/casehub-drafthouse` | Has MCP tools (DraftHouseMcpTools, DebateMcpTools) → determine if external Claude clients connect; if so, add second entry |
+| `casehubio/casehub-life` | Uses Qhorus runtime → determine if external Claude clients connect; if so, add second entry |
 | `casehubio/parent` | PLATFORM.md: add named-server convention to Capability Ownership |
 
 ### Platform Protocol
@@ -151,6 +168,8 @@ Capture as a new protocol in `casehubio/garden`:
 ```
 
 ### Qhorus integration assertions (flexible — Qhorus controls these)
+
+The Qhorus test must perform its own `initialize` handshake at `/qhorus` — the `@BeforeEach` session from `/mcp` is not valid at `/qhorus` (sessions are server-scoped). The existing `toolsList_includesQhorusTools` already does its own `initialize`; this structure is preserved in the renamed test.
 
 ```java
 // At /qhorus — key tools present, no Claudony tools, no hardcoded count
