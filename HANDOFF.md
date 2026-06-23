@@ -1,30 +1,41 @@
-# Handoff — 2026-06-23
+# Handoff — 2026-06-24
 
-*Updated: parent#291 closed — removed from backlog.*
-
-**Head commit (project):** `c72fb24` — docs(#145): add ARC42STORIES.MD — integration-tier record
+**Head commit (project):** `1d43b14` — feat(#105): separate Claudony and Qhorus MCP endpoints
 
 ## What landed this session
 
-### claudony#145 — ARC42STORIES.MD complete
+### claudony#105 — Separate MCP endpoints (Phase A groundwork)
 
-Full Arc42Stories architecture record written from scratch: 3 Journeys, 9 Chapters across the full delivery arc (Core Session Engine → Auth → Fleet → Agent/MCP → Qhorus → CaseHub SPIs → Agent Mesh → Case Worker Panel → Production Orchestration), 9 Layer entries each with Key files, Gotchas (Symptom→Cause→Fix), and Pattern-to-replicate sections.
+Split unified `/mcp` endpoint into two named MCP servers: Claudony session tools (8) at `/mcp`, Qhorus agent mesh tools at `/qhorus`. Removed `page-size=0` workaround. Qhorus upstream change (`@McpServer("qhorus")` + default config via `microprofile-config.properties`) committed locally as `6407ee2`.
 
-Quality gate caught: stale class names in DESIGN.md (`McpServer` → `ClaudonyMcpTools`, `ClaudonyWorkerProvisioner` → `ClaudonyReactiveWorkerProvisioner`, `WebAuthnPatcher`/`LenientNoneAttestation` removed in Quarkus upgrade); issue #93 body described a pending fix already implemented in db61484. All corrected before commit. Tier label corrected to Integration. File placed in project repo per PP-20260603-33c84c.
+Three-round spec review (11 issues resolved): pagination per-server, session scoping, ToolErrorHandlingTest callout, isolation assertions, ARC42STORIES enumeration, CLAUDE.md rewrite, dual-port table.
 
-DESIGN.md redirect header added. CLAUDE.md updated to declare ARC42STORIES.MD as primary architecture record.
+Platform protocol `PP-20260623-105mcp` captured in garden. 6 cross-repo issues filed.
 
 CI: 587 tests green, pushed to casehubio/claudony main.
 
 ## State
 
-- main: `c72fb24`
-- All 587 tests pass locally and on CI
-- #145 closed, branch stamped
+- main: `1d43b14`
+- All 587 tests pass locally
+- #105 closed, branch stamped
+- Qhorus commit `6407ee2` on local main — needs push to casehubio/qhorus
+
+## Cross-repo issues filed
+
+| Repo | Issue | Status |
+|------|-------|--------|
+| casehubio/qhorus | #306 | Code committed locally, needs push |
+| casehubio/parent | #308 | PLATFORM.md named-server convention |
+| casehubio/devtown | #93 | Add second mcpServers entry |
+| casehubio/openclaw | #47 | Add second mcpServers entry |
+| casehubio/drafthouse | #77 | Verify MCP client config |
+| casehubio/life | #42 | Verify MCP client config |
 
 ## Next candidates
 
 | # | Description | Scale | Complexity | Notes |
 |---|-------------|-------|------------|-------|
-| #105 | Separate Claudony/Qhorus MCP endpoints (Phase A architecture) | M | Med | No blockers; next discrete work |
+| qhorus#306 | Push @McpServer commit to casehubio/qhorus | XS | Low | Already committed locally |
+| parent#308 | Update PLATFORM.md Capability Ownership | XS | Low | Add named-server convention |
 | #157 | Migrate Worker imports to casehub-worker-api | S | Low | Refactor only |
