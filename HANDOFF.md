@@ -19,13 +19,13 @@ CI: 587 tests green, pushed to casehubio/claudony main.
 - main: `1d43b14`
 - All 587 tests pass locally
 - #105 closed, branch stamped
-- Qhorus commit `6407ee2` on local main — needs push to casehubio/qhorus
+- Qhorus commit `6407ee2` pushed to both mdproctor/qhorus and casehubio/qhorus
 
 ## Cross-repo issues filed
 
 | Repo | Issue | Status |
 |------|-------|--------|
-| casehubio/qhorus | #306 | Code committed locally, needs push |
+| casehubio/qhorus | #306 | Code pushed; issue body needs updating with resolution context |
 | casehubio/parent | #308 | PLATFORM.md named-server convention |
 | casehubio/devtown | #93 | Add second mcpServers entry |
 | casehubio/openclaw | #47 | Add second mcpServers entry |
@@ -36,6 +36,6 @@ CI: 587 tests green, pushed to casehubio/claudony main.
 
 | # | Description | Scale | Complexity | Notes |
 |---|-------------|-------|------------|-------|
-| qhorus#306 | Push @McpServer commit to casehubio/qhorus | XS | Low | Already committed locally |
+| qhorus#306 | Update issue with resolution context and close | XS | Low | Code already pushed (`6407ee2`); issue body describes the change but needs closing comment |
+| #157 | Migrate Worker imports to casehub-worker-api | S | Low | Refactor only; next discrete Claudony work |
 | parent#308 | Update PLATFORM.md Capability Ownership | XS | Low | Add named-server convention |
-| #157 | Migrate Worker imports to casehub-worker-api | S | Low | Refactor only |
