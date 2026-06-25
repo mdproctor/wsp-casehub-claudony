@@ -1,41 +1,31 @@
-# Handoff — 2026-06-24
+# Handoff — 2026-06-25
 
-**Head commit (project):** `1d43b14` — feat(#105): separate Claudony and Qhorus MCP endpoints
+**Head commit (project):** `700204b` — refactor(#157): migrate Worker imports to casehub-worker-api
 
 ## What landed this session
 
-### claudony#105 — Separate MCP endpoints (Phase A groundwork)
+### claudony#157 — Worker import migration to casehub-worker-api
 
-Split unified `/mcp` endpoint into two named MCP servers: Claudony session tools (8) at `/mcp`, Qhorus agent mesh tools at `/qhorus`. Removed `page-size=0` workaround. Qhorus upstream change (`@McpServer("qhorus")` + default config via `microprofile-config.properties`) committed locally as `6407ee2`.
+Migrated all Worker-related imports from `io.casehub.api.model` to `io.casehub.worker.api` across 8 files. Worker and Capability are now records (accessor changes: `getName()`→`name()`, constructor→factory). Lambda ambiguity on `Worker.Builder.function()` resolved with `WorkerFunction.Sync` wrapper. `casehub-worker-api` declared as direct dependency.
 
-Three-round spec review (11 issues resolved): pagination per-server, session scoping, ToolErrorHandlingTest callout, isolation assertions, ARC42STORIES enumeration, CLAUDE.md rewrite, dual-port table.
+Also closed #162 (CI dispatch trigger) — already implemented, no code change needed.
 
-Platform protocol `PP-20260623-105mcp` captured in garden. 6 cross-repo issues filed.
-
-CI: 587 tests green, pushed to casehubio/claudony main.
+Upstream dependency rebuild required: casehub-worker-api, casehub-engine-api, casehub-engine-common, casehub-engine-ledger, casehub-engine-testing, casehub-engine-persistence-memory, casehub-engine-scheduler-quartz, casehub-platform-identity (JwtVCValidator no-args constructor fix — committed to platform source, not yet pushed upstream).
 
 ## State
 
-- main: `1d43b14`
-- All 587 tests pass locally
-- #105 closed, branch stamped
-- Qhorus commit `6407ee2` pushed to both mdproctor/qhorus and casehubio/qhorus
+- main: `700204b`
+- 557 tests pass locally (down from 587 — 30 tests migrated to engine-api in #159)
+- #157 closed, #162 closed, branch stamped
 
-## Cross-repo issues filed
+## Upstream fix pending
 
-| Repo | Issue | Status |
-|------|-------|--------|
-| casehubio/qhorus | #306 | Code pushed; issue body needs updating with resolution context |
-| casehubio/parent | #308 | PLATFORM.md named-server convention |
-| casehubio/devtown | #93 | Add second mcpServers entry |
-| casehubio/openclaw | #47 | Add second mcpServers entry |
-| casehubio/drafthouse | #77 | Verify MCP client config |
-| casehubio/life | #42 | Verify MCP client config |
+`casehub-platform/identity` — added no-args constructor to `JwtVCValidator` to fix CDI proxyability error. Change is in local source only, not pushed to casehubio/platform. Must be committed and pushed in a platform session.
 
 ## Next candidates
 
 | # | Description | Scale | Complexity | Notes |
 |---|-------------|-------|------------|-------|
-| qhorus#306 | Update issue with resolution context and close | XS | Low | Code already pushed (`6407ee2`); issue body describes the change but needs closing comment |
-| #157 | Migrate Worker imports to casehub-worker-api | S | Low | Refactor only; next discrete Claudony work |
-| parent#308 | Update PLATFORM.md Capability Ownership | XS | Low | Add named-server convention |
+| #158 | Debate channel integration | M | Med | Blocked on drafthouse#71 |
+| #161 | Adopt casehub-pages for UI via Quinoa | L | High | Frontend architecture shift |
+| #156 | Read agent provider config from casehub-ops | S | Med | Cross-repo dep |
