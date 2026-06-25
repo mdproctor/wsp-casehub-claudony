@@ -99,7 +99,7 @@ Construction paths:
 - `ClaudonyProviderConfig.fromMap(Map<String, Object>)` — converts opaque map (for future ops bridge). Expects `List<String>` values for list fields (YAML-native format). Ignores unknown keys.
 - `ClaudonyProviderConfig.fromConfigMapping(CaseHubConfig.AgentProviderConfig)` — converts Quarkus config interface
 
-When both `systemPrompt` and `appendSystemPrompt` are set, `systemPrompt` wins (replaces the default entirely — appending on top of a replacement is nonsensical).
+The record faithfully stores both `systemPrompt` and `appendSystemPrompt` if both are configured. Precedence is enforced by `WorkerCommandBuilder`: when both are present, only `--system-prompt` is emitted (appending on top of a replacement is nonsensical). The record is a data carrier; the builder is the policy enforcement point.
 
 ### ProviderConfigSource (SPI interface, claudony-casehub)
 
@@ -126,7 +126,7 @@ Yields to any `@Alternative @Priority(1)` bean — the future ops bridge slot.
 public static String build(String baseCommand, ClaudonyProviderConfig config)
 ```
 
-Takes the base command (e.g., `"claude"`) and appends CLI flags. The command flows through `sh -c` (TmuxService uses ProcessBuilder with `"sh", "-c", command`), so all flag values are single-quoted (internal single quotes escaped as `'\''`).
+Takes the base command (e.g., `"claude"`) and appends CLI flags. The `command` and `workingDir` fields are resolved by the caller before invoking `build()` — the builder only appends CLI flags and never reads these fields. The command flows through `sh -c` (TmuxService uses ProcessBuilder with `"sh", "-c", command`), so all flag values are single-quoted (internal single quotes escaped as `'\''`).
 
 Flag mapping:
 
@@ -332,7 +332,7 @@ Subsumed by `ProviderConfigSource.forAgent(agentId).command()` + `defaultCommand
 - fromMap handles List<String> values for list fields
 - fromMap ignores unknown keys
 - fromConfigMapping maps all fields correctly
-- systemPrompt and appendSystemPrompt both set — systemPrompt wins
+- systemPrompt and appendSystemPrompt both set — record holds both (data carrier)
 
 **WorkerCommandBuilderTest:**
 - Empty config → base command returned unchanged
@@ -341,7 +341,7 @@ Subsumed by `ProviderConfigSource.forAgent(agentId).command()` + `defaultCommand
 - System prompt with spaces/quotes → properly single-quoted
 - List fields: tools comma-joined and single-quoted
 - Tool pattern with shell metacharacters (`Bash(git *)`) → properly quoted
-- systemPrompt takes precedence over appendSystemPrompt
+- systemPrompt and appendSystemPrompt both set → only --system-prompt emitted (builder policy)
 - addDirs repeated per entry, each single-quoted
 
 **ConfigMappingProviderConfigSourceTest:**
