@@ -2,7 +2,7 @@
 
 **Issue:** claudony#156
 **Date:** 2026-06-25
-**Status:** Approved (revised after review)
+**Status:** Approved (revised after review, round 2)
 
 ## Problem
 
@@ -63,6 +63,10 @@ The engine sets `ProvisionContext.taskType()` = `capability.name()` — the spec
 - **Capability declaration:** `ProviderConfigSource.declaredAgentIds()` feeds `getCapabilities()`
 
 The `commands` map in `CaseHubConfig.Workers` is replaced by `defaultCommand` (global fallback) + per-agent `command` in `AgentProviderConfig`.
+
+### Capability declaration is explicit
+
+Every agent that the provisioner should advertise as a capability must have at least one `provider-config.<agentId>.*` entry in application.properties. This is a Quarkus @ConfigMapping constraint — a `Map<String, Interface>` key only exists when at least one property for that key is present. This is deliberate: it forces explicit declaration of what the provisioner can handle, rather than inferring capabilities from an opaque command map.
 
 ### systemPrompt/appendSystemPrompt scope
 
@@ -147,6 +151,7 @@ All values are single-quoted unconditionally. Tool patterns like `Bash(git *)` c
 
 ```java
 interface Workers {
+    @WithDefault("claude")
     String defaultCommand();                            // NEW: replaces commands map
     String defaultWorkingDir();                         // existing
     Map<String, AgentProviderConfig> providerConfig();  // NEW
@@ -167,13 +172,13 @@ interface AgentProviderConfig {
 }
 ```
 
-The `commands` map (`Map<String, String>`) is removed. `defaultCommand` replaces it as the global fallback.
+The `commands` map (`Map<String, String>`) is removed. `defaultCommand` with `@WithDefault("claude")` replaces it as the global fallback — always non-null, no startup failure when unset.
 
 ### Properties format
 
 ```properties
-# Global default command (replaces commands.default)
-claudony.casehub.workers.default-command=claude
+# Global default command — @WithDefault("claude"), only override if needed
+# claudony.casehub.workers.default-command=claude
 
 # Per-agent provider config
 claudony.casehub.workers.provider-config.code-reviewer.command=claude
@@ -217,10 +222,16 @@ ClaudonyReactiveWorkerProvisioner(boolean enabled, TmuxService tmux, SessionRegi
                                    Instance<CaseHubRuntime> caseHubRuntime,
                                    ClaudonyWorkerExecutionManager execManager,
                                    QhorusCausalLinkResolver causalLinkResolver) {
-    // ...
+    this.enabled = enabled;
+    this.tmux = tmux;
+    this.registry = registry;
     this.providerConfigSource = providerConfigSource;
+    this.sessionMapping = sessionMapping;
     this.defaultCommand = defaultCommand;
-    // ...
+    this.defaultWorkingDir = defaultWorkingDir;
+    this.caseHubRuntime = caseHubRuntime;
+    this.execManager = execManager;
+    this.causalLinkResolver = causalLinkResolver;
 }
 ```
 
@@ -238,18 +249,30 @@ private void setupSession(Set<String> capabilities, ProvisionContext context) {
             : capabilities.stream().findFirst().orElse("worker");
 
     // Unified config resolution by agentId (= roleName = taskType)
-    ClaudonyProviderConfig config = providerConfigSource.forAgent(roleName);
-    String baseCommand = config.command().orElse(defaultCommand);
-    String enrichedCommand = WorkerCommandBuilder.build(baseCommand, config);
-    String effectiveWorkingDir = config.workingDir().orElse(defaultWorkingDir);
+    ClaudonyProviderConfig providerConfig = providerConfigSource.forAgent(roleName);
+    String baseCommand = providerConfig.command().orElse(defaultCommand);
+    String enrichedCommand = WorkerCommandBuilder.build(baseCommand, providerConfig);
+    String effectiveWorkingDir = providerConfig.workingDir().orElse(defaultWorkingDir);
 
     String sessionName = SESSION_PREFIX + sessionId;
 
     try {
         tmux.createWorkerSession(sessionName, effectiveWorkingDir, enrichedCommand);
-        // ... rest unchanged
+        if (context.caseId() != null) {
+            tmux.setSessionOption(sessionName, "@casehub_case_id", context.caseId().toString());
+            tmux.setSessionOption(sessionName, "@casehub_role", roleName);
+        }
+    } catch (IOException | InterruptedException e) {
+        throw new ProvisioningException("Failed to create tmux session for worker " + sessionId, e);
     }
-    // ...
+
+    // Session records the effective values — what was actually launched
+    var session = new Session(sessionId, sessionName, effectiveWorkingDir, enrichedCommand,
+            SessionStatus.IDLE, Instant.now(), Instant.now(), Optional.empty(),
+            Optional.ofNullable(context.caseId()).map(UUID::toString),
+            Optional.of(roleName));
+    registry.register(session);
+    sessionMapping.register(roleName, context.caseId(), sessionId);
 }
 ```
 
@@ -269,6 +292,35 @@ public Uni<Set<String>> getCapabilities() {
 Subsumed by `ProviderConfigSource.forAgent(agentId).command()` + `defaultCommand` fallback. All callers migrate:
 - `ClaudonyReactiveWorkerProvisioner` — injects `ProviderConfigSource` instead
 - `WorkerCommandResolverTest` — deleted (tests move to `ConfigMappingProviderConfigSourceTest` and `WorkerCommandBuilderTest`)
+
+## Migration
+
+### Property mapping
+
+| Old | New |
+|-----|-----|
+| `workers.commands.default=claude` | `workers.default-command=claude` (or omit — `@WithDefault("claude")`) |
+| `workers.commands.agent=claude` | `workers.provider-config.agent.command=claude` |
+| `workers.commands.code-reviewer=claude --mcp ...` | `workers.provider-config.code-reviewer.command=claude --mcp ...` |
+
+### Affected files
+
+**Production config:**
+- `app/src/main/resources/application.properties:189` — `%dev.claudony.casehub.workers.commands.agent=claude` → `%dev.claudony.casehub.workers.provider-config.agent.command=claude`
+
+**Test profiles (config overrides):**
+- `CaseEngineRoundTripTest.CasehubEnabledProfile` (lines 55-56) — `workers.commands.agent` + `workers.commands.default` → `workers.provider-config.agent.command` + `workers.default-command`
+- `AgentCaseCompletionTest.CompletionTestProfile` (line 51) — `workers.commands.default` → `workers.default-command` (or omit — `@WithDefault`)
+
+**Test classes (direct construction):**
+- `WorkerCommandResolverTest` — deleted
+- `ClaudonyReactiveWorkerProvisionerTest:35` — replace `new WorkerCommandResolver(...)` with `ProviderConfigSource` mock/stub
+- `WorkerLifecycleSequenceTest:55` — replace `new WorkerCommandResolver(...)` with `ProviderConfigSource` mock/stub
+
+**Documentation:**
+- `ARC42STORIES.MD` — 5 locations (see ARC42STORIES.MD Update section)
+- `CLAUDE.md:253` — file listing: `WorkerCommandResolver.java` → remove, add new files
+- `CLAUDE.md:329-330` — config examples: `workers.commands.*` → `workers.default-command` + `workers.provider-config.*`
 
 ## Test Plan
 
@@ -304,8 +356,10 @@ Extend existing `ClaudonyReactiveWorkerProvisionerTest`:
 - Provision with provider config → tmux receives enriched command
 - Provision with per-agent command override → tmux receives overridden command
 - Provision with workingDir override → tmux receives overridden directory
-- Provision with no provider config → tmux receives defaultCommand
+- Provision with no per-agent config → tmux receives defaultCommand
 - getCapabilities() returns declaredAgentIds from config source
+- Session records effectiveWorkingDir and enrichedCommand (not defaults)
+- Session with no per-agent config records defaultCommand and defaultWorkingDir
 
 ### Removed tests
 
@@ -322,8 +376,14 @@ Extend existing `ClaudonyReactiveWorkerProvisionerTest`:
 
 ## ARC42STORIES.MD Update
 
-Scenario 3 (line 279) should be updated to reflect the new flow:
-```
-→ ProviderConfigSource.forAgent(context.taskType()) → ClaudonyProviderConfig
-→ WorkerCommandBuilder.build(config.command() ?? defaultCommand, config) → enriched command
-```
+All 5 `WorkerCommandResolver` references must be updated:
+
+- **Line 147** — L6 layer component list: remove `WorkerCommandResolver`, add `ProviderConfigSource`, `WorkerCommandBuilder`, `ClaudonyProviderConfig`
+- **Line 201** — C4 Container description: same component list update
+- **Line 279** — Scenario 3 provision flow:
+  ```
+  → ProviderConfigSource.forAgent(context.taskType()) → ClaudonyProviderConfig
+  → WorkerCommandBuilder.build(config.command() ?? defaultCommand, config) → enriched command
+  ```
+- **Line 658** — Journey chapter change-impact: update to reference ProviderConfigSource instead of WorkerCommandResolver
+- **Line 898** — File listing: remove `WorkerCommandResolver.java`, add `ProviderConfigSource.java`, `ConfigMappingProviderConfigSource.java`, `ClaudonyProviderConfig.java`, `WorkerCommandBuilder.java`
