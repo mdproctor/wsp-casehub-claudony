@@ -1,26 +1,30 @@
 # Handoff — 2026-06-25
 
-**Head commit (project):** `700204b` — refactor(#157): migrate Worker imports to casehub-worker-api
+**Head commit (project):** `8322aa9` — feat(#156): add ProviderConfigSource SPI, migrate provisioner, remove WorkerCommandResolver
 
 ## What landed this session
 
-### claudony#157 — Worker import migration to casehub-worker-api
+### claudony#156 — Per-agent provider config
 
-Migrated all Worker-related imports from `io.casehub.api.model` to `io.casehub.worker.api` across 8 files. Worker and Capability are now records (accessor changes: `getName()`→`name()`, constructor→factory). Lambda ambiguity on `Worker.Builder.function()` resolved with `WorkerFunction.Sync` wrapper. `casehub-worker-api` declared as direct dependency.
+Workers now get per-agent CLI configuration (model, system prompt, tools, effort, permissions, working dir) at provision time. `WorkerCommandResolver` removed — replaced by `ProviderConfigSource` SPI keyed by `context.taskType()`, fixing non-deterministic Set iteration when multiple capabilities were configured.
 
-Also closed #162 (CI dispatch trigger) — already implemented, no code change needed.
+New types: `ClaudonyProviderConfig` (record), `ProviderConfigSource` (SPI), `ConfigMappingProviderConfigSource` (@DefaultBean), `WorkerCommandBuilder`.
 
-Upstream dependency rebuild required: casehub-worker-api, casehub-engine-api, casehub-engine-common, casehub-engine-ledger, casehub-engine-testing, casehub-engine-persistence-memory, casehub-engine-scheduler-quartz, casehub-platform-identity (JwtVCValidator no-args constructor fix — committed to platform source, not yet pushed upstream).
+Config migration: `workers.commands.*` → `workers.provider-config.*.command` + `workers.default-command` (@WithDefault("claude")).
+
+Also fixed pre-existing `FleetMessageRelayObserverTest` breakage from Qhorus SNAPSHOT API change (Instant timestamp parameter added to MessageReceivedEvent).
+
+Garden entry: GE-20260625-a6bc3b — engine provision() passes ALL capabilities, not the specific one.
 
 ## State
 
-- main: `700204b`
-- 557 tests pass locally (down from 587 — 30 tests migrated to engine-api in #159)
-- #157 closed, #162 closed, branch stamped
+- main: `8322aa9` (2 squashed commits from 6)
+- 576 tests pass
+- #156 closed
 
 ## Upstream fix pending
 
-`casehub-platform/identity` — added no-args constructor to `JwtVCValidator` to fix CDI proxyability error. Change is in local source only, not pushed to casehubio/platform. Must be committed and pushed in a platform session.
+*Unchanged — `git show HEAD~1:HANDOFF.md`*
 
 ## Next candidates
 
@@ -28,4 +32,5 @@ Upstream dependency rebuild required: casehub-worker-api, casehub-engine-api, ca
 |---|-------------|-------|------------|-------|
 | #158 | Debate channel integration | M | Med | Blocked on drafthouse#71 |
 | #161 | Adopt casehub-pages for UI via Quinoa | L | High | Frontend architecture shift |
-| #156 | Read agent provider config from casehub-ops | S | Med | Cross-repo dep |
+| — | Mesh system prompt delivery to CLI | S | Med | Gap discovered: WorkerContext.properties("systemPrompt") built but not consumed by provisioner |
+| — | casehub-ops co-deployment (OpsProviderConfigSource) | M | Med | Phase 2 of #156 — bridge to DeploymentProviderConfigStore |
