@@ -345,6 +345,8 @@ All tests that construct `Session` add `TenancyConstants.DEFAULT_TENANT_ID` as t
 
 **Fleet session federation is tenant-unaware:** Fleet session listing currently works because all sessions are `DEFAULT_TENANT_ID`. The path is: `PeerClient.getSessions(true)` → remote peer's `SessionResource.list()` → remote peer's tenant-filtered `registry.all()`. When OIDC adds real tenants, sessions provisioned for non-default tenants will be invisible to fleet federation. The fix is a dedicated fleet-internal endpoint (e.g. `GET /api/internal/sessions`) using `allUnscoped()`, routed via `PeerClient`. Belongs in a follow-up when fleet crosses tenant boundaries.
 
+**SSE snapshot callbacks are tenant-filtered in system context:** `HybridStrategy.tickAllCases()` and `EventsOnlyStrategy.onLifecycleEvent()` call `snapshotFn.get()` → `SessionResource.buildCaseSnapshot()` → `registry.findByCaseId()` on Mutiny tick threads / CDI observer threads without request scope. After OIDC, heartbeat and lifecycle-driven snapshots for non-default tenants would return zero workers. Same root cause as the fleet issue. Fix: capture tenant at subscribe-time, thread it through the snapshot callback.
+
 **WorkerSessionMapping role→sessionId collision:** The fallback `byRole` map will collide if two tenants provision the same role name. Not introduced by this spec — pre-existing. Noted for the road ahead; the fix is tenant-scoping the mapping keys, which belongs in a follow-up.
 
 ---
