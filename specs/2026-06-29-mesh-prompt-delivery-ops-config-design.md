@@ -122,11 +122,12 @@ public interface ProvisionerConfigRegistry {
 }
 ```
 
-#### 2b. NoOp @DefaultBean in casehub-engine-api
+#### 2b. NoOp @DefaultBean in casehub-engine-runtime
 
 ```java
-package io.casehub.api.spi;
+package io.casehub.engine.internal.worker;
 
+import io.casehub.api.spi.ProvisionerConfigRegistry;
 import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
@@ -148,7 +149,9 @@ public class NoOpProvisionerConfigRegistry implements ProvisionerConfigRegistry 
 
 #### 2c. Placement rationale
 
-engine-api already owns all provisioning-lifecycle SPIs (`ReactiveWorkerProvisioner`, `WorkerContextProvider`, `CaseChannelProvider`, `WorkerStatusListener`). ops, Claudony, and OpenClaw all depend on engine-api already — zero new dependency paths.
+Interface in engine-api: engine-api owns all provisioning-lifecycle SPIs (`ReactiveWorkerProvisioner`, `WorkerContextProvider`, `CaseChannelProvider`, `WorkerStatusListener`). ops, Claudony, and OpenClaw all depend on engine-api already — zero new dependency paths.
+
+NoOp in engine-runtime: `@DefaultBean` is `io.quarkus.arc.DefaultBean` — a Quarkus Arc annotation not available in engine-api (Tier 1 pure-Java SPI module). All existing NoOp `@DefaultBean` implementations follow this split: interface in engine-api, NoOp in engine-runtime (`NoOpReactiveWorkerProvisioner`, `NoOpCaseChannelProvider`, `NoOpWorkerStatusListener`, etc.).
 
 ### Part 3 — CompositeProviderConfigSource (#164, Claudony)
 
@@ -223,7 +226,7 @@ public class CompositeProviderConfigSource implements ProviderConfigSource {
 
 | Step | Repo | What |
 |------|------|------|
-| 1 | casehub-engine | `ProvisionerConfigRegistry` SPI + `NoOpProvisionerConfigRegistry @DefaultBean` in engine-api |
+| 1 | casehub-engine | `ProvisionerConfigRegistry` SPI in engine-api + `NoOpProvisionerConfigRegistry @DefaultBean` in engine-runtime |
 | 2 | claudony | #163 — `WorkerCommandBuilder` + provisioner changes (TDD) |
 | 3 | claudony | #164 — `CompositeProviderConfigSource` replaces `ConfigMappingProviderConfigSource` (TDD) |
 | 4 | claudony | Full test suite verification |
@@ -232,7 +235,7 @@ public class CompositeProviderConfigSource implements ProviderConfigSource {
 
 | Repo | Description |
 |------|-------------|
-| casehubio/engine | Add `ProvisionerConfigRegistry` SPI to engine-api |
+| casehubio/engine | Add `ProvisionerConfigRegistry` SPI to engine-api + `NoOpProvisionerConfigRegistry @DefaultBean` to engine-runtime |
 | casehubio/casehub-ops | `DeploymentProvisionerConfigRegistry @Alternative @Priority(1)` wrapping `DeploymentProviderConfigStore` |
 | casehubio/openclaw | Migrate `AgentProviderConfigSource` to delegate to `ProvisionerConfigRegistry` with `providerName="openclaw"`. Note: impedance mismatch — OpenClaw's `AgentConfig` is a typed record (`sessionKey()`, `capabilities()`), while `ProvisionerConfigRegistry` returns opaque `Map<String, Object>`. The migration must decide between adapting AgentConfig to/from the opaque map or keeping the typed SPI alongside the registry lookup. |
 | casehubio/parent | Update PLATFORM.md capability ownership + cross-repo dependency map |
