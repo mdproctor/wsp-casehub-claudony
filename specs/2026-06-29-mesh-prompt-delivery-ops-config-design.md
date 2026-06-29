@@ -1,6 +1,6 @@
 # Mesh System Prompt Delivery + OpsProviderConfigSource
 
-**Issues:** claudony#163, claudony#164  
+**Issues:** claudony#163 (fully addressed), claudony#164 (infrastructure only — ops integration is a follow-up)  
 **Branch:** issue-163-mesh-prompt-ops-config  
 **Date:** 2026-06-29
 
@@ -63,11 +63,11 @@ private static Optional<String> mergeAppendPrompts(Optional<String> staticAppend
     if (staticAppend.isEmpty() && dynamicAppend.isEmpty()) return Optional.empty();
     if (staticAppend.isEmpty()) return dynamicAppend;
     if (dynamicAppend.isEmpty()) return staticAppend;
-    return Optional.of(dynamicAppend.get() + "\n\n" + staticAppend.get());
+    return Optional.of(staticAppend.get() + "\n\n" + dynamicAppend.get());
 }
 ```
 
-Dynamic (mesh) prompt first in the merged output — it provides foundational context. Operator's static append refines on top.
+Static (operator) append first — standing behavioral instructions anchor the agent's persona. Dynamic (mesh) prompt second — per-case operational context builds on top. This matches Claude's prompt processing: earlier content has stronger influence on baseline behavior.
 
 The old 2-arg `build(String, ClaudonyProviderConfig)` method is removed, not preserved as a backward-compatible overload. All call sites updated.
 
@@ -87,7 +87,24 @@ Optional<String> meshPrompt = Optional.ofNullable(context.workerContext())
 String enrichedCommand = WorkerCommandBuilder.build(baseCommand, config, meshPrompt);
 ```
 
-No changes to `ClaudonyProviderConfig`, `ProviderConfigSource`, or `MeshSystemPromptTemplate`.
+**Edge cases:** `ClaudonyReactiveWorkerContextProvider.buildContext()` has two early-return paths — `clean-start=true` and `caseId == null` — that produce a `WorkerContext` with no `systemPrompt` property. The Optional chain above handles both correctly (returns `Optional.empty()`), so no `--append-system-prompt` flag is emitted. These paths are tested explicitly.
+
+No changes to `ClaudonyProviderConfig` or `ProviderConfigSource`.
+
+#### 1c. MeshSystemPromptTemplate null-workerId guard
+
+`CaseContextChangedEventHandler.tryProvision()` passes `workerId=null` to `buildContext()` — the workerId isn't generated until provisioning (`setupSession()` creates `sessionId = UUID.randomUUID()`). Java string concatenation converts null to the literal string `"null"`, producing `register("null", ...)` in the mesh prompt. This has been harmless because the prompt was never delivered, but this spec changes that.
+
+Fix: `MeshSystemPromptTemplate.buildActive()` handles null workerId by emitting a self-identification placeholder:
+
+```java
+private static String registrationInstruction(String workerId, String capability) {
+    String id = workerId != null ? "\"" + workerId + "\"" : "<your-session-id>";
+    return "  1. register(" + id + ", \"Starting " + capability + "\", [\"" + capability + "\"])\n";
+}
+```
+
+When workerId is null, the agent is instructed to use its own session identifier for registration. The mesh server accepts any unique string.
 
 ### Part 2 — ProvisionerConfigRegistry SPI (#164, engine-api)
 
@@ -157,6 +174,10 @@ public class CompositeProviderConfigSource implements ProviderConfigSource {
     public ClaudonyProviderConfig forAgent(String agentId) {
         Map<String, Object> registryConfig = registry.configFor(PROVIDER_NAME, agentId);
         if (!registryConfig.isEmpty()) {
+            if (workers.providerConfig().containsKey(agentId)) {
+                LOG.warnf("Agent '%s': registry config displaces application.properties config entirely"
+                        + " (no per-field merge — registry is authoritative when present)", agentId);
+            }
             return ClaudonyProviderConfig.fromMap(registryConfig);
         }
         var agentConfig = workers.providerConfig().get(agentId);
@@ -175,8 +196,10 @@ public class CompositeProviderConfigSource implements ProviderConfigSource {
 
 #### 3b. Resolution semantics
 
-- `forAgent()`: Registry wins. If registry has config for this agent, return it. Otherwise fall back to `application.properties`. No per-field merge — registry is authoritative when present.
+- `forAgent()`: Registry wins. If registry has config for this agent, return it (full replacement — no per-field merge). Otherwise fall back to `application.properties`. **Cliff behavior:** if ops YAML declares an agent with only `model: opus`, the agent loses ALL `application.properties` defaults (`appendSystemPrompt`, `tools`, `effort`, etc.). The ops author must declare the complete config. A warning is logged when registry config displaces existing config-mapping config for the same agentId.
 - `declaredAgentIds()`: Union of both sources. Registry agents + config-declared agents both contribute to capability discovery.
+
+**Known limitation:** When ops is active, registry-declared agents appear in `getCapabilities()` even if their config references resources claudony cannot provide (e.g., an unavailable model). These agents will fail at provision time. The ops operator is responsible for declaring valid config; the config source does not validate provisioning feasibility — that is the provisioner's concern.
 
 #### 3c. What gets deleted
 
@@ -187,12 +210,13 @@ public class CompositeProviderConfigSource implements ProviderConfigSource {
 
 ### #163 tests
 
-- `WorkerCommandBuilderTest`: system-prompt only, append-system-prompt only, both together, dynamic mesh prompt only, dynamic + static append merged, dynamic + system-prompt + static append all three, empty dynamic prompt (backward compat)
-- `ClaudonyReactiveWorkerProvisionerTest`: new test verifying mesh prompt from WorkerContext is passed through to the enriched command; null WorkerContext handled gracefully; SILENT participation (empty mesh prompt) produces no append flag
+- `WorkerCommandBuilderTest`: system-prompt only, append-system-prompt only, both together (existing `systemPromptWinsOverAppend_builderPolicy` updated to assert both flags coexist), dynamic mesh prompt only, dynamic + static append merged (static first), dynamic + system-prompt + static append all three, empty dynamic prompt (backward compat), multi-line mesh prompt with embedded quotes and special characters survives shell quoting
+- `MeshSystemPromptTemplateTest`: null workerId produces placeholder instruction (not literal `"null"`)
+- `ClaudonyReactiveWorkerProvisionerTest`: new test verifying mesh prompt from WorkerContext is passed through to the enriched command; null WorkerContext handled gracefully; SILENT participation (empty mesh prompt) produces no append flag; `clean-start=true` context produces no append flag; `caseId == null` context produces no append flag
 
 ### #164 tests
 
-- `CompositeProviderConfigSourceTest`: registry-has-config returns it; registry-empty falls back to config mapping; declaredAgentIds union; unknown agent returns EMPTY; registry-only agent not in config mapping still discovered
+- `CompositeProviderConfigSourceTest`: registry-has-config returns it; registry-empty falls back to config mapping; declaredAgentIds union; unknown agent returns EMPTY; registry-only agent not in config mapping still discovered; warning logged when registry displaces config-mapping config for same agentId
 - Existing `ClaudonyReactiveWorkerProvisionerTest` passes unchanged (NoOp registry = same behavior)
 
 ## Execution Order
@@ -210,7 +234,7 @@ public class CompositeProviderConfigSource implements ProviderConfigSource {
 |------|-------------|
 | casehubio/engine | Add `ProvisionerConfigRegistry` SPI to engine-api |
 | casehubio/casehub-ops | `DeploymentProvisionerConfigRegistry @Alternative @Priority(1)` wrapping `DeploymentProviderConfigStore` |
-| casehubio/openclaw | Migrate `AgentProviderConfigSource` to delegate to `ProvisionerConfigRegistry` with `providerName="openclaw"` |
+| casehubio/openclaw | Migrate `AgentProviderConfigSource` to delegate to `ProvisionerConfigRegistry` with `providerName="openclaw"`. Note: impedance mismatch — OpenClaw's `AgentConfig` is a typed record (`sessionKey()`, `capabilities()`), while `ProvisionerConfigRegistry` returns opaque `Map<String, Object>`. The migration must decide between adapting AgentConfig to/from the opaque map or keeping the typed SPI alongside the registry lookup. |
 | casehubio/parent | Update PLATFORM.md capability ownership + cross-repo dependency map |
 
 ## Out of Scope
