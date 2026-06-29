@@ -1,5 +1,5 @@
-# Branch Closed: issue-156-ops-provider-config
+# Branch Closed: issue-163-mesh-prompt-ops-config
 
-**Date:** 2026-06-25
-**Issues:** 156
+**Date:** 2026-06-29
+**Issues:** 163,164
 **Status:** merged to main
