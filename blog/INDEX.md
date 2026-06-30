@@ -2,6 +2,7 @@
 
 | Entry | Date | Summary |
 |---|---|---|
+| [2026-06-30-mdp01-four-qualifiers-coherence-audit.md](2026-06-30-mdp01-four-qualifiers-coherence-audit.md) | 2026-06-30 | CDI §2.3.1 cross-repo qualifier blind spot; ProvisionerConfigRegistry coherence audit across engine/claudony/openclaw/ops — all aligned, two issues already done |
 | [2026-06-17-mdp01-what-186-meant.md](2026-06-17-mdp01-what-186-meant.md) | 2026-06-17 | CI SNAPSHOT drift: NoSuchMethodError reads backwards (compiled void descriptor vs runtime CompletionStage); 186 provision loops; SignalReceivedEventHandler must stay in CasehubEnabledProfile; @RunOnVertxContext for @WithSession CDI tests |
 | [2026-06-16-mdp01-the-session-that-wasnt-about-sessions.md](2026-06-16-mdp01-the-session-that-wasnt-about-sessions.md) | 2026-06-16 | causedByEntryId provision path: Uni.combine() threading constraint, @WithSession safe sub-context requirement, JPQL subjectId/channelId gotcha |
 | [2026-06-12-mdp01-when-the-ledger-enforces-its-own-rules.md](2026-06-12-mdp01-when-the-ledger-enforces-its-own-rules.md) | 2026-06-12 | SNAPSHOT ecosystem drift: tokenise() API change, em.persist() blocked by ledger pre-persist validation, rebuild order |
