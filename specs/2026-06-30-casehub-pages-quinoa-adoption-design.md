@@ -177,7 +177,7 @@ Stock casehub-pages component at `@casehubio/pages-component-terminal`. Any host
 
 ```typescript
 interface TerminalProps {
-  wsUrl: string;
+  wsUrl?: string;          // optional — terminal starts idle until session-selected event
   fontSize?: number;       // default 14
   fontFamily?: string;     // default "Menlo, Monaco, monospace"
   scrollback?: number;     // default 5000
@@ -185,14 +185,35 @@ interface TerminalProps {
 }
 ```
 
+`wsUrl` is optional because in a non-lazy `stack()`, the terminal mounts on `loadSite()` before any session is selected. The terminal shows an idle/awaiting state until it receives a `session-selected` `pages-event` with the actual WebSocket URL.
+
+**Deferred initialization:** The terminal defers xterm.js instantiation and WebSocket connection until the first `session-selected` event. When the workbench slot is hidden (`display: none`), the terminal container has zero dimensions — xterm.js `fit()` would calculate 0 rows × 0 columns. Initialization is deferred until the slot becomes visible and the container has real dimensions.
+
 ### Internal responsibilities
 
-- xterm.js instantiation with fit addon
+- xterm.js instantiation with fit addon (deferred until first `session-selected`)
 - WebSocket connection (connect, reconnect with exponential backoff)
 - History replay on connect
-- Input via WebSocket upstream
-- Resize observation → `fit()` → sends dimensions to server
+- Terminal input via WebSocket upstream (raw UTF-8)
+- Resize via in-band WebSocket control message
+- Resize observation → `fit()` → sends resize control message to server
 - Picks up pages CSS custom properties for theming
+
+### WebSocket protocol
+
+The terminal WebSocket carries both terminal I/O and control messages over a single connection, using a binary prefix to distinguish them:
+
+| Direction | Prefix | Content |
+|-----------|--------|---------|
+| Client → Server | `0x00` + UTF-8 JSON | Control message (e.g., `{"type":"resize","cols":120,"rows":40}`) |
+| Client → Server | Raw UTF-8 (no prefix) | Terminal input |
+| Server → Client | Raw bytes | Terminal output |
+
+**Resize flow:** `ResizeObserver` fires → `fit()` recalculates dimensions → terminal sends `0x00{"type":"resize","cols":N,"rows":N}` over the WebSocket → server calls `tmux resize-window`.
+
+This replaces the current out-of-band REST `POST /api/sessions/{id}/resize?cols=...&rows=...`. The REST resize endpoint is removed — the terminal component owns the resize protocol over its own WebSocket, making it self-contained and reusable without Claudony-specific REST endpoints.
+
+**Server-side change:** `TerminalWebSocket.onMessage()` checks the first byte — `0x00` means parse as JSON control message, otherwise forward as raw `tmux send-keys` input. The initial cols/rows remain in the WebSocket path (`/ws/{id}/{cols}/{rows}`) for the connect-time resize.
 
 ### NOT owned by the terminal component
 
@@ -279,13 +300,13 @@ src/main/webui/
 
 - **New endpoint:** `/ws/sessions-feed` — WebSocket speaking pages wire protocol, pushes session state changes
 - **Existing endpoints:** unchanged (REST API, terminal WebSocket, SSE streams)
-- **`application.properties`:** add `quarkus.quinoa.build-dir=dist`, `quarkus.quinoa.package-manager-install=true`
+- **`application.properties`:** add `quarkus.quinoa.build-dir=dist`, `quarkus.quinoa.package-manager-install=true`, `quarkus.quinoa.ui-root-path=/app` — serving under `/app/` keeps the existing auth protection rule (`quarkus.http.auth.permission.protected.paths=/api/*,/ws/*,/app/*`) effective. Without this, Quinoa serves at `/` which is not covered by the auth permission config, creating an unauthenticated access path to the UI.
 - **`pom.xml`:** add `quarkus-quinoa` dependency
 
 ### Test impact
 
 - **`StaticFilesTest`** — rewrite to verify Quinoa-served paths. Quinoa serves the esbuild `dist/` output. New assertions: `/index.html` (entry point), `/app.js` (bundled JS), `/app.css` (bundled CSS), `/manifest.json`, `/sw.js`, `/icons/icon-192.svg`, `/icons/icon-512.svg`. Content assertions update: `index.html` contains `<div id="app">` and loads `app.js`; previous `dashboard.js`/`terminal.js` references no longer apply.
-- **`AppAuthProtectionTest`** — same assertions, paths unchanged (`/auth/*` routes are outside Quinoa)
+- **`AppAuthProtectionTest`** — same test structure. With `quarkus.quinoa.ui-root-path=/app`, the Quinoa-served files are at `/app/index.html` (same path prefix as today), so the existing assertion against `/app/index.html` continues to verify auth protection. The `/app/session.html` assertion is removed (session view is now a stack slot, not a separate page).
 - **Playwright E2E tests** — Playwright's `page.locator()` auto-pierces open Shadow DOM (built-in since Playwright 1.27). Tests update selectors for new custom element tag names (e.g., `page.locator("claudony-session-grid")`) but do not require shadow-piercing workarounds. ID-based selectors inside shadow roots work via Playwright's default CSS engine.
 - All test categories (dashboard, terminal, channel, case worker, mesh) map 1:1 to new components
 
