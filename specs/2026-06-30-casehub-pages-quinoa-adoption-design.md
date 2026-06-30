@@ -3,7 +3,7 @@
 **Issue:** casehubio/claudony#161
 **Date:** 2026-06-30
 **Status:** Approved
-**Depends on:** None — all required primitives (`stack`, `split`, `hostPanel`, `registerPanel`, `activateSlot`, `pages-event`) already exist in casehub-pages. casehub-pages#64 tracks additional workbench features (dockable panels, topbar/status bar) that this spec does not use.
+**Depends on:** None — all required primitives (`stack`, `split`, `hostPanel`, `registerPanel`, `activateSlot`) already exist in casehub-pages. `pages-event` is designed and partially implemented (dispatched by `websocket-source.ts`, documented in workbench-primitives spec, tested) but has no central runtime handler — this spec uses it as a plain DOM event bus, which requires no runtime support. casehub-pages#64 tracks additional workbench features (dockable panels, topbar/status bar) that this spec does not use.
 **Cross-repo deliverable:** casehubio/casehub-pages — `@casehubio/pages-component-terminal` (new stock component)
 
 ## Summary
@@ -18,7 +18,9 @@ Use the pages data pipeline where it adds value today (session list via WebSocke
 
 ### Application Structure
 
-Root is a `stack()` with two views: a **selector** (session grid + fleet + mesh) and a **workbench** (terminal + channels + case workers). Session selection in the grid fires a `pages-event` that triggers `activateSlot` to switch the stack to the workbench view, passing the session context to all workbench panels.
+Root is a `stack()` (non-lazy, the default) with two views: a **selector** (session grid + fleet + mesh) and a **workbench** (terminal + channels + case workers). Non-lazy mode keeps inactive slots mounted with `display: none` — the terminal WebSocket stays connected when navigating back to the selector, avoiding reconnect and history replay cost on switch-back. Components handle cleanup via `session-deselected` event handlers, not `disconnectedCallback()`.
+
+Session selection in the grid fires a `pages-event` that triggers `activateSlot` to switch the stack to the workbench view, passing the session context to all workbench panels.
 
 ```typescript
 import { stack, split, rows, hostPanel, dataset } from "@casehubio/pages-ui";
@@ -82,7 +84,18 @@ Pages detects WebSocket sources by URL scheme (`ws://` or `wss://`), not by a co
 
 New server-side WebSocket endpoint (`/ws/sessions-feed`) speaks the pages wire protocol: `snapshot` on connect, then `replace`/`append`/`remove` events as sessions change. Existing REST endpoint `/api/sessions` unchanged for non-pages consumers.
 
-**Implementation:** New class `SessionFeedWebSocket` in `claudony-app`, annotated `@WebSocket(path = "/ws/sessions-feed")`. On connect: sends a `snapshot` message with all sessions from `SessionRegistry.all()`. Subscribes to `SessionRegistry.addChangeListener()` to push `replace` (status change, touch) and `remove` (session deleted) events. Authentication follows the same implicit tenant-scoping as `TerminalWebSocket` — `SessionRegistry.find()` and `.all()` filter by `TenantContext.currentTenantId()`.
+**Implementation:** New class `SessionFeedWebSocket` in `claudony-app`, annotated `@WebSocket(path = "/ws/sessions-feed")`. On connect: sends a `snapshot` message with all sessions from `SessionRegistry.all()`. Authentication follows the same implicit tenant-scoping as `TerminalWebSocket` — `SessionRegistry.all()` filters by `TenantContext.currentTenantId()`.
+
+**SessionRegistry change notification rework:** The existing `addChangeListener(Consumer<String>)` is inadequate for session feeds — it passes `caseId` (not `sessionId`), skips sessions without a `caseId`, doesn't fire on `register()` or `touch()`, and fires `remove()` notifications before the session is actually removed. Replace with a typed session event API:
+
+```java
+public record SessionEvent(String sessionId, Type type) {
+    enum Type { ADDED, UPDATED, REMOVED }
+}
+void addSessionListener(Consumer<SessionEvent> listener);
+```
+
+Fire from `register()` (ADDED), `updateStatus()` (UPDATED), `touch()` (UPDATED, throttled — lastActive changes on every interaction), and `remove()` (REMOVED, fired after `sessions.remove()`). The existing `caseId`-based listener stays for its current consumers (case-level notifications); the new API is session-level.
 
 **Snapshot-subscribe atomicity:** The listener is registered before the snapshot is sent. Any change events arriving between registration and snapshot delivery are queued and flushed after the snapshot. This avoids the history-replay race documented in ARC42STORIES §6.
 
@@ -107,7 +120,54 @@ No new endpoint — pages polls the existing REST API.
 
 ### Back navigation
 
-A "back to sessions" button dispatches `pages-event` with `{ topic: "session-deselected" }`. App-level listener calls `activateSlot(stackEl, "selector")`. Terminal WebSocket disconnects, SSE connections close — components handle cleanup in their `session-deselected` event handler (not via unmount, since `stack()` may keep inactive slots mounted for fast switching).
+A "back to sessions" button dispatches `pages-event` with `{ topic: "session-deselected" }`. App-level listener calls `activateSlot(stackEl, "selector")`. Terminal WebSocket disconnects, SSE connections close — components handle cleanup in their `session-deselected` event handler (not via unmount, since non-lazy `stack()` keeps inactive slots mounted).
+
+### URL state management
+
+The app preserves view state in the URL so that page refresh, deep links, and browser back/forward work:
+
+| State | URL parameter | Example |
+|-------|---------------|---------|
+| Workbench view active | `?view=workbench` | `/?view=workbench&session=abc123` |
+| Selected session | `&session=<id>` | Deep link to a session |
+| Selected worker | `&worker=<id>` | Refresh returns to the same worker |
+
+**Write:** The app-level `pages-event` listeners call `history.replaceState()` on `session-selected`, `worker-selected`, and `session-deselected` events — same pattern as the current `history.replaceState()` in `switchToWorker()`.
+
+**Read:** On initial load, `index.ts` reads URL search params. If `?view=workbench&session=<id>` is present, it dispatches a synthetic `session-selected` event to restore state — triggering `activateSlot` and component initialization as if the user had clicked the session.
+
+**Browser back:** `popstate` event listener dispatches the appropriate `pages-event` to sync view state with the URL.
+
+### `pages-event` contract
+
+Components communicate via the standard DOM `pages-event` custom event. No pages-runtime handler is required — the event is a plain DOM event bus.
+
+```typescript
+interface PagesEventDetail {
+  topic: string;
+  payload?: Record<string, unknown>;
+}
+
+// Dispatch (from any component)
+this.dispatchEvent(new CustomEvent("pages-event", {
+  bubbles: true,
+  composed: true,
+  detail: { topic: "session-selected", payload: { sessionId, wsUrl } },
+}));
+
+// Listen (on document — events bubble from any shadow root)
+document.addEventListener("pages-event", (e: CustomEvent<PagesEventDetail>) => {
+  if (e.detail.topic === "session-selected") { /* ... */ }
+});
+```
+
+Topics used by this app: `session-selected`, `session-deselected`, `worker-selected`.
+
+`activateSlot` is imported from `@casehubio/pages-component` (not `pages-runtime`):
+
+```typescript
+import { activateSlot } from "@casehubio/pages-component";
+```
 
 ## Terminal Component (`pages-terminal`)
 
@@ -182,7 +242,7 @@ Every interactive feature in `dashboard.js` and `terminal.js` maps to a specific
 | Peer add/remove/ping/mode toggle | `dashboard.js` peer management section | `claudony-fleet` (full CRUD — not read-only) |
 | MeshPanel overview + interjection | `dashboard.js` `MeshPanel._send()` | `claudony-mesh` (human interjection dock inside component) |
 | Terminal I/O | `terminal.js` xterm.js + WebSocket | `pages-terminal` stock component |
-| Stale cursor prompt | `terminal.js` `showStalePrompt()` | `pages-terminal` (catch-up vs reload prompt on reconnect) |
+| Stale cursor prompt | `terminal.js` `showStalePrompt()` | `claudony-channels` (operates on channel cursors and timeline endpoints, not terminal state) |
 | Compose overlay (Ctrl+G) | `terminal.js` compose UI | Claudony root-level UI (outside pages layout tree) |
 | Mobile key bar | `terminal.js` key bar | Claudony root-level UI (outside pages layout tree) |
 | Channel feed + send | `terminal.js` channel panel | `claudony-channels` component |
