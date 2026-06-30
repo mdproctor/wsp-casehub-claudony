@@ -128,9 +128,9 @@ The app preserves view state in the URL so that page refresh, deep links, and br
 
 | State | URL parameter | Example |
 |-------|---------------|---------|
-| Workbench view active | `?view=workbench` | `/?view=workbench&session=abc123` |
-| Selected session | `&session=<id>` | Deep link to a session |
-| Selected worker | `&worker=<id>` | Refresh returns to the same worker |
+| Workbench view active | `?view=workbench` | `/app/?view=workbench&session=abc123` |
+| Selected session | `&session=<id>` | `/app/?view=workbench&session=abc123` (deep link) |
+| Selected worker | `&worker=<id>` | `/app/?view=workbench&session=abc123&worker=w1` |
 
 **Write:** The app-level `pages-event` listeners call `history.replaceState()` on `session-selected`, `worker-selected`, and `session-deselected` events — same pattern as the current `history.replaceState()` in `switchToWorker()`.
 
@@ -305,7 +305,7 @@ src/main/webui/
 
 ### Test impact
 
-- **`StaticFilesTest`** — rewrite to verify Quinoa-served paths. Quinoa serves the esbuild `dist/` output. New assertions: `/index.html` (entry point), `/app.js` (bundled JS), `/app.css` (bundled CSS), `/manifest.json`, `/sw.js`, `/icons/icon-192.svg`, `/icons/icon-512.svg`. Content assertions update: `index.html` contains `<div id="app">` and loads `app.js`; previous `dashboard.js`/`terminal.js` references no longer apply.
+- **`StaticFilesTest`** — rewrite to verify Quinoa-served paths under `/app/` (per `quarkus.quinoa.ui-root-path=/app`). New assertions: `/app/index.html` (entry point), `/app/app.js` (bundled JS), `/app/app.css` (bundled CSS), `/app/manifest.json`, `/app/sw.js`, `/app/icons/icon-192.svg`, `/app/icons/icon-512.svg`. Content assertions update: `index.html` contains `<div id="app">` and loads `app.js` (relative path, resolved against `/app/`); previous `dashboard.js`/`terminal.js` references no longer apply.
 - **`AppAuthProtectionTest`** — same test structure. With `quarkus.quinoa.ui-root-path=/app`, the Quinoa-served files are at `/app/index.html` (same path prefix as today), so the existing assertion against `/app/index.html` continues to verify auth protection. The `/app/session.html` assertion is removed (session view is now a stack slot, not a separate page).
 - **Playwright E2E tests** — Playwright's `page.locator()` auto-pierces open Shadow DOM (built-in since Playwright 1.27). Tests update selectors for new custom element tag names (e.g., `page.locator("claudony-session-grid")`) but do not require shadow-piercing workarounds. ID-based selectors inside shadow roots work via Playwright's default CSS engine.
 - All test categories (dashboard, terminal, channel, case worker, mesh) map 1:1 to new components
@@ -339,11 +339,27 @@ This spec describes the full architectural vision. Issue #161 covers phase 1 onl
 |-------|-------|-------|
 | 1 | Quinoa setup + esbuild + `claudony-session-grid` rendering via `loadSite()` | #161 |
 | 2 | `pages-terminal` stock component in casehub-pages | File on casehub-pages |
-| 3 | Remaining Claudony components (`fleet`, `mesh`, `channels`, `case-workers`) | File on claudony |
+| 3 | Remaining Claudony components (`fleet`, `mesh`, `channels`, `case-workers`) + workbench slot | File on claudony |
 | 4 | `/ws/sessions-feed` server-side endpoint + WebSocket dataset wiring | File on claudony |
 | 5 | Delete old `dashboard.js`, `terminal.js`, `session.html` | File on claudony |
 
 Issue #161's scale should be updated from S to M and complexity from Low to Med to reflect phase 1 scope (Quinoa setup + first component migration).
+
+### Phase 1 coexistence strategy
+
+With `quarkus.quinoa.ui-root-path=/app`, Quinoa output and old static files both serve under `/app/`. Quinoa produces `index.html`, `app.js`, `app.css`; old files (`session.html`, `dashboard.js`, `terminal.js`, `style.css`) remain in `META-INF/resources/app/`. No filename collisions except `index.html` (intentional replacement).
+
+During phase 1:
+- `/app/index.html` → **Quinoa** (new session grid via `loadSite()`)
+- `/app/session.html` → **old file** (existing terminal page, untouched)
+- `/app/dashboard.js` → **old file** (unreachable — nothing loads it)
+- `/app/terminal.js` → **old file** (loaded by old `session.html`)
+
+**Session click in phase 1:** The session grid component navigates to the old terminal page via `window.location.href = '/app/session.html?id=' + sessionId`. This is one line of throwaway code replaced in phase 3 when the workbench slot and `activateSlot` are introduced. The old terminal page works unchanged — it loads `terminal.js`, connects the WebSocket, and renders xterm.js as it does today.
+
+**No workbench slot in phase 1.** The `stack()` layout exists only as the selector view — no workbench slot yet. The full two-view stack architecture activates in phase 3 when the workbench components are ready. This avoids implementing a partial workbench with missing components.
+
+**Phase 5 cleanup:** Old files are deleted only after all components are migrated and the workbench slot fully replaces `session.html`. `StaticFilesTest` is updated per phase: phase 1 adds assertions for Quinoa-served files alongside old file assertions; phase 5 removes old file assertions.
 
 ## Deferred
 
