@@ -88,6 +88,7 @@ The event table below lists `topic` values, not standalone DOM event names.
 
 | Target | Method | When |
 |--------|--------|------|
+| `ClaudonyTerminalWorkspace` | `configure({ sessionId, sessionName, proxyPeer?, caseId?, roleName?, status?, createdAt?, channel? })` | Mount (entry point passes merged URL params + session fetch result). Workspace constructs child configure payloads and WebSocket/resize URLs from these. |
 | `PagesTerminal` | `configure({ wsUrl })` | Mount + worker switch (wsUrl uses `{cols}/{rows}` placeholders — PagesTerminal substitutes at connect time) |
 | `ClaudonyWorkerPanel` | `configure({ sessionId })` | Mount |
 | `ClaudonyChannelPanel` | `configure({ sessionId, caseId, roleName, createdAt, channel? })` | Mount + worker switch. When `channel` is present (from `?channel=` URL param), auto-selects that channel and opens the panel. |
@@ -242,12 +243,9 @@ Garden entry GE-20260701-c000c7: Quinoa is disabled in `@QuarkusTest` (hardcoded
 
 The entry point registers a `beforeunload` handler that tears down resources not covered by `disconnectedCallback` (which does NOT fire on page unload in most browsers):
 
-- Calls `workspace.destroy()` which propagates cleanup to child components
-- Worker panel closes its SSE `EventSource`
-- Channel panel closes its SSE `EventSource` and clears poll timers
-- Entry point clears lineage poll timer and elapsed ticker
+- Calls `workspace.destroy()` which propagates cleanup to all child components
 
-This matches the current terminal.js `beforeunload` handler (line 829-833).
+Per-component cleanup responsibilities are defined in §Lifecycle methods. This matches the current terminal.js `beforeunload` handler (line 829-833).
 
 ## What Does NOT Change
 
