@@ -90,9 +90,17 @@ The event table below lists `topic` values, not standalone DOM event names.
 |--------|--------|------|
 | `PagesTerminal` | `configure({ wsUrl })` | Mount + worker switch (wsUrl uses `{cols}/{rows}` placeholders — PagesTerminal substitutes at connect time) |
 | `ClaudonyWorkerPanel` | `configure({ sessionId })` | Mount |
-| `ClaudonyChannelPanel` | `configure({ sessionId, caseId, roleName, createdAt })` | Mount + worker switch |
+| `ClaudonyChannelPanel` | `configure({ sessionId, caseId, roleName, createdAt, channel? })` | Mount + worker switch. When `channel` is present (from `?channel=` URL param), auto-selects that channel and opens the panel. |
 | `ClaudonyTerminalHeader` | `configure({ sessionName, sessionId })` | Mount |
 | `ClaudonyTerminalHeader` | `updateStatus(text, cssClass)` | On terminal events |
+
+### Lifecycle methods
+
+| Target | Method | What it does |
+|--------|--------|-------------|
+| `ClaudonyTerminalWorkspace` | `destroy()` | Propagates cleanup to all child components: closes PagesTerminal WebSocket, worker panel SSE, channel panel SSE/poll timers. Called by entry point's `beforeunload` handler. |
+| `ClaudonyWorkerPanel` | `destroy()` | Closes SSE `EventSource` for case events. |
+| `ClaudonyChannelPanel` | `destroy()` | Closes SSE `EventSource`, clears poll timer, clears lineage poll timer, clears elapsed ticker. |
 
 ### Workspace configuration
 
@@ -118,6 +126,17 @@ Entry point creates overlay DOM, listens for Ctrl+G globally, calls `terminal.pa
 After `loadSite()` renders the component tree, the entry point obtains the PagesTerminal reference via DOM query: `document.querySelector("pages-component-terminal")`. This reference is used by compose and stored for the `window._xtermTerminal` test hook.
 
 Not a registered panel — page-level utility.
+
+### Global keyboard shortcuts
+
+The entry point registers global `document` keydown listeners for two shortcuts:
+
+| Shortcut | Action | Current location |
+|----------|--------|-----------------|
+| Ctrl+G | Open compose overlay | terminal.js line 143-148 |
+| Ctrl+K | Toggle channel panel open/closed | terminal.js line 698-704 |
+
+Both delegate to workspace or DOM elements — they are entry-point-owned, not component-owned.
 
 ## File Structure
 
@@ -197,11 +216,13 @@ Light DOM preserves existing Playwright selectors (`#ch-select`, `.case-worker-r
 
 ### Correctness contract
 
-All 32 existing Playwright E2E tests must pass without changing test assertions:
+All 32 existing Playwright E2E tests must pass:
 - `TerminalPageE2ETest` (2 tests)
 - `ChannelPanelE2ETest` (19 tests)
-- `CaseWorkerPanelE2ETest` (7 tests)
+- `CaseWorkerPanelE2ETest` (7 tests — one test updated, see below)
 - `CaseContextPanelE2ETest` (4 tests)
+
+**One test requires modification:** `CaseWorkerPanelE2ETest.noPollingInterval_forWorkerUpdates_inSource()` reads `terminal.js` by hardcoded file path (`Path.of("src/main/resources/META-INF/resources/app/terminal.js")`). Migration step 4 deletes this file. This test is converted from a source-reading assertion to a behavioral assertion — verify that `window._caseEventSource` is connected (readyState check) and that no polling timer is active. The other 6 CaseWorkerPanelE2ETest tests already verify SSE-only behavior via the browser; this change makes the regression guard equally resilient to source reorganization.
 
 ### Test mode hooks
 
@@ -233,7 +254,7 @@ This matches the current terminal.js `beforeunload` handler (line 829-833).
 - `session.html` URL and query params (`?id=X&name=Y&proxyPeer=Z&channel=C`)
 - REST API endpoints
 - WebSocket URL pattern (`/ws/{id}/{cols}/{rows}`)
-- E2E test files
+- E2E test files (one exception: `CaseWorkerPanelE2ETest` AC 4 — source-reading assertion converted to behavioral)
 - `index.html` / dashboard Quinoa entry (migrated separately — `index.ts` is renamed to `app.ts` to preserve `app.js` output name)
 
 ## Upstream changes required (casehub-pages)
