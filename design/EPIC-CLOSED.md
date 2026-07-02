@@ -1,5 +1,5 @@
-# Branch Closed: issue-156-ops-provider-config
+# Branch Closed: issue-161-adopt-casehub-pages-quinoa
 
-**Date:** 2026-06-25
-**Issues:** 156
+**Date:** 2026-07-02
+**Issues:** 161
 **Status:** merged to main
