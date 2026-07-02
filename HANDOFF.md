@@ -1,36 +1,29 @@
-# Handoff — 2026-07-01
+# Handoff — 2026-07-02
 
-**Branch:** `issue-161-adopt-casehub-pages-quinoa` (12 commits, project + workspace)
-**Head commit (project):** `a5838c2` — feat(#161): add pages-component-terminal dependency
+**Head commit (project):** `123243c` — feat(#161): adopt casehub-pages for UI composition via Quinoa
 
 ## What landed this session
 
-- Brainstormed + design-reviewed (#161 spec: hybrid C→A architecture, 23 issues across 5 rounds)
-- Quinoa 2.8.3 wired with esbuild pipeline, `claudony-session-grid` Web Component rendering via `loadSite()`
-- Session-expired protocol changed to WebSocket close code 4001 (closes #166)
-- Flaky tmux blank-line test re-architected: `processHistory()` extracted, 6 unit tests, simplified integration test
-- Upstream SNAPSHOT adaptations: engine Worker.Builder API, Qhorus Channel/Message POJO→record, CDI exclude-types sync
-- `@casehubio/pages-component-terminal` adopted from upstream (casehub-pages#80)
-- Garden entry GE-20260701-c000c7: Quinoa disabled in @QuarkusTest mode
+- Completed terminal page migration: 834-line terminal.js → 5 TypeScript Web Components via casehub-pages loadSite()
+- Components: terminal-header, terminal-workspace, worker-panel, channel-panel, key-bar
+- esbuild code splitting: dashboard and terminal bundles share common deps
+- Upstream PagesTerminal gains paste() and terminal getter (casehub-pages 0c3a936)
+- Design review caught 21 issues (xterm.css, paste vs sendInput, proxy peer URLs, PWA manifest, etc.)
+- Code review caught header re-render bug (innerHTML destroying parent-wired listeners)
+- Garden entry GE-20260701-fe7a85: light DOM innerHTML re-render gotcha
+- #161 closed, #166 closed (session-expired via close code 4001)
 
 ## State
 
-- Branch: 12 commits ahead of main, 601 tests pass (1 known flaky tmux test resolved)
-- Using `file:` local deps for casehub-pages packages — blocked on casehub-pages#86 (npm publish)
-- `mvn test` green; `mvn package` blocked by production CDI issue (engine `@Default` qualifier change) — separate from Quinoa work
+- main: `123243c` (squashed from 27 commits), pushed to origin
+- 600 tests pass (16 core + 177 casehub + 407 app)
+- ChannelPanelE2ETest has 13/19 failures from Qhorus SNAPSHOT `allowedWriters()` NPE — pre-existing upstream regression, not caused by this migration
+- Using `file:` local deps for casehub-pages packages — still blocked on casehub-pages#86 (npm publish)
 
-## Immediate next step
-
-When casehub-pages#86 lands: swap `file:` deps to published versions in `package.json`, verify `mvn package`, update CLAUDE.md test baseline. Then `/work end`.
-
-## Cross-Module
-
-**Blocked by:**
-- `casehub-pages#86` — npm publish of 0.3.0 with workbench primitives + terminal component · XS · Low
-
-## What's Next
+## Next candidates
 
 | # | Description | Scale | Complexity | Notes |
 |---|-------------|-------|------------|-------|
-| #141 | ActionRiskClassifier oversight gate | M | High | engine#402 closed — unblocked |
 | #158 | Debate channel integration | M | Med | Blocked on drafthouse#71 |
+| #141 | ActionRiskClassifier oversight gate | M | High | engine#402 closed — unblocked |
+| — | Fix Qhorus allowedWriters() NPE | S | Low | Upstream fix needed in qhorus Channel.builder() |
