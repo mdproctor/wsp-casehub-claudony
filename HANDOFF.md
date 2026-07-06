@@ -1,3 +1,5 @@
+*Updated: #141 closed — removed from backlog.*
+
 # Handoff — 2026-07-02
 
 **Head commit (project):** `123243c` — feat(#161): adopt casehub-pages for UI composition via Quinoa
@@ -25,5 +27,4 @@
 | # | Description | Scale | Complexity | Notes |
 |---|-------------|-------|------------|-------|
 | #158 | Debate channel integration | M | Med | Blocked on drafthouse#71 |
-| #141 | ActionRiskClassifier oversight gate | M | High | engine#402 closed — unblocked |
 | — | Fix Qhorus allowedWriters() NPE | S | Low | Upstream fix needed in qhorus Channel.builder() |
