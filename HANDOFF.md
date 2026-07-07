@@ -1,30 +1,26 @@
-*Updated: #141 closed — removed from backlog.*
+# Handoff — 2026-07-07
 
-# Handoff — 2026-07-02
-
-**Head commit (project):** `123243c` — feat(#161): adopt casehub-pages for UI composition via Quinoa
+**Head commit (project):** `677d73c` — feat(#168): migrate from FleetMessageRelayObserver to casehub-qhorus-postgres-broadcaster
 
 ## What landed this session
 
-- Completed terminal page migration: 834-line terminal.js → 5 TypeScript Web Components via casehub-pages loadSite()
-- Components: terminal-header, terminal-workspace, worker-panel, channel-panel, key-bar
-- esbuild code splitting: dashboard and terminal bundles share common deps
-- Upstream PagesTerminal gains paste() and terminal getter (casehub-pages 0c3a936)
-- Design review caught 21 issues (xterm.css, paste vs sendInput, proxy peer URLs, PWA manifest, etc.)
-- Code review caught header re-render bug (innerHTML destroying parent-wired listeners)
-- Garden entry GE-20260701-fe7a85: light DOM innerHTML re-render gotcha
-- #161 closed, #166 closed (session-expired via close code 4001)
+- Replaced custom HTTP fleet relay (FleetMessageRelayObserver + ChannelFleetBroadcaster) with casehub-qhorus-postgres-broadcaster (PostgreSQL LISTEN/NOTIFY)
+- Migrated qhorus datasource from H2 to PostgreSQL across all profiles (Dev Services for dev/test)
+- Removed 6 production files, 3 test files, cleaned up PeerClient and ClaudonyReactiveCaseChannelProvider
+- Design review (11 issues, all resolved) and code review (clean)
+- #168 closed, qhorus#323 closed (allowedWriters NPE)
+- Created blocks-ui#39 (claudony component migration tracking)
+- Parent repo updated (PLATFORM.md capability ownership)
 
 ## State
 
-- main: `123243c` (squashed from 27 commits), pushed to origin
-- 600 tests pass (16 core + 177 casehub + 407 app)
-- ChannelPanelE2ETest has 13/19 failures from Qhorus SNAPSHOT `allowedWriters()` NPE — pre-existing upstream regression, not caused by this migration
-- Using `file:` local deps for casehub-pages packages — still blocked on casehub-pages#86 (npm publish)
+- main: `677d73c` (squashed from 6 commits), pushed to origin
+- 591 tests pass (16 core + 176 casehub + 399 app)
+- Docker now required for dev/test (PostgreSQL Dev Services)
 
 ## Next candidates
 
 | # | Description | Scale | Complexity | Notes |
 |---|-------------|-------|------------|-------|
 | #158 | Debate channel integration | M | Med | Blocked on drafthouse#71 |
-| — | Fix Qhorus allowedWriters() NPE | S | Low | Upstream fix needed in qhorus Channel.builder() |
+| blocks-ui#39 | Promote channel-panel and worker-panel to blocks-ui | M | Med | Channel panel is the most feature-complete feed impl |
