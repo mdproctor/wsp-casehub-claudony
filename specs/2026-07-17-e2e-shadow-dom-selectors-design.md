@@ -170,5 +170,9 @@ JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test -Pe2e \
   -Dtest=ChannelPanelE2ETest,CaseContextPanelE2ETest,TerminalPageE2ETest
 ```
 
-All E2E tests green. Unit tests (`mvn test`) still pass (production change is
-additive — no logic change).
+**Prerequisite:** verify the `.msg-badge` class in `channel-message` via browser
+DevTools before running (see §Badge class note). If the class has changed, update
+the selector in `messageBadges_showCorrectTypeLabel` first.
+
+With the correct badge selector in place, all E2E tests pass. Unit tests
+(`mvn test`) still pass (production change is additive — no logic change).
