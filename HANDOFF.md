@@ -1,27 +1,23 @@
 # Handoff — 2026-07-17
 
-**Head commit (project):** `4cfe1ba` — feat(#170): refactor channel-panel to consume blocks-ui channel-activity
+**Head commit (project):** `37c7f36` — fix(#171): enable legacy decorators for Lit E2E compat
 
 ## What landed this session
 
-- #170 closed — channel-panel refactored from 1,067-line vanilla HTMLElement to 479-line LitElement composing `<channel-feed>` + `<channel-input>` from `@casehubio/blocks-ui-channel-activity`
-- #169 closed — upstream API parameter updates (OutboundMessage, ChannelCreateRequest, WorkerFunction.Sync)
-- CDI fix — CbrCaseRetainObserver excluded from test context (engine SNAPSHOT drift)
-- blocks-ui#64 filed (channel-nav dropdown mode) and #65 filed (renderContent callback)
-- #171 filed — E2E tests broken by GITHUB_TOKEN not available to Quinoa during @QuarkusTest (pre-existing, High priority)
-- Design spec written and pre-reviewed (adversarial, 2 rounds, 7 issues all verified)
+- #171 closed — root cause was TC39 decorator pass-through in esbuild, not GITHUB_TOKEN/npm install as originally documented. Fix: `experimentalDecorators: true` + `useDefineForClassFields: false` in `tsconfig.json`
+- Garden entry GE-20260717-19540a submitted (esbuild/Lit/Chromium decorator gotcha, score 13/15)
 
 ## State
 
-- main: `4cfe1ba`, pushed, CI should be green (591 Java tests + 15 vitest)
+- main: `37c7f36`, pushed, 591 Java tests + 15 vitest pass
+- E2E `terminalPage_loadsStructure` now passes
+- E2E tests for channel-panel/case-context/proxy-resize still fail — DOM expectations predate #170's LitElement refactor (separate issue needed)
 - Docker required for dev/test (PostgreSQL Dev Services)
-- npm packages require `GITHUB_TOKEN=$(gh auth token)` for install
-- E2E tests (session page) blocked by #171
 
 ## Next candidates
 
 | # | Description | Scale | Complexity | Notes |
 |---|-------------|-------|------------|-------|
-| #171 | Fix E2E test infrastructure — Quinoa needs GITHUB_TOKEN in surefire env | S | Low | High priority — blocks verification of #170 and all session-page UI work |
+| — | Update E2E tests for #170 LitElement DOM structure | M | Med | ChannelPanelE2ETest (19), CaseContextPanelE2ETest (4), proxyMode resize — Shadow DOM selectors needed |
 | — | Consume `<blocks-timeline>` for case lifecycle events | M | Med | Follow-on from #170; eventChronologyStrategy from blocks-ui |
 | #158 | Debate channel integration | M | Med | Blocked on drafthouse#71 |
