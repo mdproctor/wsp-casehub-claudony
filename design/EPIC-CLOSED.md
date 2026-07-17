@@ -1,5 +1,5 @@
-# Branch Closed: issue-156-ops-provider-config
+# Branch Closed: issue-170-channel-panel-blocks-ui
 
-**Date:** 2026-06-25
-**Issues:** 156
+**Date:** 2026-07-17
+**Issues:** 170
 **Status:** merged to main
