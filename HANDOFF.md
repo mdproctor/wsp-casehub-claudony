@@ -1,26 +1,28 @@
 # Handoff — 2026-07-18
 
-**Head commit (project):** `a67900b` — fix(#172): update E2E tests for #170 LitElement Shadow DOM structure
+**Head commit (project):** `362b4f4` — fix(#174): fix 4 pre-existing E2E test failures
 
 ## What landed this session
 
-- #172 closed — E2E tests updated for #170's LitElement Shadow DOM refactor (21/25 passing, was 0/25)
-- Production fix: `channel-panel.ts` `connectedCallback()` adds initial `collapsed` class
-- Garden entry GE-20260718-b097b3 submitted (Playwright textContent/Shadow DOM extraction gap, score 14/15)
-- Design review ran 5 rounds ($13.37), improved spec with occurrence counts, test disposition table, badge class verification note
-- #174 filed for 4 pre-existing E2E failures (EVENT validation, messageStore.put visibility, proxy resize)
+- #173 closed — channel-panel collapsed class derived from `_collapsed` reactive state via `updated()` override
+- #174 closed — 4 E2E test failures fixed: null `channelId` from discarded `channelStore.put()` return value + headless Chromium resize event dispatch
+- All 25/25 E2E tests now pass (was 21/25)
 
 ## State
 
-- main: `a67900b`, pushed, 591 Java tests + 15 vitest pass
-- 21/25 E2E tests pass; 4 remaining are #174 (unrelated to Shadow DOM)
+- main: `362b4f4`, pushed, 591 Java tests + 15 vitest pass (test compilation has pre-existing engine SNAPSHOT ambiguity — `CaseLifecycleEvent.of()` overload — not a Claudony bug)
 - Docker required for dev/test (PostgreSQL Dev Services)
+
+## Hygiene (carried forward)
+
+- 4 unrecovered artifacts on closed branches (#161 blog+spec, #168 spec, #172 spec) — cherry-pick to workspace main
+- 3 unstamped closed branches (#105, #145, #163) — stamp with landing SHA
+- 2 stale branches (#151, #156) — 17 days without commits
 
 ## Next candidates
 
 | # | Description | Scale | Complexity | Notes |
 |---|-------------|-------|------------|-------|
-| #174 | Fix 4 pre-existing E2E failures (EVENT, messageStore.put, proxy resize) | S | Med | 3 distinct root causes |
-| #173 | Consolidate imperative host class management in channel-panel | XS | Low | Tech debt from design review |
 | — | Consume `<blocks-timeline>` for case lifecycle events | M | Med | Follow-on from #170 |
 | #158 | Debate channel integration | M | Med | Blocked on drafthouse#71 |
+| — | Hygiene pass: recover artifacts + stamp branches | XS | Low | See above |
