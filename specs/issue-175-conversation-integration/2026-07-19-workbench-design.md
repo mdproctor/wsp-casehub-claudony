@@ -122,19 +122,57 @@ The existing `channel-panel.ts` (484 lines) is replaced by the workbench. Its re
 
 ### Terminal Integration
 
-The current `terminal.ts` entry point sets up xterm.js imperatively. This is extracted into a `terminal-controller.ts` module:
+The current `terminal.ts` entry point sets up xterm.js imperatively via `PagesTerminal` from `@casehubio/pages-component-terminal`. This is extracted into a `terminal-controller.ts` module that encapsulates all terminal concerns:
 
 ```typescript
-export function attachTerminal(container: HTMLElement, sessionId: string): TerminalHandle
+export function attachTerminal(
+  container: HTMLElement, sessionId: string, opts?: { proxyPeer?: string }
+): TerminalHandle
+
 export interface TerminalHandle {
   dispose(): void
   resize(cols: number, rows: number): void
+  sendInput(text: string): void
+  switchSession(sessionId: string, opts?: { proxyPeer?: string }): void
 }
 ```
 
+- `dispose()` — tears down the `PagesTerminal` and WebSocket connection
+- `resize(cols, rows)` — handles BOTH xterm.js resize AND the tmux resize REST call (`POST /api/sessions/{id}/resize`). The caller doesn't need to know about tmux.
+- `sendInput(text)` — forwards keyboard input to the terminal (required for the key-bar on touch devices)
+- `switchSession(sessionId)` — reconstructs the WebSocket URL and calls `PagesTerminal.configure({ wsUrl })` to reconnect to a different session. Used during worker switching.
+
+The module internally constructs WebSocket URLs (`wss://{host}/ws/{sessionId}/{cols}/{rows}`) and handles proxy peer routing (`/ws/proxy/{peer}/{sessionId}/...`). These are terminal implementation details that the workbench doesn't need to see.
+
 - The workbench calls `attachTerminal()` in `firstUpdated()` on a `<div>` ref
 - The existing fleet-mode terminal page calls the same module
-- No duplication of WebSocket, history replay, or resize logic
+- No duplication of WebSocket, history replay, resize logic, or URL construction
+
+#### terminal-workspace.ts Logic Redistribution
+
+The existing `terminal-workspace.ts` (161 lines) is replaced by the workbench for case-bound sessions (fleet mode keeps it as-is). Its responsibilities move as follows:
+
+| Responsibility | Current owner | New owner |
+|---------------|---------------|-----------|
+| WebSocket URL construction (incl. proxy peer) | terminal-workspace | `terminal-controller.ts` module (internal) |
+| `PagesTerminal` creation + configuration | terminal-workspace | `terminal-controller.ts` via `attachTerminal()` |
+| tmux resize REST call (`POST /api/sessions/{id}/resize`) | terminal-workspace `handleResize()` | `terminal-controller.ts` via `TerminalHandle.resize()` |
+| Key-bar input forwarding (`sendInput`) | terminal-workspace `wireEvents()` | `<claudony-workbench>` catches `key-pressed` → `TerminalHandle.sendInput()` |
+| Worker switch — terminal reconnection | terminal-workspace `handleWorkerSwitch()` | `<claudony-workbench>` catches `worker-selected` → `TerminalHandle.switchSession()` |
+| Worker switch — URL update (`history.replaceState`) | terminal-workspace `handleWorkerSwitch()` | `<claudony-workbench>` event routing |
+| Worker switch — panel re-configuration | terminal-workspace `handleWorkerSwitch()` | `<claudony-workbench>` updates `@state()` props (channels, messages re-fetched for new session) |
+| Worker switch — `session-changed` event dispatch | terminal-workspace `handleWorkerSwitch()` | `<claudony-workbench>` dispatches `session-changed` for header |
+| DOM composition (worker-panel + terminal + channel-panel) | terminal-workspace `render()` | `<claudony-workbench>` LitElement `render()` |
+
+#### Worker Switch Lifecycle
+
+When the worker list dispatches `worker-selected` with a new `sessionId`:
+
+1. `TerminalHandle.switchSession(newSessionId)` — terminal reconnects to new session's WebSocket
+2. Workbench updates `_sessionId` state → triggers re-fetch of channels, messages, commitments for the new session
+3. `history.replaceState()` — URL updated without page reload
+4. Workbench dispatches `session-changed` event for the page header to update session name
+5. Channel-switch resets apply (`_selectedMessageId`, `_replyTo`, `_selectedArtefactRef` cleared)
 
 ### Entry Point Routing
 
