@@ -54,7 +54,7 @@ A LitElement composition root that replaces `<terminal-workspace>` + `<channel-p
 |-----------|--------|------|---------------------|
 | `<claudony-task-panel>` | chat-app `qhorus-task-panel` | Commitment tracking — active/overdue/completed | Yes — uses `CommitmentRecord` + `QhorusMessage` |
 | `<claudony-correlation-panel>` | chat-app `qhorus-correlation-panel` | Conversation chain visualization | Yes — uses `QhorusMessage` |
-| `<claudony-artifact-panel>` | chat-app `qhorus-artifact-panel` | Artifact browser with history | Yes — uses `ArtefactRef` |
+| `<claudony-artifact-panel>` | chat-app `qhorus-artifact-panel` | Artifact reference viewer (v1: metadata only, no content fetching) | Yes — uses `ArtefactRef` |
 
 Absorbed panels use only types that are either already in blocks-ui (`QhorusMessage`, `CommitmentState`, `ArtefactRef`) or are blocks-ui promotion candidates (`CommitmentRecord`). No Claudony-specific imports. The chat-app's dockable panels spec defines `CommitmentRecord` for promotion to `@casehubio/blocks-ui-channel-activity/types.ts`; this spec depends on that promotion landing first. If it hasn't landed when implementation begins, define an identical local type in the Claudony adapter layer.
 
@@ -142,7 +142,18 @@ The terminal page (`session.html` / `terminal.ts`) detects case context and cond
 - **No `caseId`** → existing `<terminal-workspace>` (fleet mode, unchanged)
 - **Has `caseId`** → `<claudony-workbench>` (workbench mode)
 
-Single page, conditional render. The workbench is a LitElement — it composes cleanly.
+The workbench is loaded via dynamic `import()` to avoid bundling its dependency tree (task/correlation/artifact panels, blocks-ui components) into fleet-mode sessions that never use it:
+
+```typescript
+if (session.caseId) {
+  const { ClaudonyWorkbench } = await import('./components/claudony-workbench.js');
+  // render workbench
+} else {
+  // render existing terminal-workspace — no workbench code loaded
+}
+```
+
+This keeps the fleet-mode `terminal` chunk lean — only xterm.js and the existing terminal-workspace.
 
 ### Threading Interaction Model
 
@@ -153,6 +164,8 @@ The workbench supports reply-based threading for speech acts that require `inRep
 3. **`<channel-input>`** receives `replyTo` prop → shows reply indicator above textarea
 4. **User sends** → `PostMessageRequest` includes `inReplyTo` (the selected message ID) and `correlationId` (inherited from the selected message's correlation chain)
 5. **Cancel reply** → user clicks dismiss on reply indicator → clears `_replyTo`
+
+**Channel switch resets:** When the user switches channels, the workbench clears `_selectedMessageId`, `_replyTo`, and `_selectedArtefactRef`. These reference messages/artifacts in the previous channel and would cause stale rendering (correlation panel for a nonexistent message, reply indicator for a message in another channel).
 
 This is the same interaction model as the chat-app workbench's `_onChatEvent` handler for `MESSAGE_SELECTED`.
 
@@ -259,6 +272,26 @@ interface CommitmentRecord {
 
 If the blocks-ui promotion hasn't landed when implementation begins, define an identical local type in `src/main/webui/src/util/channel-adapter.ts`.
 
+#### Field mapping from Qhorus `Commitment` record
+
+The Qhorus `Commitment` Java record does not have `updatedAt` or `deadline` fields directly. The commitment endpoint maps as follows:
+
+| `CommitmentRecord` field | Source on Qhorus `Commitment` | Notes |
+|-------------------------|------------------------------|-------|
+| `state` | `commitment.state()` | Direct mapping |
+| `deadline` | `commitment.expiresAt()` | Name difference — Qhorus uses `expiresAt`, chat-app uses `deadline` |
+| `acknowledgedAt` | `commitment.acknowledgedAt()` | Direct mapping |
+| `createdAt` | `commitment.createdAt()` | Direct mapping |
+| `updatedAt` | Synthetic: `max(resolvedAt, acknowledgedAt, createdAt)` | Qhorus has no `updatedAt` — derived from the most recent state-change timestamp |
+
+The synthetic `updatedAt` is computed in the MeshResource endpoint handler, not in the Qhorus layer. This keeps the adapter mapping self-contained and avoids modifying the Qhorus `Commitment` record.
+
+### Artifact panel — v1 stub resolver
+
+The chat-app's `qhorus-artifact-panel` takes a `resolveArtifact?: (ref: ArtefactRef) => Promise<{content: string, language?: string}>` callback for content fetching. In v1, the Claudony workbench provides a stub resolver that returns `{content: ref.label, language: undefined}` — the panel renders artifact metadata (type badge, label, URI with copy button) without fetching real content. This matches the chat-app's v1 approach per the dockable panels spec §6.
+
+Content resolution by artifact type requires different strategies (`channel:` URIs → internal navigation, `http:` URIs → external fetch, `case:` URIs → case API) and is deferred to a follow-up issue. The artifact panel is still useful in v1: it surfaces what artifacts are referenced in a conversation, even without inline content display.
+
 ### Client-side commitment join
 
 The workbench fetches commitments from `GET /api/mesh/channels/{name}/commitments` and stores them as `Map<string, CommitmentRecord>` keyed by `correlationId`. Panels that need commitment context (task panel, correlation panel) receive this map as a property. They join messages to commitments using the message's `correlationId` — no `commitmentId` field needed on the timeline entry.
@@ -299,6 +332,15 @@ Existing test baseline (587 tests) is expected to grow, not shrink.
 - Promoting panels to blocks-ui (after proven in Claudony) — track as new issue
 
 Deferred items without issue numbers must be filed as GitHub issues before this spec's implementation begins.
+
+## Prerequisites
+
+| Prerequisite | Repo | Dependency |
+|-------------|------|------------|
+| `ReactiveCommitmentStore.findByChannel(UUID)` | casehub-qhorus | Must be added to the SPI interface (`casehub-qhorus-api`), implemented in `InMemoryReactiveCommitmentStore` (`casehub-qhorus-persistence-memory`), and implemented in `ReactiveJpaCommitmentStore` (`casehub-qhorus-runtime`). Without this, MeshResource's commitment endpoint has no method to call. |
+| `CommitmentRecord` in blocks-ui (optional) | casehub-blocks-ui | Per chat-app dockable panels spec. If not landed, use local identical type (fallback documented in §Frontend Adapter Enrichment). |
+
+Implementation of the commitment endpoint is blocked on the Qhorus SPI addition. The rest of this spec (workbench component, terminal extraction, timeline enrichment, adapter enrichment) can proceed in parallel.
 
 ## Design Principles
 
