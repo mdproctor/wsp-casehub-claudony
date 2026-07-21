@@ -79,7 +79,12 @@ Each gets a corresponding `.test.ts` file following the existing vitest + jsdom 
 Code is the Claudony source with:
 - Tag names: `claudony-*` → `channel-*`
 - Class names: `Claudony*Element` → `Channel*Element`
+- Package self-imports → relative internal imports (all three panels import from `@casehubio/blocks-ui-channel-activity` which becomes a self-reference inside the package):
+  - `QhorusMessage`, `commitmentStateCategory`, `isObligationCreating`, `messageTypeCategory`: `@casehubio/blocks-ui-channel-activity` → `./types.js`
+  - `ChannelEventTopics`: `@casehubio/blocks-ui-channel-activity` → `./events.js`
+  - `ArtefactRef` (artifact panel only): `@casehubio/blocks-ui-channel-activity` → `./types.js`
 - `CommitmentRecord` import: `../util/channel-adapter.js` → `./commitment.js`
+- `emitPagesEvent` from `@casehubio/blocks-ui-core` stays unchanged — cross-package dependency, not self-referencing
 - CSS variables: strip all inline fallback values to bare `var(--token)` form, matching blocks-ui's existing convention (e.g. `channel-member-panel`). The host app provides tokens; component-level fallbacks mask configuration problems.
 - Artifact panel: use `ResolvedArtifact` named type for `resolveArtifact` callback return instead of anonymous inline `{ content: string; language?: string }`
 
@@ -158,7 +163,7 @@ Add a new nav entry in `shell.ts` under Components — or extend the existing `c
 
 ## Testing
 
-- **blocks-ui:** New vitest tests for each panel (rendering, state grouping, click events, empty states, navigation history for artifact panel)
+- **blocks-ui:** New vitest tests for each panel (rendering, state grouping, click events, empty states, navigation history for artifact panel) + `commitment.test.ts` for `toCommitmentRecord` and `toCommitmentMap` (3 tests covering basic mapping, `updatedAt` derivation, and `correlationId` keying — migrated from claudony's `channel-adapter.test.ts`)
 - **Claudony vitest:** Existing `channel-adapter.test.ts` tests shrink (commitment tests removed)
 - **Claudony E2E:** `WorkbenchE2ETest` passes unchanged (selectors don't reference panel tag names)
 - **Claudony Java tests:** No changes expected — panels are frontend-only
