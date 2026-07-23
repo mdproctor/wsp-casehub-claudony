@@ -376,6 +376,59 @@ Components currently using `var(--pages-neutral-N)` directly should migrate to s
 - **Visual regression** — blocks-ui showcase rendered with each preset, compared against baseline screenshots
 - **Consumer smoke tests** — Claudony and chat-app build with the new runtime API
 
+## Theme picker component
+
+A reusable LitElement component that any CaseHub app can drop in wherever theme switching is needed — sidebar footer, settings panel, toolbar.
+
+```html
+<pages-theme-picker></pages-theme-picker>
+```
+
+**Renders:** A compact two-control widget — theme dropdown + light/dark mode toggle.
+
+```
+┌─────────────────────────────┐
+│ [Default ▾]  [Light] [Dark] │
+└─────────────────────────────┘
+```
+
+The dropdown lists all registered themes via `listThemes()`, grouped by family (themes sharing a name prefix before `-light`/`-dark` are the same family). The mode toggle switches light↔dark within the selected family. Selecting "CaseHub" + "Dark" calls `applyTheme('casehub-dark')`.
+
+**Properties:**
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `target` | `HTMLElement` | `document.documentElement` | Element to apply theme to (for scoped theming) |
+| `compact` | `boolean` | `false` | Compact mode — icon-only toggle, no labels |
+
+**Reads from the runtime API:**
+- `listThemes()` — populates the dropdown
+- `getTheme()` — reflects the current selection
+- `applyTheme(name, target)` — applies on change
+
+**Theme family grouping:** Presets follow the naming convention `{family}-{mode}` (e.g. `casehub-dark`, `casehub-light`, `default-dark`, `default-light`). The picker extracts the family name and presents it as a single dropdown entry with the mode toggle controlling which variant is applied. A preset without a `-light`/`-dark` suffix is treated as a standalone entry with no mode toggle.
+
+**Lives in:** `pages-ui-tokens` alongside the runtime API. Exported as `PagesThemePickerElement` from the package index.
+
+**Styling:** Uses semantic role tokens exclusively — the picker itself is themed by the theme it selects. Uses `--pages-surface-secondary` for the background, `--pages-border-default` for borders, `--pages-text-secondary` for labels, `--pages-interactive` for the active mode toggle.
+
+### blocks-ui showcase integration
+
+The existing `shell.ts` light/dark toggles at the bottom of the sidebar are replaced with `<pages-theme-picker>`. Every example page updates instantly on theme change because all components read from the same CSS custom properties.
+
+### App integration examples
+
+```typescript
+// Sidebar footer
+html`<pages-theme-picker></pages-theme-picker>`
+
+// Toolbar (compact, icon-only)
+html`<pages-theme-picker compact></pages-theme-picker>`
+
+// Scoped to a specific element
+html`<pages-theme-picker .target=${this.shadowRoot?.host}></pages-theme-picker>`
+```
+
 ## Execution order
 
 1. Transform library + pipeline runner + CLI
@@ -383,9 +436,10 @@ Components currently using `var(--pages-neutral-N)` directly should migrate to s
 3. Design and tune `casehub-dark` preset (match Claudony/casehub.org palette)
 4. Design `casehub-light` preset
 5. Runtime API (`applyTheme`, `registerTheme`)
-6. Migrate consumers (claudony, chat-app, blocks-ui examples)
-7. Semantic role token migration in blocks-ui components (can be incremental)
-8. Standalone designer tool (follow-on)
+6. `<pages-theme-picker>` component
+7. Migrate consumers (claudony, chat-app, blocks-ui examples — replace shell.ts toggles with `<pages-theme-picker>`)
+8. Semantic role token migration in blocks-ui components (can be incremental)
+9. Standalone designer tool (follow-on)
 
 ## Out of scope
 
