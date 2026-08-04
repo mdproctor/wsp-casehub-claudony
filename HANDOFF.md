@@ -1,26 +1,21 @@
-*Updated: #188, #187, #177, #178, #179 closed — removed from backlog.*
+# Handoff — 2026-08-04
 
-# Handoff — 2026-08-03
-
-**Head commit (project):** `8a669f3` — fix: add blocks-ui-session-workbench to dependencies
+**Head commit (project):** `3aed401` — feat: case browser and task inbox (#176)
 
 ## What landed this session
 
-- PR #186 closed (stale — work already on main, branch properly stamped)
-- PR #189 created, iterated through 10 CI fixes, merged — CI now self-contained
-  - Checks out pages + blocks-ui repos, builds npm packages from source
-  - Yarn 4 with portal: resolutions for frontend build
-  - Maven unpack skippable via `-Dcasehub-packages.phase=none`
-  - Compile-only until engine SNAPSHOT CDI drift resolved (#188)
-  - Fixed missing `blocks-ui-session-workbench` dep (gap from #185)
-- Created 3 epic work-slots (62, 63, 64) for claudony — all 3 completed and archived
-- Slot 72 (pages, issue-259-graph-phase0) archived; promoted 16 artifacts to original workspace
-- Slot 42 (issue-185-pages-ui-migration) created, completed, and archived
+- #176 case browser + task inbox — full Phase 1 and Phase 2 implemented and merged
+  - Fleet home switched from `columns()` to `tabs()` layout (Sessions/Cases/Inbox/Fleet/Mesh)
+  - Case browser: `CaseBrowserService` aggregating CaseInstanceRepository + SessionRegistry + QhorusDashboardService, `CaseBrowserResource` (GET /api/cases), `claudony-case-browser.ts` composing `blocks-case-explorer` with `caseInstanceType` preset
+  - Action inbox: `ActionItem` unified abstraction, `StallTracker` CDI observer, `ActionAggregationService` composing commitments + stalls, `ActionInboxResource` (GET /api/actions), `claudony-action-inbox.ts` with urgency-sorted table
+  - 21 new tests, code review passed (1 finding fixed: wrong import name)
+  - CLAUDE.md synced, forage entry GE-20260804-c8590c captured (engine CDI exclude-types drift)
+  - Design spec and plan committed to workspace
 
 ## State
 
-- main: `8a669f3`, CI green (compile-only — full verify blocked by #188)
-- Untracked: `docs/specs/2026-07-17-e2e-shadow-dom-selectors-design.md`
+- main: `3aed401`, all tests pass (1 pre-existing engine SNAPSHOT CDI failure excluded)
+- Untracked: `docs/specs/2026-07-17-e2e-shadow-dom-selectors-design.md`, yarn PnP files
 
 ## Cross-Module
 
@@ -29,11 +24,12 @@
 
 ## What's Left
 
-*Nothing trailing — #188 resolved.*
+*Nothing trailing — #176 Phases 1–2 complete.*
 
 ## What's Next
 
 | # | Description | Scale | Complexity | Notes |
 |---|-------------|-------|------------|-------|
-| #176 | Case browser + task inbox | XL | High | Builds on workbench |
+| — | Phase 3: WorkItem integration for #176 | M | Med | Add casehub-work dep, extend ActionAggregationService |
+| — | ActionItem extraction to blocks-ui | M | Med | blocks-action-inbox component + ActionSource SPI to blocks (Java) |
 | #158 | Debate channel integration | M | Med | Blocked on drafthouse#71 |
