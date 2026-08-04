@@ -1,3 +1,5 @@
+*Updated: #188, #187, #177, #178, #179 closed — removed from backlog.*
+
 # Handoff — 2026-08-03
 
 **Head commit (project):** `8a669f3` — fix: add blocks-ui-session-workbench to dependencies
@@ -27,16 +29,11 @@
 
 ## What's Left
 
-- #188 fix Quarkus augmentation SignalReceivedEventHandler CDI failure — restores full `mvn verify` in CI · S · Med
+*Nothing trailing — #188 resolved.*
 
 ## What's Next
 
 | # | Description | Scale | Complexity | Notes |
 |---|-------------|-------|------------|-------|
-| #188 | Fix Quarkus augmentation — restore full CI | S | Med | Unblocks test execution in CI |
-| #187 | Session workbench blocks-ui adoption | M | Med | Wire existing component |
-| #177 | General-purpose chat rooms | M | Med | User-created channels |
-| #178 | Reactions + member/presence panels | M | Med | Wire blocks-ui components |
-| #179 | Responsive layouts for tablet/phone | M | Med | Workbench modes |
 | #176 | Case browser + task inbox | XL | High | Builds on workbench |
 | #158 | Debate channel integration | M | Med | Blocked on drafthouse#71 |
