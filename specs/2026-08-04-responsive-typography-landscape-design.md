@@ -29,7 +29,11 @@ Claudony's frontend has two responsive gaps deferred from the responsive layouts
 
 #### Breakpoint Overrides
 
-Added to `THEME_CSS` in `theme.ts` — every component already imports this, and shadow DOM scoping avoids cascade conflicts with the global theme.
+Added in two places:
+- `THEME_CSS` in `theme.ts` — scoped to `:host`, inherited by all shadow-DOM components
+- `style.css` — scoped to `:root`, covers the global stylesheet (fleet home, terminal page shell)
+
+Shadow DOM components get overrides via `THEME_CSS`; light-DOM elements in `index.html`/`session.html` get overrides via `style.css`.
 
 ```css
 @media (max-width: 767px) {
