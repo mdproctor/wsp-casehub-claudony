@@ -1,5 +1,5 @@
-# Branch Closed: issue-156-ops-provider-config
+# Branch Closed: issue-197-responsive-typography-landscape
 
-**Date:** 2026-06-25
-**Issues:** 156
+**Date:** 2026-08-04
+**Issues:** 197,196
 **Status:** merged to main
