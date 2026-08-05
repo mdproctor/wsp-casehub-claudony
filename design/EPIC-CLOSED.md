@@ -1,5 +1,5 @@
-# Branch Closed: issue-156-ops-provider-config
+# Branch Closed: issue-200-workitem-inbox-integration
 
-**Date:** 2026-06-25
-**Issues:** 156
+**Date:** 2026-08-05
+**Issues:** 200
 **Status:** merged to main
