@@ -1,0 +1,26 @@
+# Work Plan — issue-205-llm-fleet-manager
+
+## State
+branch: issue-205-llm-fleet-manager
+state: scaffolded
+project-sha: slot-creation
+date: 2026-09-21
+issue-repo: casehubio/claudony
+covers: 205
+design-repo: project
+design-section-hashes: 
+flyway-next-v: unknown
+
+## Queue
+- [ ] casehubio/claudony#205 — Issue #205 ← active
+  - [ ] Batch 1: Platform SPI
+    - [ ] Task 1: PoolManager SPI + DefaultPoolManager
+    - [ ] Task 2: Manifest pools parsing
+  - [ ] Batch 2: Claudony Backend
+    - [ ] Task 3: ClaudonyAgentBackend
+    - [ ] Task 4: FleetPoolManager
+  - [ ] Batch 3: Observability
+    - [ ] Task 5: Fleet REST endpoints
+    - [ ] Task 6: Wire WorkerProvisioner to pool
+  - [ ] Batch 4: Engine Convergence
+    - [ ] Task 7: AgentConverter onto RoutingAgentProvider
