@@ -88,3 +88,42 @@
 **Sources:** AgentBackend interface (agent-api), TmuxService.createSession vs createWorkerSession
 **Exploration:** quick
 **Status:** captured
+
+## D8: Session lifecycle (suspend/resume), not connection pool (destroy/create)
+
+**Choice:** CLI agent instances are stateful — they carry conversation history, working directory, and file state. The connection pool model (destroy on release, create fresh) is wrong. Replace with a session lifecycle manager: ACTIVE → SUSPENDED → ACTIVE. Suspend kills the tmux session (frees resources, 1-3s resume cost). Resume restarts with `claude -c <conversation-id>` in the same working directory. Conversation context and files persist on disk through suspend.
+**Alternatives:**
+- Connection pool (destroy/create) — REJECTED: destroys conversation context, forces cold start every time
+- Keep sessions permanently active — wasteful: each tmux session consumes memory even when idle
+**Rationale:** LLMs don't need a live terminal to exist. Their state is on disk. Only the tmux process is ephemeral. Suspend/resume gives low-resource idle cost with 1-3s resume latency.
+**Trade-offs:** Resume latency (1-3s) vs permanent resource consumption. Mitigated by `minActive` floor — the most-used sessions stay hot.
+**Depends on:** D7 (CLI backend modes), D5 (capacity model — reinterpreted as maxActive ceiling)
+**Exploration:** deep-analysis
+**Status:** captured
+
+## D9: Policy-based eviction with memory-weighted scoring
+
+**Choice:** Eviction queue ordered by weighted score: `idleTime × memoryWeight`. Sessions consuming more memory are evicted sooner. Memory is sampled at end of each interaction (tmux pane PID → `ps` RSS). No polling loop, no idle timeouts — eviction is pressure-driven. Sessions stay active until `maxActive` forces eviction. `minActive` sessions are eviction-immune.
+**Alternatives:**
+- Pure LRU — doesn't account for memory pressure
+- Fixed idle timeout — too rigid; kills sessions that might be needed in 30s
+**Rationale:** The eviction queue is a cache, not a pool. Sessions stay hot until pressure. The score balances recency with resource cost.
+**Depends on:** D8 (suspend/resume lifecycle)
+**Exploration:** quick
+**Status:** captured
+
+## D10: Identity-correlated instances with conversation continuity
+
+**Choice:** Each instance is identified by conversation-id and bound to a specific identity + workingDir. Not interchangeable. When acquiring, the session manager first looks for a SUSPENDED match before creating new. Qhorus channel correlation already routes to specific workers via `WorkerSessionMapping`.
+**Rationale:** A "code-reviewer" on PR-42 has conversation history specific to that PR. Swapping for a fresh instance loses context. The `-c` flag preserves it through suspend/resume.
+**Depends on:** D8 (suspend/resume), D3 (existing routing stack)
+**Exploration:** quick
+**Status:** captured
+
+## D11: Shared file coordination — open design question
+
+**Choice:** NOT DECIDED. Current architecture assumes single-agent ownership of a working directory. Multiple agents operating on shared files (debates, parallel review, ensemble critique) need coordination. Possible patterns: branch-per-agent (git isolation), read-only-input + per-agent-output (orchestrator merges), or explicit file-level locking. The session manager must track workingDir ownership to detect conflicts.
+**Rationale:** Surfaced during pool design discussion. The session lifecycle (D8) manages individual agent instances, but doesn't address what happens when multiple instances share a workspace. This is an orchestration concern that intersects session management.
+**Depends on:** D8 (session lifecycle), CaseHub choreography model
+**Exploration:** not started
+**Status:** open
