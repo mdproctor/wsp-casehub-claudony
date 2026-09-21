@@ -9,67 +9,74 @@
 
 ### Session 1 — Design and planning (prior session)
 
-7 brainstorming decisions captured. Spec and plan written. See previous HANDOFF for details.
+7 brainstorming decisions captured. Spec and plan written.
 
-### Session 2 — Spec reconciliation + Batch 1–3 implementation
+### Session 2 — Spec reconciliation, design evolution, implementation
 
-**Reconciled plan with spec.** The spec (revised by another session) made pool lifecycle internal to `ClaudonyAgentBackend` — no `PoolManager` platform SPI. The plan's Batch 1 (platform SPI) was dropped entirely. Reconciled sequence:
+**Reconciled plan with spec.** Dropped platform `PoolManager` SPI (pool lifecycle internal to claudony). Then design evolved further during session: connection-pool model replaced with suspend/resume lifecycle based on discussion about agent identity, conversation continuity, and memory-weighted eviction.
 
-1. Deploy platform agent stack (pom.xml deps only)
-2. ClaudonyAgentBackend with internal AgentPool
-3. Observability REST endpoints
-4. Engine convergence (deferred — highest risk)
+**Decisions D8–D11 captured:**
+- D8: Suspend/resume lifecycle (not destroy/create pool)
+- D9: Memory-weighted additive eviction scoring
+- D10: Identity-correlated instances with conversation continuity
+- D11: Shared file coordination (open design question)
 
-**Implemented with TDD (17 new tests, 222 total casehub module green):**
+**Implementation (TDD, 234 total casehub tests green):**
 
 | Commit | What |
 |--------|------|
-| `079d9d5` | AgentPool — capacity-bounded session pool (11 tests) |
-| `ce601e2` | ClaudonyAgentBackend — CLI sessions as AgentBackend key "claudony" (6 tests) |
-| `c26e378` | Deploy agent-router, agent-gate, agent-langchain4j deps + @HandWrittenEndpoint fixes |
-| `53d6ba5` | AgentPoolResource — GET /api/agent-pools observability endpoint |
+| `079d9d5` | AgentPool — initial pool (later superseded) |
+| `ce601e2` | ClaudonyAgentBackend — key "claudony" |
+| `c26e378` | Deploy agent-router, agent-gate, agent-langchain4j + @HandWrittenEndpoint fixes |
+| `53d6ba5` | AgentPoolResource — GET /api/agent-pools |
+| `da2c642` | AgentSessionManager — suspend/resume with memory-weighted eviction (13 tests) |
+| `14065f5` | Refactor: wire backend to session manager, remove old AgentPool |
+| `27e2e94` | TmuxSessionOperations — real tmux bridge (10 tests) |
+| `a677e67` | Wire ClaudonyAgentBackend to real TmuxSessionOperations |
 
-**Key design decisions:**
-- `AgentPool` is a standalone class (not CDI) for pure unit testability — injected into `ClaudonyAgentBackend`
-- Pool is "warm start" — sessions are destroyed on release and replaced (not reused)
-- Config via constructor for now; will move to `@ConfigMapping` when wired to Quarkus
-- `ClaudonyAgentBackend` `invoke()` and `openSession()` are stubs — pool session factory not yet wired to `TmuxService`
+**Architecture:**
+
+```
+ClaudonyAgentBackend (AgentBackend key="claudony")
+  → AgentSessionManager (suspend/resume lifecycle, eviction queue)
+    → TmuxSessionOperations (implements SessionOperations SPI)
+      → TmuxService (tmux create/kill/displayMessage)
+```
+
+**Session states:** ACTIVE (tmux live) ↔ SUSPENDED (tmux killed, conversation-id on disk)
+**Eviction:** `idleSeconds + (memoryMB / 10)` — additive, memory sampled post-interaction
+**Capacity:** `maxActive` ceiling, `minActive` eviction-immune floor
 
 ### Blocker: Pre-existing CDI deployment failures in app module
 
-The app module `@QuarkusTest` tests fail with 83 CDI deployment errors — **pre-existing, not caused by agent deps**. Confirmed by:
-1. No agent-specific CDI errors (BackendInstanceCoordinator, RouterBeans etc. resolved fine)
-2. The branch already had compile errors from #204 `@McpDomain` annotation processor (fixed with `@HandWrittenEndpoint`)
-3. The engine SNAPSHOTs in .m2 have evolved past what this slot's `quarkus.arc.exclude-types` covers
-
-**Impact:** Cannot run integration tests that verify RoutingAgentProvider displaces NoOpAgentProvider, or that ClaudonyAgentBackend is auto-registered in BackendInstanceRegistry. Unit tests (222 green) validate the core logic.
-
-**Fix needed:** Refresh engine SNAPSHOTs by installing compatible versions from the engine repo, then update the `quarkus.arc.exclude-types` list in `app/src/test/resources/application.properties`. This is a slot infrastructure task, not a #205 task.
+App module `@QuarkusTest` tests fail with 83 CDI errors from stale engine SNAPSHOTs. Pre-existing, not caused by agent deps. See previous HANDOFF for details. Blocks integration tests only; 234 unit tests green.
 
 ## What's Next
 
-1. **Wire pool session factory to TmuxService** — `AgentPool` currently uses a stub factory. Need to connect it to `TmuxService.createWorkerSession()`.
-2. **Implement `ClaudonyAgentBackend.openSession()`** — acquire from pool, return an `AgentSession` that releases on close.
-3. **Wire `ClaudonyWorkerProvisioner` to `AgentProvider`** — replace direct `TmuxService.createWorkerSession()` calls with `agentProvider.openSession()`.
-4. **Fix CDI deployment issue** — refresh engine SNAPSHOTs, update exclude-types. Blocks integration tests.
-5. **Engine convergence (Batch 4)** — `AgentConverter` onto `RoutingAgentProvider`. Highest risk, sequenced last.
+1. **`ClaudonyAgentBackend.openSession()`** — acquire from session manager, return an `AgentSession` that records interaction on close
+2. **Wire `ClaudonyWorkerProvisioner` to `AgentProvider`** — replace direct `TmuxService.createWorkerSession()` with `agentProvider.openSession()`
+3. **Conversation-id capture** — after `claude` starts, read its conversation-id from the session and store it for resume
+4. **D11: Shared file coordination** — design for multi-agent shared workspaces (debates, parallel review)
+5. **Fix CDI deployment issue** — refresh engine SNAPSHOTs, update exclude-types
+6. **Engine convergence (Batch 4)** — `AgentConverter` onto `RoutingAgentProvider`
 
 ## Artifacts
 
 | Artifact | Path |
 |----------|------|
 | Design spec | `specs/issue-205-llm-fleet-manager/2026-09-21-llm-fleet-manager-design.md` |
-| Decisions | `specs/issue-205-llm-fleet-manager/decisions.md` |
+| Decisions (D1–D11) | `specs/issue-205-llm-fleet-manager/decisions.md` |
 | Implementation plan | `plans/2026-09-21-llm-fleet-manager.md` |
-| .plan (queue) | `.plan` |
+| .plan | `.plan` |
 | .slot | `/Users/mdproctor/claude/casehub/slots/202/.slot` |
 
 ## Context for Next Session
 
-- Platform agent stack: `AgentProvider` → `RoutingAgentProvider` → `BackendInstanceRegistry` → `AgentBackend` (by key)
-- `BackendInstanceCoordinator` auto-registers all CDI `AgentBackend` beans on startup
-- `ClaudonyAgentBackend` key is "claudony", instanceId is "default"
-- `AgentPool` API: `preWarm()`, `acquire()→String sessionId`, `release(sessionId)`, `shutdown()`, `status()→AgentPoolStatus`
+- Platform agent stack deployed: `RoutingAgentProvider` displaces `NoOpAgentProvider` via CDI
+- `BackendInstanceCoordinator` auto-registers `ClaudonyAgentBackend` at startup
+- `AgentSessionManager` tracks `ManagedSession` instances (ACTIVE/SUSPENDED)
+- `TmuxSessionOperations` bridges to `TmuxService` for real tmux lifecycle
+- Resume uses `claude -c <conversationId>` — conversation-id must be captured after session creation
+- Eviction score: `idleSeconds + (memoryMB / 10.0)`, memory via `ps -o rss= -p <pane_pid>`
+- Config defaults: `minActive=0`, `maxActive=10` — TODO: move to `@ConfigMapping`
 - Protocols: PP-20260605-4b6c4e (createWorkerSession), PP-20260616-d32bc3 (reactive Panache)
-- `NoOpModelRegistry @DefaultBean` provides empty model registry — sufficient until manifest config is wired
-- `RoutingAgentConfig` defaults `casehub.platform.agent.default-backend=claude` — override to "claudony" for CLI-first routing
