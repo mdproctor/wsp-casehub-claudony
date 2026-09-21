@@ -24,3 +24,10 @@ flyway-next-v: unknown
     - [ ] Task 6: Wire WorkerProvisioner to pool
   - [ ] Batch 4: Engine Convergence
     - [ ] Task 7: AgentConverter onto RoutingAgentProvider
+- [ ] casehubio/claudony#213 — openSession-pool-acquire
+- [ ] casehubio/claudony#214 — wire-WorkerProvisioner
+- [ ] casehubio/claudony#215 — conversation-id-capture
+- [ ] casehubio/claudony#216 — shared-file-coordination
+- [ ] casehubio/claudony#217 — CDI-deployment-fix
+- [ ] casehubio/claudony#218 — engine-convergence
+- [ ] casehubio/claudony#219 — ConfigMapping-agent-pool
