@@ -7,36 +7,52 @@
 
 ## What Was Done
 
-Design and planning session. No implementation code written yet.
+### Session 1 — Design and planning (prior session)
 
-### Brainstorming (7 decisions captured)
+7 brainstorming decisions captured. Spec and plan written. See previous HANDOFF for details.
 
-- **D1:** Unified fleet abstraction — manages both API connection pools and CLI agent sessions
-- **D2:** Fleet manager lives in Claudony — integration layer, not engine
-- **D3:** Extend existing platform stack (ModelRegistry, BackendInstanceRegistry, RoutingAgentProvider) with pool semantics — do NOT create a new ModelResolver SPI
-- **D4:** Full scope across platform + engine + claudony (slot 202)
-- **D5:** Capacity-bounded on-demand pool model (min/max instances, pre-warming, idle eviction)
-- **D6:** Pool config extends the manifest YAML (`pools:` section)
-- **D7:** CLI AgentBackend supports both invoke (one-shot) and openSession (interactive)
+### Session 2 — Spec reconciliation + Batch 1–3 implementation
 
-**Key discovery:** The platform already has a comprehensive model resolution and routing stack (`ModelDescriptor`, `ModelQuery`, `ModelRegistry`, `AgentBackend`, `BackendInstanceRegistry`, `RoutingAgentProvider`). The original D3 proposal (new ModelResolver SPI in engine-api) was revised after discovering this — fleet management adds pool lifecycle to the existing stack, not a parallel resolution system.
+**Reconciled plan with spec.** The spec (revised by another session) made pool lifecycle internal to `ClaudonyAgentBackend` — no `PoolManager` platform SPI. The plan's Batch 1 (platform SPI) was dropped entirely. Reconciled sequence:
 
-**Spec revision:** Another session revised the spec while this session was running. The revised spec (now titled "Agent Pool Management") simplifies the architecture: pool lifecycle is internal to `ClaudonyAgentBackend` rather than a platform SPI. The plan may need reconciliation with the revised spec.
+1. Deploy platform agent stack (pom.xml deps only)
+2. ClaudonyAgentBackend with internal AgentPool
+3. Observability REST endpoints
+4. Engine convergence (deferred — highest risk)
 
-### Implementation Plan (4 batches, 7 tasks)
+**Implemented with TDD (17 new tests, 222 total casehub module green):**
 
-| Batch | Tasks | Repo | What's working after |
-|-------|-------|------|---------------------|
-| 1 | PoolManager SPI + Manifest parsing | platform | Pool abstractions with no-op default |
-| 2 | ClaudonyAgentBackend + FleetPoolManager | claudony | CLI sessions as platform backend, full pool lifecycle |
-| 3 | REST endpoints + WorkerProvisioner wiring | claudony | Observable fleet, provisioner acquires from pool |
-| 4 | AgentConverter convergence | engine | All YAML agents fleet-managed via routing stack |
+| Commit | What |
+|--------|------|
+| `079d9d5` | AgentPool — capacity-bounded session pool (11 tests) |
+| `ce601e2` | ClaudonyAgentBackend — CLI sessions as AgentBackend key "claudony" (6 tests) |
+| `c26e378` | Deploy agent-router, agent-gate, agent-langchain4j deps + @HandWrittenEndpoint fixes |
+| `53d6ba5` | AgentPoolResource — GET /api/agent-pools observability endpoint |
+
+**Key design decisions:**
+- `AgentPool` is a standalone class (not CDI) for pure unit testability — injected into `ClaudonyAgentBackend`
+- Pool is "warm start" — sessions are destroyed on release and replaced (not reused)
+- Config via constructor for now; will move to `@ConfigMapping` when wired to Quarkus
+- `ClaudonyAgentBackend` `invoke()` and `openSession()` are stubs — pool session factory not yet wired to `TmuxService`
+
+### Blocker: Pre-existing CDI deployment failures in app module
+
+The app module `@QuarkusTest` tests fail with 83 CDI deployment errors — **pre-existing, not caused by agent deps**. Confirmed by:
+1. No agent-specific CDI errors (BackendInstanceCoordinator, RouterBeans etc. resolved fine)
+2. The branch already had compile errors from #204 `@McpDomain` annotation processor (fixed with `@HandWrittenEndpoint`)
+3. The engine SNAPSHOTs in .m2 have evolved past what this slot's `quarkus.arc.exclude-types` covers
+
+**Impact:** Cannot run integration tests that verify RoutingAgentProvider displaces NoOpAgentProvider, or that ClaudonyAgentBackend is auto-registered in BackendInstanceRegistry. Unit tests (222 green) validate the core logic.
+
+**Fix needed:** Refresh engine SNAPSHOTs by installing compatible versions from the engine repo, then update the `quarkus.arc.exclude-types` list in `app/src/test/resources/application.properties`. This is a slot infrastructure task, not a #205 task.
 
 ## What's Next
 
-1. **Reconcile plan with revised spec.** The spec was revised by another session — the plan references a `PoolManager` SPI in platform, but the revised spec makes pool lifecycle internal to `ClaudonyAgentBackend`. Read both and align.
-2. **Begin Batch 1** — or Batch 2 if the revised spec's approach is adopted (no platform SPI needed).
-3. **Engine convergence (Batch 4)** is highest risk — sequenced last.
+1. **Wire pool session factory to TmuxService** — `AgentPool` currently uses a stub factory. Need to connect it to `TmuxService.createWorkerSession()`.
+2. **Implement `ClaudonyAgentBackend.openSession()`** — acquire from pool, return an `AgentSession` that releases on close.
+3. **Wire `ClaudonyWorkerProvisioner` to `AgentProvider`** — replace direct `TmuxService.createWorkerSession()` calls with `agentProvider.openSession()`.
+4. **Fix CDI deployment issue** — refresh engine SNAPSHOTs, update exclude-types. Blocks integration tests.
+5. **Engine convergence (Batch 4)** — `AgentConverter` onto `RoutingAgentProvider`. Highest risk, sequenced last.
 
 ## Artifacts
 
@@ -50,8 +66,10 @@ Design and planning session. No implementation code written yet.
 
 ## Context for Next Session
 
-- Project and Eidos now have manifests for configuring LLMs and relationship orgs for agents — the fleet manager integrates with these, not duplicates them
-- `AgentBackend` interface: `key()`, `instanceId()`, `invoke(AgentSessionConfig) → Multi<AgentEvent>`, `openSession(AgentSessionInit) → AgentSession`
-- `BackendInstanceRegistry`: `register(AgentBackend)`, `resolve(key, instanceId)`, `resolveByKey(key)`
-- `ClaudonyWorkerProvisioner` is the existing worker provisioning path — it will delegate to the pool
-- Protocols to follow: PP-20260605-4b6c4e (createWorkerSession not createSession), PP-20260616-d32bc3 (reactive Panache event loop)
+- Platform agent stack: `AgentProvider` → `RoutingAgentProvider` → `BackendInstanceRegistry` → `AgentBackend` (by key)
+- `BackendInstanceCoordinator` auto-registers all CDI `AgentBackend` beans on startup
+- `ClaudonyAgentBackend` key is "claudony", instanceId is "default"
+- `AgentPool` API: `preWarm()`, `acquire()→String sessionId`, `release(sessionId)`, `shutdown()`, `status()→AgentPoolStatus`
+- Protocols: PP-20260605-4b6c4e (createWorkerSession), PP-20260616-d32bc3 (reactive Panache)
+- `NoOpModelRegistry @DefaultBean` provides empty model registry — sufficient until manifest config is wired
+- `RoutingAgentConfig` defaults `casehub.platform.agent.default-backend=claude` — override to "claudony" for CLI-first routing
