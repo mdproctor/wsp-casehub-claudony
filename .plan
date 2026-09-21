@@ -2,7 +2,7 @@
 
 ## State
 branch: issue-205-llm-fleet-manager
-state: scaffolded
+state: active
 project-sha: slot-creation
 date: 2026-09-21
 issue-repo: casehubio/claudony
