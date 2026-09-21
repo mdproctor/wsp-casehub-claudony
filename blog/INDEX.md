@@ -34,3 +34,4 @@
 | [2026-05-22-mdp02-dead-config-live-redirects.md](2026-05-22-mdp02-dead-config-live-redirects.md) | 2026-05-22 | Removed stale selected-alternatives config; discovered GitHub repo-move push redirect |
 | [2026-05-29-mdp01-profile-wasnt-test.md](2026-05-29-mdp01-profile-wasnt-test.md) | 2026-05-29 | Three failed Dev Services attempts before finding QuarkusTestResource for the PostgreSQL reactive IT |
 | [2026-05-29-mdp02-one-way-to-register-a-backend.md](2026-05-29-mdp02-one-way-to-register-a-backend.md) | 2026-05-29 | Fleet channel backend delivery: finding the initChannel() gap, collapsing three registration sites into one ChannelInitialisedEvent observer, and the @ObservesAsync CDI trap |
+| [2026-09-21-mdp01-agents-arent-connections.md](2026-09-21-mdp01-agents-arent-connections.md) | 2026-09-21 | Design evolution: CLI agent pools need suspend/resume lifecycle, not connection pooling. Memory-weighted eviction, conversation continuity. |
