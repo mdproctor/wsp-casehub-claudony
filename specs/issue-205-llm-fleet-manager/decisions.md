@@ -120,10 +120,30 @@
 **Exploration:** quick
 **Status:** captured
 
-## D11: Shared file coordination — open design question
+## D11: Shared file coordination — pattern per use case, not global policy
 
-**Choice:** NOT DECIDED. Current architecture assumes single-agent ownership of a working directory. Multiple agents operating on shared files (debates, parallel review, ensemble critique) need coordination. Possible patterns: branch-per-agent (git isolation), read-only-input + per-agent-output (orchestrator merges), or explicit file-level locking. The session manager must track workingDir ownership to detect conflicts.
-**Rationale:** Surfaced during pool design discussion. The session lifecycle (D8) manages individual agent instances, but doesn't address what happens when multiple instances share a workspace. This is an orchestration concern that intersects session management.
-**Depends on:** D8 (session lifecycle), CaseHub choreography model
-**Exploration:** not started
-**Status:** open
+**Choice:** No single coordination pattern. The right pattern depends on the use case, selected per-case via the CaseHub choreography model. Three patterns map to three concurrency scenarios:
+
+| Scenario | Pattern | Mechanism |
+|----------|---------|-----------|
+| Parallel review / critique | Read-only input + per-agent output | Each agent writes to `{workingDir}/output/{agentId}/` — orchestrator merges or selects |
+| Parallel implementation | Branch-per-agent | Session manager creates `{sessionId}` branch on acquire; orchestrator merges branches |
+| Iterative collaboration | Sequential via choreography | No concurrency — CaseEngine gates activation on input/output dependencies |
+
+Shared-workspace-with-conflict-detection and explicit file-level locking are REJECTED — too dangerous or too complex respectively for LLM agents that operate on whole files.
+
+The session manager enforces a `WorkingDirPolicy` per session:
+- `EXCLUSIVE` (default) — only one active session per workingDir; second acquire throws `WorkingDirConflictException`
+- `SHARED_READ` — multiple sessions may share, each writes to an isolated output directory
+- `BRANCH_ISOLATED` — session manager creates a per-session git branch on acquire
+
+Detection is in `AgentSessionManager.acquireSession()` — checks active sessions for workingDir collisions against the session's policy.
+
+**Alternatives:**
+- Global policy — REJECTED: debates need SHARED_READ while implementation tasks need BRANCH_ISOLATED. A single setting can't serve both.
+- No detection — REJECTED: silent conflicts corrupt agent work. The default must be safe.
+- File-level locking — REJECTED: LLMs read/write whole files, not lines. Locking at file granularity adds complexity without matching the access pattern.
+**Rationale:** CaseHub choreography already prevents most conflicts via dependency-gated activation. The three concurrent scenarios are explicitly designed (case definitions declare them), so the coordination pattern can be selected per-case rather than imposed globally. The default (EXCLUSIVE) is safe — shared access requires an explicit opt-in.
+**Depends on:** D8 (session lifecycle), D10 (identity-correlated instances), CaseHub choreography model
+**Exploration:** deep-analysis
+**Status:** captured
