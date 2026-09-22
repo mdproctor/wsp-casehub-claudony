@@ -2,7 +2,7 @@
 
 ## State
 branch: issue-205-llm-fleet-manager
-state: active
+state: closing:promoted
 project-sha: slot-creation
 date: 2026-09-21
 issue-repo: casehubio/claudony
@@ -11,6 +11,7 @@ design-repo: project
 design-section-hashes: 
 flyway-next-v: unknown
 
+evidence-era: true
 ## Queue
 - [x] casehubio/claudony#205 — Issue #205
 - [x] casehubio/claudony#213 — openSession-pool-acquire
