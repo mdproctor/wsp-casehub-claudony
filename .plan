@@ -19,9 +19,9 @@ flyway-next-v: unknown
 - [x] casehubio/claudony#216 — shared-file-coordination
 - [x] casehubio/claudony#217 — CDI-deployment-fix
 - [ ] casehubio/claudony#218 — engine-convergence ← active
-  - [ ] Batch 1: Engine SPI
-    - [ ] Task 1: Define ChatModelProviderResolver SPI
-    - [ ] Task 2: Refactor AgentConverter + thread resolver
+  - [x] Batch 1: Engine SPI
+    - [x] Task 1: Define ChatModelProviderResolver SPI
+    - [x] Task 2: Refactor AgentConverter + thread resolver
   - [ ] Batch 2: Blocks adapter
     - [ ] Task 3: Implement RoutingChatModelProviderResolver
     - [ ] Task 4: CDI wiring in EngineAdapterBeans
