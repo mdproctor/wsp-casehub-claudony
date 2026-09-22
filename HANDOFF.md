@@ -2,45 +2,51 @@
 
 ## Last Session
 
-Completed #217 CDI deployment fix and rebased onto main.
+Completed #218 engine AgentConverter convergence onto RoutingAgentProvider. Cross-repo work across engine and blocks.
 
-**#217 — CDI deployment fix (completed).** Updated `CasehubEnabledProfile` and `CompletionTestProfile` to work with the current engine SNAPSHOT:
+**#218 — AgentConverter convergence (completed).** Replaced the inline 5-way LLM provider switch in `AgentConverter` with a `ChatModelProviderResolver` SPI. Blocks provides a routing implementation that delegates to `RoutingAgentProvider` via `AgentProviderChatModel`.
 
-- Replaced individual engine bean exclusions with sub-package globs (`bridge.*`, `callback.*`, `orchestration.*`, `engine.recovery.*`, `scheduler.**`, `trust.**`, `connectors.**`, `work.core.**`)
-- Added all 19 runtime `EventBusAdapter` exclusions — engine split handlers into runtime-core `*Handler` POJOs + runtime `*EventBusAdapter` `@ConsumeEvent` CDI beans. Adapters for excluded handlers need exclusion (unsatisfied dep); adapters for kept handlers were kept (they ARE the primary dispatch mechanism)
-- Added missing non-engine exclusions: `AuditedInterceptor`, `QhorusInboundCurrentPrincipal`, `DefaultOutcomeRecorder`, `TestWorkerProvisioner`, qhorus API resources (`A2AResource`, `AgentCardResource`, `CausalGraphResource`), `QhorusPushWebSocket`
-- Added `casehub-neocortex-memory` index dependency — engine's `RuntimeBeans` produces `CbrRetrievalService` which injects neocortex CBR types; their `@DefaultBean` no-ops need to be indexed
-- Fixed neocortex SNAPSHOT version mismatch in slot-local `.m2` — locally-installed neocortex JARs had renamed classes (`CbrRecordStore` vs `CbrCaseMemoryStore`). Restored all 11 neocortex artifacts from remote versions
-- Relaxed `CaseEngineRoundTripTest` lineage assertion from `hasSize(1)` to `isNotEmpty()` — engine SNAPSHOT fires `WorkerExecutionCompleted` twice through EventBus adapter + orchestrator paths
+### Engine changes (2 commits on `issue-205-llm-fleet-manager`):
 
-**Rebase onto main.** Resolved one merge conflict (`SessionResource.java` import overlap) and deduplicated `@HandWrittenEndpoint` annotations across 7 resource classes (main added annotations, branch had its own).
+1. **SPI + default implementation:** `ChatModelProviderResolver` interface and `InlineChatModelProviderResolver` (extracts the existing 5-way switch). 9 unit tests.
+2. **Refactor + thread resolver:** `AgentConverter.toApiAgent()` now takes a resolver parameter (no backward-compat overload — pre-release). Threaded through `CaseDefinitionYamlMapper.load()` → `YamlCaseDefinitionConverter.convert()` → `buildAgentFunction()`. All callers updated: `YamlCaseHub` (production), 4 test files (expression-override, json-node, variable, main mapper test — 11 call sites total). 16 `AgentConverterTest` tests pass.
+
+### Blocks changes (2 commits on `issue-218-agentconverter-convergence`):
+
+1. **`RoutingChatModelProviderResolver`** in `engine-adapter-core` — routes through `AgentProviderChatModel` with `ModelScopedAgentProvider` injecting the model reference via `config.withModel()`. Model resolution: `modelName` first (registry ID), falls back to `providerType` (backend key). 6 unit tests.
+2. **CDI wiring** in `engine-adapter/EngineAdapterBeans` — produces `ChatModelProviderResolver`. When `AgentProvider` is resolvable, routes through `RoutingChatModelProviderResolver`. Falls back to `InlineChatModelProviderResolver` when absent.
+
+### Dependencies added:
+- `engine-adapter-core/pom.xml`: `casehub-platform-agent-router-core` + `casehub-platform-agent-langchain4j-core` (both `0.2-SNAPSHOT`)
+- `engine-adapter-core/pom.xml`: `junit-jupiter` + `assertj-core` (test scope — first tests in this module)
+- Slot-local `.mvn/maven.config` created for blocks (gitignored) pointing to slot `.m2`
 
 ## Immediate Next Step
 
-Advance to #218 (engine convergence) or #219 (ConfigMapping agent pool). Run `work next` to advance the queue.
-
-The engine SNAPSHOT was rebuilt from slot 194 (slot 202's engine has compilation errors in `CbrRetrievalService`). All 3 engine-dependent tests pass: `CaseEngineRoundTripTest`, `AgentCaseCompletionTest`, `ClaudonyLedgerEventCaptureSignalTest`.
+Advance to #219 (ConfigMapping agent pool) — last issue in the queue. Run `work next` to advance.
 
 ## Pre-Existing Failures
 
-These are NOT caused by #217 and exist in the baseline:
+These are NOT caused by #218 and exist in the baseline:
 
-- `ClaudonyLedgerEventCaptureTest` — 12/13 failures, test isolation (expected N entries, got 2N from state bleeding between test classes)
-- `McpServerIntegrationTest` / `McpProtocolTest` — MCP protocol changes from engine SNAPSHOT
-- `StaticFilesTest.terminalBundleIsAccessible` — frontend npm build broken (`portal:` protocol error on npm 11.x)
+- Engine: 18 checkstyle errors (pre-existing), 106 build errors (all neocortex CBR classes — slot-local `.m2` issue, not related)
+- Engine: `CaseContextChangedEnsembleTest.java` modified but not by this session (pre-existing dirty state)
+- Claudony: same baseline failures as previous session (see prior handoff)
 
 ## Queue
 
-Position 5/8. #205, #213, #214, #215, #216 done. #217 done. Next: #218 (engine convergence), #219 (ConfigMapping).
+Position 6/8. #205–#217 done. #218 done. Next: #219 (ConfigMapping agent pool).
 
 ## Key Discoveries
 
-- **Slot-local Maven repo** at `/Users/mdproctor/claude/casehub/slots/202/.m2` — configured via `.mvn/maven.config`. Previous session's HANDOFF pointed to global `~/.m2` for engine rebuild but claudony resolves from slot-local. Any JAR fixes must target the slot-local repo.
-- **Engine EventBusAdapter architecture** — runtime module now has `*EventBusAdapter` CDI beans (`@ConsumeEvent`) that delegate to runtime-core `*Handler` POJOs produced by `RuntimeBeans`. Excluding adapters for kept handlers breaks event dispatch (they're the primary path, not duplicates). Only exclude adapters whose corresponding handlers are excluded.
-- **Neocortex SNAPSHOT version conflict** — a local `mvn install` of neocortex (from another session/slot) overwrote the slot-local `.m2` with renamed API classes (`CbrCaseMemoryStore` → `CbrRecordStore`). Fix: copy remote timestamped JARs over the `-SNAPSHOT.jar` files for all 11 neocortex artifacts.
+- **Package names differ from source:** The fork research reported `io.casehub.platform.agent.api.*` but the installed JARs use `io.casehub.platform.agent.*` (no `.api` suffix). Always verify against the installed JAR, not source-tree layout.
+- **`AgentProviderChatModel` requires non-null `AgentLangchain4jProperties`:** Passing `null` causes NPE at `doChat()`. A `DEFAULT_PROPERTIES` anonymous impl with sensible defaults (30s timeout, 10 memory window, 100 max sessions) is needed.
+- **`engine-adapter-core` had zero test dependencies:** First module in blocks to have tests. Needed explicit `junit-jupiter` + `assertj-core` in the module pom.
+- **Slot-local Maven repo:** Blocks repo had no `.mvn/maven.config`. Created one (gitignored) pointing to the slot `.m2` so `mvn install` from engine-api would be visible.
 
 ## References
 
 - `specs/issue-205-llm-fleet-manager/2026-09-21-llm-fleet-manager-design.md`
-- `specs/issue-205-llm-fleet-manager/decisions.md` (D1–D11, all captured)
+- `specs/issue-205-llm-fleet-manager/decisions.md` (D1–D11)
+- `plans/2026-09-22-engine-agentconverter-convergence.md`
 - `plans/2026-09-21-llm-fleet-manager.md`
