@@ -12,22 +12,11 @@ design-section-hashes:
 flyway-next-v: unknown
 
 ## Queue
-- [ ] casehubio/claudony#205 — Issue #205 ← active
-  - [ ] Batch 1: Platform SPI
-    - [ ] Task 1: PoolManager SPI + DefaultPoolManager
-    - [ ] Task 2: Manifest pools parsing
-  - [ ] Batch 2: Claudony Backend
-    - [ ] Task 3: ClaudonyAgentBackend
-    - [ ] Task 4: FleetPoolManager
-  - [ ] Batch 3: Observability
-    - [ ] Task 5: Fleet REST endpoints
-    - [ ] Task 6: Wire WorkerProvisioner to pool
-  - [ ] Batch 4: Engine Convergence
-    - [ ] Task 7: AgentConverter onto RoutingAgentProvider
-- [ ] casehubio/claudony#213 — openSession-pool-acquire
-- [ ] casehubio/claudony#214 — wire-WorkerProvisioner
-- [ ] casehubio/claudony#215 — conversation-id-capture
-- [ ] casehubio/claudony#216 — shared-file-coordination
+- [x] casehubio/claudony#205 — Issue #205
+- [x] casehubio/claudony#213 — openSession-pool-acquire
+- [x] casehubio/claudony#214 — wire-WorkerProvisioner
+- [x] casehubio/claudony#215 — conversation-id-capture
+- [ ] casehubio/claudony#216 — shared-file-coordination ← active
 - [ ] casehubio/claudony#217 — CDI-deployment-fix
 - [ ] casehubio/claudony#218 — engine-convergence
 - [ ] casehubio/claudony#219 — ConfigMapping-agent-pool
