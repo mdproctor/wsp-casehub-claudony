@@ -23,6 +23,6 @@ flyway-next-v: unknown
     - [x] Task 1: Define ChatModelProviderResolver SPI
     - [x] Task 2: Refactor AgentConverter + thread resolver
   - [ ] Batch 2: Blocks adapter
-    - [ ] Task 3: Implement RoutingChatModelProviderResolver
+    - [x] Task 3: Implement RoutingChatModelProviderResolver
     - [ ] Task 4: CDI wiring in EngineAdapterBeans
 - [ ] casehubio/claudony#219 — ConfigMapping-agent-pool
