@@ -20,10 +20,10 @@ flyway-next-v: unknown
 - [x] casehubio/claudony#217 — CDI-deployment-fix
 - [x] casehubio/claudony#218 — engine-convergence
 - [x] casehubio/claudony#219 — ConfigMapping-agent-pool
-- [ ] casehubio/claudony#220 — close-pool-leak ← active
-- [ ] casehubio/claudony#221 — terminate-bypasses-close
-- [ ] casehubio/claudony#222 — eviction-formula
-- [ ] casehubio/claudony#223 — branch-isolated-guard
-- [ ] casehubio/claudony#224 — pool-resource-auth
-- [ ] casehubio/claudony#225 — openWorkerSession-tests
-- [ ] casehubio/claudony#226 — pool-resource-quarkustest
+- [x] casehubio/claudony#220 — close-pool-leak
+- [x] casehubio/claudony#221 — terminate-bypasses-close
+- [x] casehubio/claudony#222 — eviction-formula
+- [x] casehubio/claudony#223 — branch-isolated-guard
+- [x] casehubio/claudony#224 — pool-resource-auth
+- [x] casehubio/claudony#225 — openWorkerSession-tests
+- [x] casehubio/claudony#226 — pool-resource-quarkustest
