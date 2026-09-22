@@ -17,6 +17,6 @@ flyway-next-v: unknown
 - [x] casehubio/claudony#214 — wire-WorkerProvisioner
 - [x] casehubio/claudony#215 — conversation-id-capture
 - [x] casehubio/claudony#216 — shared-file-coordination
-- [ ] casehubio/claudony#217 — CDI-deployment-fix ← active
-- [ ] casehubio/claudony#218 — engine-convergence
+- [x] casehubio/claudony#217 — CDI-deployment-fix
+- [ ] casehubio/claudony#218 — engine-convergence ← active
 - [ ] casehubio/claudony#219 — ConfigMapping-agent-pool
