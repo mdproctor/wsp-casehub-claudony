@@ -20,8 +20,8 @@
 - Engine-api is a library module — no CDI annotations, no framework deps
 - `engine-adapter-core` is "zero CDI, zero Spring" — POJOs only
 - `engine-adapter` is the CDI wiring layer — `@ApplicationScoped` beans, `@Produces`
-- Backward compatibility required — existing `AgentConverter.toApiAgent(JsonNode)` overload must keep working with inline provider construction
-- All existing `AgentConverterTest` tests must continue to pass unchanged
+- Pre-release: no backward-compat overloads. Change signatures directly, update all callers.
+- All existing `AgentConverterTest` tests must be updated to pass the resolver explicitly
 
 ---
 
@@ -269,33 +269,22 @@ Refs casehubio/claudony#218"
 
 **Interfaces:**
 - Consumes: `ChatModelProviderResolver` from Task 1
-- Produces: `AgentConverter.toApiAgent(JsonNode, ChatModelProviderResolver)` — new overload
-- Produces: `YamlCaseDefinitionConverter.convert(yaml, registry, providers, resolver)` — new overload
-- Produces: `CaseDefinitionYamlMapper.load(...)` overloads with optional `ChatModelProviderResolver`
+- Produces: `AgentConverter.toApiAgent(JsonNode, ChatModelProviderResolver)` — single method (no overload)
+- Produces: `YamlCaseDefinitionConverter.convert(yaml, registry, providers, resolver)` — resolver added to existing signature
+- Produces: `CaseDefinitionYamlMapper.load(...)` — resolver added to existing signatures
 
-- [ ] **Step 1: Run existing `AgentConverterTest` to establish green baseline**
+- [ ] **Step 1: Refactor `AgentConverter` — replace static method with resolver parameter**
 
-Run: `JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test -f engine/api/pom.xml -Dtest=AgentConverterTest`
-Expected: all 14 tests PASS
-
-- [ ] **Step 2: Refactor `AgentConverter` — add resolver overload, delegate**
-
-Replace `AgentConverter.java` contents:
+Replace `AgentConverter.java` contents. Single `toApiAgent` method that takes a resolver. No backward-compat overload — pre-release.
 
 ```java
 package io.casehub.api.model.converter;
 
 import io.casehub.api.model.ai.ChatModelProvider;
 import io.casehub.api.model.ai.ChatModelProviderResolver;
-import io.casehub.api.model.ai.InlineChatModelProviderResolver;
 import io.casehub.api.model.ai.AgentBuilder;
 
 public class AgentConverter {
-
-    public static io.casehub.api.model.ai.Agent toApiAgent(
-            com.fasterxml.jackson.databind.JsonNode agentNode) {
-        return toApiAgent(agentNode, InlineChatModelProviderResolver.INSTANCE);
-    }
 
     public static io.casehub.api.model.ai.Agent toApiAgent(
             com.fasterxml.jackson.databind.JsonNode agentNode,
@@ -342,41 +331,47 @@ public class AgentConverter {
 }
 ```
 
-The `toChatModelProviderFromNode` private static method is removed — its logic now lives in `InlineChatModelProviderResolver`. The no-arg overload delegates to the resolver overload with the default.
+The `toChatModelProviderFromNode` private static method is removed — its logic now lives in `InlineChatModelProviderResolver`.
 
-- [ ] **Step 3: Run `AgentConverterTest` to verify backward compatibility**
+- [ ] **Step 2: Update `AgentConverterTest` to pass resolver explicitly**
+
+Every test call changes from `AgentConverter.toApiAgent(node)` to `AgentConverter.toApiAgent(node, InlineChatModelProviderResolver.INSTANCE)`:
+
+```java
+import io.casehub.api.model.ai.InlineChatModelProviderResolver;
+
+// In each test method, e.g.:
+Agent result = AgentConverter.toApiAgent(node, InlineChatModelProviderResolver.INSTANCE);
+
+// For thrown-exception tests:
+assertThatThrownBy(() -> AgentConverter.toApiAgent(node, InlineChatModelProviderResolver.INSTANCE))
+```
+
+Add a constant at the top of the test class:
+```java
+private static final ChatModelProviderResolver RESOLVER = InlineChatModelProviderResolver.INSTANCE;
+```
+
+Then use `AgentConverter.toApiAgent(node, RESOLVER)` everywhere.
+
+- [ ] **Step 3: Run `AgentConverterTest`**
 
 Run: `JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test -f engine/api/pom.xml -Dtest=AgentConverterTest`
-Expected: all 14 tests PASS (no changes to test code)
+Expected: all 14 tests PASS
 
 - [ ] **Step 4: Thread resolver through `YamlCaseDefinitionConverter`**
 
-Add `ChatModelProviderResolver` parameter to `convert()` and `convertWorkers()` and `buildAgentFunction()`:
+Change the `convert()` signature directly — add `ChatModelProviderResolver` parameter:
 
-In `YamlCaseDefinitionConverter.java`:
-
-Add new `convert()` overload (keep existing for backward compat):
 ```java
 public static CaseDefinition convert(
     YamlCaseDefinition yaml,
     ExpressionEngineRegistry registry,
     WorkerFunctionProviderRegistry providers,
     ChatModelProviderResolver chatModelResolver) {
-    // ... same body but passes chatModelResolver to convertWorkers
-}
 ```
 
-Modify existing `convert()` to delegate:
-```java
-public static CaseDefinition convert(
-    YamlCaseDefinition yaml,
-    ExpressionEngineRegistry registry,
-    WorkerFunctionProviderRegistry providers) {
-    return convert(yaml, registry, providers, null);
-}
-```
-
-Update `convertWorkers()` signature to accept `ChatModelProviderResolver`:
+Update `convertWorkers()` signature:
 ```java
 private static void convertWorkers(
     List<YamlWorker> yamlWorkers, CaseDefinition def,
@@ -390,9 +385,7 @@ private static WorkerFunction<?, ?> buildAgentFunction(
     YamlWorker yw, ChatModelProviderResolver chatModelResolver) {
     try {
         JsonNode agentNode = MAPPER.valueToTree(yw.agent());
-        Agent agent = chatModelResolver != null
-            ? AgentConverter.toApiAgent(agentNode, chatModelResolver)
-            : AgentConverter.toApiAgent(agentNode);
+        Agent agent = AgentConverter.toApiAgent(agentNode, chatModelResolver);
         return new AgentWorkerFunction(agent);
     } catch (Exception e) {
         LOG.warnf(
@@ -405,7 +398,7 @@ private static WorkerFunction<?, ?> buildAgentFunction(
 
 - [ ] **Step 5: Thread resolver through `CaseDefinitionYamlMapper`**
 
-Add `ChatModelProviderResolver` parameter to the 3 `load()` overloads that accept `WorkerFunctionProviderRegistry`:
+Add `ChatModelProviderResolver` parameter to all `load()` methods that accept `WorkerFunctionProviderRegistry`. Change signatures directly — no overloads:
 
 ```java
 public static CaseDefinition load(
@@ -414,30 +407,34 @@ public static CaseDefinition load(
     final ExpressionEngineRegistry registry,
     final WorkerFunctionProviderRegistry providerRegistry,
     final ChatModelProviderResolver chatModelResolver) throws IOException {
-    // ... same body but passes chatModelResolver to convert()
+    // ... passes chatModelResolver to convert()
 }
 ```
 
-Keep existing overloads as backward-compatible delegators (pass `null` for resolver).
+For the simple `load(InputStream)` convenience method (non-CDI), pass `InlineChatModelProviderResolver.INSTANCE`.
 
-- [ ] **Step 6: Run full engine-api test suite**
+- [ ] **Step 6: Fix all callers across the engine repo**
+
+Find all callers of `convert()` and `load()` and update them. The main callers:
+- `CaseDefinitionYamlMapper.load()` calls `YamlCaseDefinitionConverter.convert()` — already updated above
+- Any test classes that call `load()` or `convert()` directly — pass `InlineChatModelProviderResolver.INSTANCE`
+- Runtime callers in other engine modules — search with `ide_find_references`
+
+- [ ] **Step 7: Run full engine-api test suite**
 
 Run: `JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test -f engine/api/pom.xml`
-Expected: all tests PASS — no behavioral change, only API addition
+Expected: all tests PASS
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git -C engine add api/src/main/java/io/casehub/api/model/converter/AgentConverter.java \
-  api/src/main/java/io/casehub/api/model/converter/YamlCaseDefinitionConverter.java \
-  api/src/main/java/io/casehub/api/model/converter/CaseDefinitionYamlMapper.java
+git -C engine add -A
 git -C engine commit -m "refactor(#218): thread ChatModelProviderResolver through YAML conversion chain
 
-AgentConverter now delegates to the injected ChatModelProviderResolver
-instead of a private static method. The resolver is threaded through
-CaseDefinitionYamlMapper.load() → YamlCaseDefinitionConverter.convert()
-→ buildAgentFunction(). Existing no-resolver overloads use the default
-InlineChatModelProviderResolver for backward compatibility.
+AgentConverter.toApiAgent() now requires a ChatModelProviderResolver parameter.
+The resolver is threaded through CaseDefinitionYamlMapper.load() →
+YamlCaseDefinitionConverter.convert() → buildAgentFunction(). No backward-compat
+overloads — pre-release, clean signatures.
 
 Refs casehubio/claudony#218"
 ```
