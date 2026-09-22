@@ -18,11 +18,12 @@ flyway-next-v: unknown
 - [x] casehubio/claudony#215 — conversation-id-capture
 - [x] casehubio/claudony#216 — shared-file-coordination
 - [x] casehubio/claudony#217 — CDI-deployment-fix
-- [ ] casehubio/claudony#218 — engine-convergence ← active
-  - [x] Batch 1: Engine SPI
-    - [x] Task 1: Define ChatModelProviderResolver SPI
-    - [x] Task 2: Refactor AgentConverter + thread resolver
-  - [x] Batch 2: Blocks adapter
-    - [x] Task 3: Implement RoutingChatModelProviderResolver
-    - [x] Task 4: CDI wiring in EngineAdapterBeans
-- [ ] casehubio/claudony#219 — ConfigMapping-agent-pool
+- [x] casehubio/claudony#218 — engine-convergence
+- [x] casehubio/claudony#219 — ConfigMapping-agent-pool
+- [ ] casehubio/claudony#220 — close-pool-leak ← active
+- [ ] casehubio/claudony#221 — terminate-bypasses-close
+- [ ] casehubio/claudony#222 — eviction-formula
+- [ ] casehubio/claudony#223 — branch-isolated-guard
+- [ ] casehubio/claudony#224 — pool-resource-auth
+- [ ] casehubio/claudony#225 — openWorkerSession-tests
+- [ ] casehubio/claudony#226 — pool-resource-quarkustest
