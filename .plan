@@ -12,7 +12,7 @@ design-section-hashes:
 flyway-next-v: unknown
 
 ## Queue
-- [ ] casehubio/claudony#231 — fluent-dsl-agent-pool ← active
-- [ ] casehubio/claudony#232 — annotations-agent-pool
-- [ ] casehubio/claudony#233 — yaml-parity-agent-pool
-- [ ] casehubio/claudony#234 — ops-yaml-plugin-integration
+- [x] casehubio/claudony#231 — fluent-dsl-agent-pool
+- [x] casehubio/claudony#232 — annotations-agent-pool
+- [x] casehubio/claudony#233 — yaml-parity-agent-pool
+- [x] casehubio/claudony#234 — ops-yaml-plugin-integration
