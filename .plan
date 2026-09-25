@@ -2,7 +2,7 @@
 
 ## State
 branch: issue-231-canonical-pool-layer
-state: active
+state: closing:promoted
 project-sha: slot-creation
 date: 2026-09-22
 issue-repo: casehubio/claudony
@@ -11,6 +11,7 @@ design-repo: project
 design-section-hashes: 
 flyway-next-v: unknown
 
+evidence-era: true
 ## Queue
 - [x] casehubio/claudony#231 — fluent-dsl-agent-pool
 - [x] casehubio/claudony#232 — annotations-agent-pool
