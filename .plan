@@ -2,7 +2,7 @@
 
 ## State
 branch: issue-238-fleet-integration-test
-state: closing:merged
+state: closing:stamped
 project-sha: 35682bdf8b83f3ca862d5c09359cdda900145860
 date: 
 issue-repo: casehubio/claudony
