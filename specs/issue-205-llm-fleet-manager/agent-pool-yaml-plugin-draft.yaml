@@ -1,0 +1,242 @@
+# Agent Pool — YAML Plugin Draft
+#
+# Pure YAML plugin for managing Claudony agent pool sessions.
+# Uses platform yaml-step-runtime: process plugin for tmux commands,
+# structural step types for lifecycle control flow.
+#
+# This is a DRAFT — exploring how far the YAML language can go
+# for pool provisioning before hitting a Java escape hatch.
+
+plugin:
+  name: claudony-agent-pool
+  version: "1.0"
+  nodeType: agent_pool
+  resyncInterval: PT30S
+
+defaults:
+  tmuxPrefix: claudony-pool-
+  defaultCommand: claude
+  defaultWorkingDir: ~/claudony-workspace
+
+# ── Actual State ──────────────────────────────────────────
+# Reads current pool state via tmux commands.
+# Returns: session list with names, states, and health.
+
+actual-state:
+  steps:
+    - step: list-sessions
+      process:
+        command: tmux
+        args: [list-sessions, -F, "#{session_name} #{session_activity}"]
+        timeout: 5s
+      output: lines
+
+    - step: filter-pool-sessions
+      transform: |
+        .lines
+        | map(select(startswith("${plugin.tmuxPrefix}")))
+        | map(split(" ") | { name: .[0], lastActivity: .[1] })
+
+    - step: check-health
+      forEach: ${step.filter-pool-sessions} as session
+      process:
+        command: tmux
+        args: [has-session, -t, "${each.session.name}"]
+        timeout: 3s
+
+    - step: build-state
+      transform: |
+        {
+          sessions: ${step.filter-pool-sessions},
+          activeCount: (${step.filter-pool-sessions} | length),
+          health: (if ${step.check-health.exitCode} == 0 then "HEALTHY" else "DEGRADED" end)
+        }
+
+  drift:
+    compare-state:
+      fields: [activeCount]
+      tolerance:
+        activeCount: { min: "${spec.minActive}", max: "${spec.maxActive}" }
+
+# ── Provisioner ───────────────────────────────────────────
+# Creates, suspends, resumes, and destroys tmux sessions.
+
+provisioner:
+  create:
+    steps:
+      - step: create-tmux-session
+        process:
+          command: tmux
+          args:
+            - new-session
+            - -d
+            - -s
+            - "${plugin.tmuxPrefix}${spec.name}-${spec.instanceId}"
+            - -c
+            - "${spec.workingDir}"
+          timeout: 10s
+
+      - step: send-command
+        if: "${spec.command} != ''"
+        process:
+          command: tmux
+          args:
+            - send-keys
+            - -t
+            - "${plugin.tmuxPrefix}${spec.name}-${spec.instanceId}"
+            - "${spec.command}"
+            - Enter
+          timeout: 5s
+
+      - step: verify-created
+        process:
+          command: tmux
+          args: [has-session, -t, "${plugin.tmuxPrefix}${spec.name}-${spec.instanceId}"]
+          timeout: 3s
+        retry: 3
+
+  update:
+    # Pool config change (e.g. maxActive increased) — reconcile session count
+    steps:
+      - step: current-count
+        process:
+          command: tmux
+          args: [list-sessions, -F, "#{session_name}"]
+          timeout: 5s
+        output: lines
+
+      - step: count-pool-sessions
+        transform: |
+          .lines | map(select(startswith("${plugin.tmuxPrefix}${spec.name}"))) | length
+
+      # Pre-warm if below minActive
+      - step: pre-warm
+        if: "${step.count-pool-sessions} < ${spec.minActive}"
+        block:
+          - step: warm-session
+            forEach: range(${spec.minActive} - ${step.count-pool-sessions}) as i
+            process:
+              command: tmux
+              args:
+                - new-session
+                - -d
+                - -s
+                - "${plugin.tmuxPrefix}${spec.name}-warm-${each.i}"
+                - -c
+                - "${spec.workingDir}"
+              timeout: 10s
+
+  delete:
+    steps:
+      - step: list-pool-sessions
+        process:
+          command: tmux
+          args: [list-sessions, -F, "#{session_name}"]
+          timeout: 5s
+        output: lines
+
+      - step: kill-each
+        forEach: ${step.list-pool-sessions.lines} as session
+        if: startswith("${plugin.tmuxPrefix}${spec.name}")
+        process:
+          command: tmux
+          args: [kill-session, -t, "${each.session}"]
+          timeout: 5s
+
+# ── Suspend / Resume (pool-specific lifecycle) ────────────
+# These extend the standard create/delete with session persistence.
+
+  suspend:
+    steps:
+      - step: get-conversation-id
+        process:
+          command: tmux
+          args: [display-message, -t, "${spec.sessionId}", -p, "#{pane_pid}"]
+          timeout: 3s
+
+      - step: kill-tmux
+        process:
+          command: tmux
+          args: [kill-session, -t, "${spec.sessionId}"]
+          timeout: 5s
+
+      # Conversation persists on disk — only tmux process is destroyed
+
+  resume:
+    steps:
+      - step: recreate-session
+        process:
+          command: tmux
+          args:
+            - new-session
+            - -d
+            - -s
+            - "${spec.sessionId}"
+            - -c
+            - "${spec.workingDir}"
+          timeout: 10s
+
+      - step: resume-conversation
+        if: "${spec.conversationId} != ''"
+        process:
+          command: tmux
+          args:
+            - send-keys
+            - -t
+            - "${spec.sessionId}"
+            - "claude -c ${spec.conversationId}"
+            - Enter
+          timeout: 5s
+
+# ── Health Check ──────────────────────────────────────────
+
+health-check:
+  steps:
+    - step: session-alive
+      process:
+        command: tmux
+        args: [has-session, -t, "${spec.sessionId}"]
+        timeout: 3s
+
+    - step: memory-usage
+      process:
+        command: ps
+        args: [-o, "rss=", -p, "${spec.panePid}"]
+        timeout: 3s
+      output: lines
+
+    - step: evaluate
+      transform: |
+        {
+          alive: (${step.session-alive.exitCode} == 0),
+          memoryBytes: (${step.memory-usage.lines[0]} | tonumber * 1024),
+          healthy: (${step.session-alive.exitCode} == 0)
+        }
+
+# ── Fault Policy ──────────────────────────────────────────
+
+fault-policy:
+  faultTypes: [PROVISION_FAILED, NODE_DEGRADED]
+  tiers:
+    - threshold: 3
+      action:
+        steps:
+          - step: restart-session
+            try:
+              - process:
+                  command: tmux
+                  args: [kill-session, -t, "${fault.nodeId}"]
+                  timeout: 5s
+              - process:
+                  command: tmux
+                  args: [new-session, -d, -s, "${fault.nodeId}", -c, "${spec.workingDir}"]
+                  timeout: 10s
+            catch:
+              - step: log-failure
+                process:
+                  command: echo
+                  args: ["Session restart failed for ${fault.nodeId}"]
+
+    - threshold: 5
+      action: escalate-human
+      humanGating: ALL
