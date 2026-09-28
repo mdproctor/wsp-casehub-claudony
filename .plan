@@ -13,3 +13,5 @@ flyway-next-v:
 
 ## Queue
 - [ ] casehubio/claudony#238 — Issue #238 ← active
+  - [ ] Batch 1: Fleet Integration
+    - [ ] Task 1: Create MockAgent and FleetPoolIntegrationTest
