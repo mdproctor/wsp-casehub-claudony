@@ -13,3 +13,9 @@ flyway-next-v:
 
 ## Queue
 - [ ] casehubio/claudony#235 — Issue #235 ← active
+  - [ ] Batch 1: YAML Parser Migration
+    - [ ] Task 1: Define pool StepDefinition schema
+    - [ ] Task 2: Migrate parser to StepValidator
+  - [ ] Batch 2: Annotation Scanner Migration
+    - [ ] Task 3: Create @PoolDefinition and APT processor
+    - [ ] Task 4: Create PoolDefinitionSource and delete old annotations
