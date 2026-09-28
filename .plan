@@ -1,0 +1,21 @@
+# Work Plan — issue-235-align-pool-yaml-platform
+
+## State
+branch: issue-235-align-pool-yaml-platform
+state: scaffolded
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 236,237
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+## Queue
+- [ ] casehubio/claudony#235 — Issue #235 ← active
+  - [x] Batch 1: YAML Parser Migration
+    - [x] Task 1: Define pool StepDefinition schema
+    - [x] Task 2: Migrate parser to StepValidator
+  - [x] Batch 2: Annotation Scanner Migration
+    - [x] Task 3: Create @PoolDefinition and APT processor
+    - [x] Task 4: Create PoolDefinitionSource and delete old annotations
