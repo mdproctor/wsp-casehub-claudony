@@ -22,3 +22,17 @@
 **Exploration:** quick
 **Depends on:** D1 (module structure)
 **Status:** captured
+
+## D3: Suspend model and persistence
+
+**Choice:** tmux-as-persistence — suspend kills the process, not the session; session options store all metadata; no file or database needed
+**Alternatives:**
+- File-based pool-state.json — fragile, race conditions, classic anti-pattern for mutable state
+- Database (PostgreSQL) — over-engineered for a small key-value store
+- SIGSTOP — pauses process but doesn't free memory
+**Rationale:** tmux is already the persistence layer for active sessions. Suspended sessions should use the same layer. Kill the process, keep the session as a metadata container. `respawn-pane` resumes. Filed as #239 for the production implementation; #230 testing module models the new semantics.
+**Trade-offs:** Changes suspend/resume implementation in TmuxSessionOperations; InMemorySessionOperations must model "session survives suspend"
+**Sources:** First-principles analysis of crash recovery, TmuxSessionOperations.java, ServerStartup.bootstrapRegistry() pattern
+**Exploration:** quick
+**Depends on:** D1 (module structure)
+**Status:** captured
