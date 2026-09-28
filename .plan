@@ -1,0 +1,15 @@
+# Work Plan — issue-230-agent-pool-test-utilities
+
+## State
+branch: issue-230-agent-pool-test-utilities
+state: active
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 230
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+## Queue
+- [ ] casehubio/claudony#230 — agent pool test utilities for downstream projects <- active
