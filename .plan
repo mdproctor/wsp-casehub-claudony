@@ -1,0 +1,15 @@
+# Work Plan — issue-238-fleet-integration-test
+
+## State
+branch: issue-238-fleet-integration-test
+state: scaffolded
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 238
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+## Queue
+- [ ] casehubio/claudony#238 — Issue #238 ← active
