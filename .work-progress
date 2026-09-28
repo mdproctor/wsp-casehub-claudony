@@ -46,3 +46,7 @@ rebase:blocks=done
 report_rebase=done
 report_squash=done
 write_marker=done
+land:claudony_mechanical_attempt=1
+land:platform=done
+land:engine=done
+land:blocks=done
