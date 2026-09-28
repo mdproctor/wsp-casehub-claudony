@@ -16,6 +16,6 @@ flyway-next-v:
   - [x] Batch 1: YAML Parser Migration
     - [x] Task 1: Define pool StepDefinition schema
     - [x] Task 2: Migrate parser to StepValidator
-  - [ ] Batch 2: Annotation Scanner Migration
-    - [ ] Task 3: Create @PoolDefinition and APT processor
-    - [ ] Task 4: Create PoolDefinitionSource and delete old annotations
+  - [x] Batch 2: Annotation Scanner Migration
+    - [x] Task 3: Create @PoolDefinition and APT processor
+    - [x] Task 4: Create PoolDefinitionSource and delete old annotations
