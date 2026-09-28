@@ -2,7 +2,7 @@
 
 ## State
 branch: issue-238-fleet-integration-test
-state: active
+state: closing:review
 project-sha: 35682bdf8b83f3ca862d5c09359cdda900145860
 date: 
 issue-repo: casehubio/claudony
@@ -11,7 +11,6 @@ design-repo:
 design-section-hashes: 
 flyway-next-v: 
 
+evidence-era: true
 ## Queue
-- [ ] casehubio/claudony#238 — Issue #238 ← active
-  - [ ] Batch 1: Fleet Integration
-    - [ ] Task 1: Create MockAgent and FleetPoolIntegrationTest
+- [x] casehubio/claudony#238 — Issue #238
