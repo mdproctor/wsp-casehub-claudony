@@ -1,6 +1,0 @@
-{"ts": "2026-09-28T21:28:17.559983+00:00", "mode": "wrap", "action": "user_input", "step": "epic_hygiene", "steps_executed": [], "error": ""}
-{"ts": "2026-09-28T21:28:31.238344+00:00", "mode": "wrap", "action": "wrap_sweep_config", "step": "", "steps_executed": [], "error": ""}
-{"ts": "2026-09-28T21:28:36.980778+00:00", "mode": "wrap", "action": "user_input", "step": "journal_entry", "steps_executed": [], "error": ""}
-{"ts": "2026-09-28T21:28:45.737118+00:00", "mode": "wrap", "action": "user_input", "step": "arc42_scan_wrap", "steps_executed": [], "error": ""}
-{"ts": "2026-09-28T21:28:55.820806+00:00", "mode": "wrap", "action": "user_input", "step": "handoff_write", "steps_executed": [], "error": ""}
-{"ts": "2026-09-28T21:29:55.268649+00:00", "mode": "wrap", "action": "complete", "step": "", "steps_executed": ["wip_commit"], "error": ""}
