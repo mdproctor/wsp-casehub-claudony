@@ -2,7 +2,7 @@
 
 ## State
 branch: feat/206-auto-scaling-policies
-state: closing:promoted
+state: closing:pushed
 project-sha: 
 date: 
 issue-repo: casehubio/claudony
