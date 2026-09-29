@@ -83,10 +83,10 @@
 - Status + sessions only — simpler but incomplete ops view
 - Status + sessions + scaling — no historical data
 **Rationale:** Ops perspective needs full observability to provision and manage pools effectively
-**Trade-offs:** Requires time-series storage for historical charts; more complex UI
+**Trade-offs:** Requires EventStore-backed history (bounded, no aggregation — see D9 revised); more complex UI
 **Sources:** AgentPoolStatus, PoolSnapshot, DemandMetrics, ManagedSession, ScalingDecision
 **Exploration:** quick
-**Status:** captured
+**Status:** revised (R2-01: trade-off text updated — EventStore replaces TSDB reference)
 
 ## D8: Metrics instrumentation
 
@@ -169,11 +169,11 @@
 **Alternatives:**
 - `@Authenticated` for all — current pattern on AgentPoolResource. Insufficient: adjustMaxActive, destroySession, suspend are destructive ops that should be restricted.
 - Fine-grained per-operation roles — overcomplicated for the current user model (single operator + fleet key).
-**Rationale:** Pool mutations affect infrastructure availability. An authenticated user can view pool status, but only an admin can modify pool capacity or destroy sessions. Claudony's auth module (L2) already supports roles via WebAuthn credential metadata.
-**Trade-offs:** Requires admin role assignment during credential provisioning. Minor setup cost.
-**Sources:** AgentPoolResource (@Authenticated), auth module (L2), WebAuthn CredentialStore
+**Rationale:** Pool mutations affect infrastructure availability. An authenticated user can view pool status, but only an admin can modify pool capacity or destroy sessions. Role infrastructure does not exist yet — `@RolesAllowed` is unused in the codebase and no `SecurityIdentityAugmentor` is present. Implementation requires either adopting `casehub-platform-oidc` or building a custom `SecurityIdentityAugmentor` that maps WebAuthn credentials to roles.
+**Trade-offs:** Requires new role infrastructure (SecurityIdentityAugmentor or platform-oidc adoption) and admin role assignment during credential provisioning. The role infrastructure is new work, not a minor configuration step.
+**Sources:** AgentPoolResource (@Authenticated), auth module (L2), WebAuthn CredentialStore, casehub-platform-oidc (not yet adopted)
 **Exploration:** quick (surfaced by R1-13)
-**Status:** captured
+**Status:** revised (R2-01: corrected rationale — role infrastructure is new work, not pre-existing)
 
 ## D15: Frontend technology for pool dashboard
 
