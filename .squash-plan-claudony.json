@@ -1,0 +1,19 @@
+{
+  "target_sha": "276a247",
+  "target_message": "fix(#239): pool suspend kills process, not tmux session \u2014 tmux as persistence layer",
+  "squash_into": [
+    {
+      "sha": "5b2f6d7",
+      "action": "fixup"
+    },
+    {
+      "sha": "6216e8b",
+      "action": "fixup"
+    },
+    {
+      "sha": "d97e22b",
+      "action": "fixup"
+    }
+  ],
+  "verified": true
+}
