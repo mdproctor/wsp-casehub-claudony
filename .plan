@@ -1,0 +1,16 @@
+# Work Plan — issue-239-pool-tmux-persistence
+
+## State
+branch: issue-239-pool-tmux-persistence
+state: closing:promoted
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 239
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+evidence-era: true
+## Queue
+- [ ] casehubio/claudony#239 — Issue #239 ← active
