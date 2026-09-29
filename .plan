@@ -1,0 +1,15 @@
+# Work Plan — feat/208-ops-pool-provisioning
+
+## State
+branch: feat/208-ops-pool-provisioning
+state: scaffolded
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 208
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+## Queue
+- [ ] casehubio/claudony#208 — Issue #208 ← active
