@@ -168,7 +168,7 @@ git commit -m "feat(#206): add ScalingDirection, ScalingDecision, PoolSnapshot r
 **Interfaces:**
 - Consumes: `PoolSnapshot`, `ScalingDecision`
 - Produces: `ScalingPolicy.evaluate(PoolSnapshot) → ScalingDecision`
-- Produces: `NoOpScalingPolicy` (`@ApplicationScoped`, `@DefaultBean`)
+- Produces: `NoOpScalingPolicy` (plain class, constructed directly — not CDI-managed)
 
 - [ ] **Step 1: Write NoOpScalingPolicy test**
 
@@ -219,11 +219,7 @@ public interface ScalingPolicy {
 ```java
 package io.casehub.claudony.casehub.fleet;
 
-import io.quarkus.arc.DefaultBean;
-import jakarta.enterprise.context.ApplicationScoped;
-
-@ApplicationScoped
-@DefaultBean
+/** No-op scaling — always returns NONE. Constructed directly, not CDI-managed. */
 public class NoOpScalingPolicy implements ScalingPolicy {
 
     @Override
@@ -534,6 +530,20 @@ class StepScalingPolicyTest {
             new ScalingStep(1.0, 2)
         ))).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void graduatedScaleInMatchesMostAggressiveStep() {
+        var policy = new StepScalingPolicy(List.of(
+            new ScalingStep(0.8, 2),
+            new ScalingStep(0.3, -1),
+            new ScalingStep(0.1, -5)
+        ));
+        // fillRatio = 0.05 → below both 0.3 and 0.1 → most aggressive (-5) should win
+        var snapshot = new PoolSnapshot(1, 0, 0, 20, PoolSnapshot.DemandMetrics.ZERO);
+        var decision = policy.evaluate(snapshot);
+        assertThat(decision.direction()).isEqualTo(ScalingDirection.IN);
+        assertThat(decision.count()).isEqualTo(5);
+    }
 }
 ```
 
@@ -576,6 +586,7 @@ public class StepScalingPolicy implements ScalingPolicy {
     @Override
     public ScalingDecision evaluate(PoolSnapshot snapshot) {
         double fillRatio = snapshot.fillRatio();
+        ScalingStep matchedScaleIn = null;
         for (var step : steps) {
             if (step.adjustment() > 0 && fillRatio >= step.threshold()) {
                 return ScalingDecision.scaleOut(step.adjustment(),
@@ -583,10 +594,13 @@ public class StepScalingPolicy implements ScalingPolicy {
                         .formatted(fillRatio * 100, step.threshold() * 100));
             }
             if (step.adjustment() < 0 && fillRatio <= step.threshold()) {
-                return ScalingDecision.scaleIn(-step.adjustment(),
-                    "fillRatio %.0f%% <= step threshold %.0f%%"
-                        .formatted(fillRatio * 100, step.threshold() * 100));
+                matchedScaleIn = step;
             }
+        }
+        if (matchedScaleIn != null) {
+            return ScalingDecision.scaleIn(-matchedScaleIn.adjustment(),
+                "fillRatio %.0f%% <= step threshold %.0f%%"
+                    .formatted(fillRatio * 100, matchedScaleIn.threshold() * 100));
         }
         return ScalingDecision.none();
     }
@@ -624,7 +638,7 @@ public class StepScalingPolicy implements ScalingPolicy {
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test -pl claudony-casehub -Dtest=StepScalingPolicyTest`
-Expected: PASS (9 tests)
+Expected: PASS (10 tests)
 
 - [ ] **Step 6: Commit**
 
@@ -707,6 +721,14 @@ class ScalingConfigTest {
     }
 
     @Test
+    void stepConfigValidatesStepsAtConstructionTime() {
+        assertThatThrownBy(() -> new ScalingConfig.StepConfig(
+            List.of(new ScalingStep(0.8, 0)), null, null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("zero adjustment");
+    }
+
+    @Test
     void customScalingConfigBlankBeanNameThrows() {
         assertThatThrownBy(() -> new ScalingConfig.CustomScalingConfig("", null, null))
             .isInstanceOf(IllegalArgumentException.class);
@@ -779,8 +801,33 @@ public sealed interface ScalingConfig
             Objects.requireNonNull(steps);
             if (steps.isEmpty())
                 throw new IllegalArgumentException("steps must not be empty");
+            validateSteps(steps);
             if (cooldown == null) cooldown = Duration.ofSeconds(60);
             if (scaleInCooldown == null) scaleInCooldown = cooldown;
+        }
+
+        private static void validateSteps(List<ScalingStep> steps) {
+            for (var step : steps) {
+                if (step.threshold() <= 0.0 || step.threshold() >= 1.0)
+                    throw new IllegalArgumentException(
+                        "threshold must be in (0.0, 1.0): " + step.threshold());
+                if (step.adjustment() == 0)
+                    throw new IllegalArgumentException("zero adjustment is meaningless");
+            }
+            var dupes = steps.stream().map(ScalingStep::threshold)
+                .collect(Collectors.groupingBy(t -> t, Collectors.counting()))
+                .entrySet().stream().filter(e -> e.getValue() > 1).toList();
+            if (!dupes.isEmpty())
+                throw new IllegalArgumentException("duplicate thresholds: " + dupes);
+            double lowestScaleOut = steps.stream()
+                .filter(s -> s.adjustment() > 0).mapToDouble(ScalingStep::threshold)
+                .min().orElse(Double.MAX_VALUE);
+            double highestScaleIn = steps.stream()
+                .filter(s -> s.adjustment() < 0).mapToDouble(ScalingStep::threshold)
+                .max().orElse(-1.0);
+            if (highestScaleIn >= lowestScaleOut)
+                throw new IllegalArgumentException(
+                    "scale-in thresholds must be strictly below all scale-out thresholds");
         }
     }
 
@@ -809,7 +856,7 @@ public sealed interface ScalingConfig
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test -pl claudony-casehub -Dtest=ScalingConfigTest`
-Expected: PASS (8 tests)
+Expected: PASS (9 tests)
 
 - [ ] **Step 5: Commit**
 
@@ -855,6 +902,18 @@ void adjustMaxActive_setsEffectiveMax() {
     manager.adjustMaxActive(7);
     var status = manager.status();
     assertThat(status.max()).isEqualTo(7); // status reports effectiveMaxActive
+}
+
+@Test
+void adjustMaxActive_clampsToActiveCount() {
+    manager = createManager(0, 10);
+    manager.acquireSession("a", "/ws/1");
+    manager.acquireSession("b", "/ws/2");
+    manager.acquireSession("c", "/ws/3");
+    manager.acquireSession("d", "/ws/4");
+    // 4 active sessions — cannot lower effectiveMax below 4
+    int actual = manager.adjustMaxActive(2);
+    assertThat(actual).isEqualTo(4); // clamped to activeCount
 }
 
 @Test
@@ -934,6 +993,7 @@ public int adjustMaxActive(int newMax) {
     try {
         int clamped = Math.min(newMax, config.maxActive());
         clamped = Math.max(clamped, config.minActive());
+        clamped = Math.max(clamped, activeCount());
         effectiveMaxActive = clamped;
         return clamped;
     } finally {
@@ -966,7 +1026,7 @@ Change `status()` to use `effectiveMaxActive` instead of `config.maxActive()`.
 - [ ] **Step 9: Run tests to verify they pass**
 
 Run: `JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test -pl claudony-casehub -Dtest=AgentSessionManagerTest`
-Expected: PASS (all existing + 6 new tests)
+Expected: PASS (all existing + 7 new tests)
 
 - [ ] **Step 10: Run full casehub module tests**
 
@@ -1391,10 +1451,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @ApplicationScoped
 public class ScalingScheduler {
 
+    private static final java.util.logging.Logger LOG =
+        java.util.logging.Logger.getLogger(ScalingScheduler.class.getName());
+
     private final AgentPoolDefinitionRegistry defRegistry;
     private final AgentPoolManagerRegistry mgrRegistry;
     private final Map<String, Instant> lastScaleOut = new ConcurrentHashMap<>();
     private final Map<String, Instant> lastScaleIn = new ConcurrentHashMap<>();
+    private final Map<String, ScalingPolicy> policyCache = new ConcurrentHashMap<>();
 
     @Inject
     public ScalingScheduler(AgentPoolDefinitionRegistry defRegistry,
@@ -1427,7 +1491,9 @@ public class ScalingScheduler {
         var snapshot = new PoolSnapshot(
             status.active(), status.idle(), status.min(), status.max(), demand);
 
-        var policy = policyFor(scalingConfig);
+        var policy = policyCache.computeIfAbsent(poolName, k -> policyFor(scalingConfig));
+        if (policy == null) return;
+
         var decision = policy.evaluate(snapshot);
 
         if (decision.direction() != ScalingDirection.NONE) {
@@ -1462,8 +1528,11 @@ public class ScalingScheduler {
             var instance = jakarta.enterprise.inject.spi.CDI.current()
                 .select(ScalingPolicy.class, new jakarta.enterprise.util.NamedLiteral(beanName));
             if (instance.isResolvable()) return instance.get();
-        } catch (Exception ignored) {}
-        return new NoOpScalingPolicy();
+            LOG.warning("Custom ScalingPolicy bean '" + beanName + "' not found — scaling disabled for this pool");
+        } catch (Exception e) {
+            LOG.warning("Failed to resolve custom ScalingPolicy bean '" + beanName + "': " + e.getMessage());
+        }
+        return null;
     }
 
     private boolean inCooldown(String poolName, ScalingConfig config) {
@@ -1527,6 +1596,44 @@ Expected: PASS (~823+ tests)
 - [ ] **Step 11: Commit any fixups**
 
 If any cross-module test failures surfaced, fix and commit here.
+
+---
+
+## Batch 6: Wiring
+
+### Task 9: Wire ClaudonyAgentBackend to AgentPoolManagerRegistry
+
+**Files:**
+- Modify: `app/src/main/java/dev/claudony/server/ServerStartup.java` (or the class that creates `AgentSessionManager`)
+- Test: Verify via existing integration tests that the scheduler can reach the manager
+
+**Interfaces:**
+- Consumes: `AgentPoolManagerRegistry.register(String, AgentSessionManager)`, `AgentPoolDefinitionRegistry.names()`
+
+> **Note:** `ClaudonyAgentBackend` creates `AgentSessionManager` from `AgentPoolConfig` (a `@ConfigMapping` interface) — it does not currently know its pool name. The pool name must come from the `AgentPoolDefinitionRegistry`. If only one pool is registered, use that name. If the definition registry is empty (legacy config-only path), use a default name like `"default"`. This wiring is in the `app` module, not `casehub`.
+
+- [ ] **Step 1: Inject AgentPoolManagerRegistry into the startup class**
+
+Inject `AgentPoolManagerRegistry` alongside the existing `AgentPoolDefinitionRegistry`.
+
+- [ ] **Step 2: After creating the AgentSessionManager, register it**
+
+```java
+String poolName = defRegistry.names().stream().findFirst().orElse("default");
+managerRegistry.register(poolName, sessionManager);
+```
+
+- [ ] **Step 3: Run full test suite**
+
+Run: `JAVA_HOME=$(/usr/libexec/java_home -v 26) mvn test`
+Expected: PASS — no regressions. The `ScalingScheduler` can now find the manager via `AgentPoolManagerRegistry`.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add app/src/main/java/dev/claudony/server/ServerStartup.java
+git commit -m "feat(#206): wire AgentSessionManager into AgentPoolManagerRegistry for scaling"
+```
 
 ## References
 
