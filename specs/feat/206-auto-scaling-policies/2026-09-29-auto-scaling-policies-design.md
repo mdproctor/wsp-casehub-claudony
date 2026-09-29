@@ -37,7 +37,7 @@ public record PoolSnapshot(
         return maxActive > 0 ? activeCount / (double) maxActive : 0.0;
     }
 
-    /** Demand-pressure counters accumulated since the last evaluation tick. */
+    /** Demand-pressure counters for one tick interval. Always reset per tick, even during cooldown. */
     public record DemandMetrics(
         int evictions,     // sessions evicted to make room for acquires
         int exhaustions,   // acquires rejected (pool exhausted, minActive reached)
@@ -203,9 +203,13 @@ public class ScalingScheduler {
 
         var scalingConfig = definition.pool().scaling();
         if (scalingConfig instanceof NoScalingConfig) return;
+
+        // Always snapshot and reset demand metrics — prevents accumulation
+        // across cooldown periods. Metrics always reflect one tick interval.
+        var demand = manager.snapshotAndResetDemandMetrics();
+
         if (inCooldown(poolName, scalingConfig)) return;
 
-        var demand = manager.snapshotAndResetDemandMetrics();
         var status = manager.status();
         var snapshot = new PoolSnapshot(
             status.active(), status.idle(), status.min(), status.max(), demand);
@@ -220,8 +224,10 @@ public class ScalingScheduler {
                 case IN  -> currentMax - decision.count();
                 case NONE -> currentMax;
             };
-            manager.adjustMaxActive(newMax);
-            recordCooldown(poolName, decision.direction(), scalingConfig);
+            int actualMax = manager.adjustMaxActive(newMax);
+            if (actualMax != currentMax) {
+                recordCooldown(poolName, decision.direction(), scalingConfig);
+            }
         }
     }
 }
@@ -237,7 +243,7 @@ A sealed interface hierarchy — each variant carries only its relevant fields:
 
 ```java
 public sealed interface ScalingConfig
-    permits TargetTrackingConfig, StepConfig, NoScalingConfig {
+    permits TargetTrackingConfig, StepConfig, CustomScalingConfig, NoScalingConfig {
     Duration cooldown();
     Duration scaleInCooldown();
 }
@@ -292,6 +298,19 @@ public record StepConfig(
     }
 }
 
+public record CustomScalingConfig(
+    String beanName,
+    Duration cooldown,
+    Duration scaleInCooldown
+) implements ScalingConfig {
+    public CustomScalingConfig {
+        Objects.requireNonNull(beanName);
+        if (beanName.isBlank()) throw new IllegalArgumentException("beanName must not be blank");
+        if (cooldown == null) cooldown = Duration.ofSeconds(60);
+        if (scaleInCooldown == null) scaleInCooldown = cooldown;
+    }
+}
+
 public record NoScalingConfig() implements ScalingConfig {
     public static final NoScalingConfig INSTANCE = new NoScalingConfig();
     @Override public Duration cooldown() { return Duration.ZERO; }
@@ -342,23 +361,27 @@ Custom policy via CDI bean:
         cooldown: 60s
 ```
 
-Built-in type names (`target-tracking`, `step`, `none`) are resolved directly. Unknown type names are looked up as CDI `@Named` beans implementing `ScalingPolicy`. If no matching bean is found, the parser throws `IllegalArgumentException`.
+Built-in type names (`target-tracking`, `step`, `none`) construct the corresponding sealed subtype directly. Unknown type names construct a `CustomScalingConfig(beanName, cooldown, scaleInCooldown)` — the `beanName` is looked up at runtime as a CDI `@Named` bean implementing `ScalingPolicy`. If no matching bean is found at evaluation time, the scheduler logs a warning and skips the pool.
 
 ### Changes to Existing Code
 
 **`AgentPoolDefinition.PoolConfig`:** Add `ScalingConfig scaling` field (defaults to `NoScalingConfig.INSTANCE` if null).
 
-**`AgentPoolYamlParser`:** Parse the `scaling:` nested section. Construct the appropriate `ScalingConfig` sealed subtype based on the `type:` field. For unrecognised type names, record the name for CDI bean lookup at runtime.
+**`AgentPoolYamlParser`:** Parse the `scaling:` nested section. Construct the appropriate `ScalingConfig` sealed subtype based on the `type:` field. For unrecognised type names, construct `CustomScalingConfig(beanName, cooldown, scaleInCooldown)` — the bean name is resolved at evaluation time, not parse time, so the CDI container doesn't need the bean present at startup for config validation to pass.
 
 **`AgentPoolSchema`:** Add `pool.scaling.*` parameters to the schema definition.
 
 **`AgentSessionManager`:**
-- Change `config` field from `private final` to `private volatile` — enables safe reads from `status()` without acquiring the lock, while allowing atomic replacement by `adjustMaxActive()`. The config record is immutable; only the reference is reassigned. Read sites (`status()`, `activeCount()` boundary checks) see a consistent snapshot via volatile semantics. Write sites (`adjustMaxActive()`, `acquireSession()` eviction path) acquire the lock.
+- `config` remains `private final` — the immutable ceiling and floor from YAML. No thread-safety change needed; `config.maxActive()` is the **hard ceiling** that scaling cannot exceed, and `config.minActive()` is the floor.
+- Add `private volatile int effectiveMaxActive` — initialized to `config.maxActive()` in the constructor. This is the scaling-adjusted ceiling that `acquireSession()` checks instead of `config.maxActive()`. `volatile` ensures visibility for unsynchronized readers (`status()`); writes happen under the lock.
+- Change `acquireSession()` to check `activeCount() >= effectiveMaxActive` instead of `activeCount() >= config.maxActive()`.
+- Change `status()` to report `effectiveMaxActive` as the pool's current max (not `config.maxActive()`).
+- `evictOne()` continues to use `config.minActive()` — the floor is always the immutable YAML value.
 - Add demand-pressure counters: `evictionCount`, `exhaustionCount`, `acquireCount` (plain `int`, accessed only under the lock).
 - Increment `acquireCount` at entry to `acquireSession()` (inside the lock).
 - Increment `evictionCount` in `evictOne()` on successful eviction.
 - Increment `exhaustionCount` in `evictOne()` when throwing `AgentPoolExhaustedException`.
-- Add `adjustMaxActive(int newMax)`: acquires the lock, clamps `newMax` to `max(newMax, activeCount(), minActive())` — never goes below current occupancy or configured floor. Replaces `this.config` with a new `AgentSessionManagerConfig` instance. No sessions are suspended — the new ceiling only affects future `acquireSession()` capacity decisions.
+- Add `adjustMaxActive(int newMax)` returning `int`: acquires the lock, clamps `newMax` to `min(newMax, config.maxActive())` (hard ceiling) then to `max(result, config.minActive())` (floor). Sets `effectiveMaxActive` to the clamped value. Returns the actual effective value so the caller can detect no-ops. No sessions are suspended — the new ceiling only affects future `acquireSession()` capacity decisions.
 - Add `snapshotAndResetDemandMetrics()`: acquires the lock, returns a `PoolSnapshot.DemandMetrics` snapshot of current counters, resets all counters to zero.
 
 **`AgentPoolManagerRegistry` (new):** A `@ApplicationScoped` CDI bean mapping pool names to `AgentSessionManager` instances. `ClaudonyAgentBackend` registers its manager during startup via `managerRegistry.register(poolName, sessionManager)`. The `ScalingScheduler` injects this registry to reach each pool's manager.
@@ -369,7 +392,7 @@ Built-in type names (`target-tracking`, `step`, `none`) are resolved directly. U
 - **Unit tests for ScalingConfig:** Sealed type construction, YAML parsing round-trip, validation rules (step overlap, threshold ranges, fill ratio bounds). Verify `NoScalingConfig.INSTANCE` identity.
 - **Unit tests for demand metrics:** Verify counter increment/reset lifecycle across multiple acquires and evictions. Verify `snapshotAndResetDemandMetrics()` atomicity.
 - **Unit test for ScalingScheduler:** Cooldown enforcement, tick-driven evaluation, `adjustMaxActive` dispatch. Mock `AgentSessionManager`.
-- **Integration test:** `FleetPoolIntegrationTest` addition — end-to-end: configure a pool with target-tracking, drive fill ratio above target via concurrent acquires, verify `maxActive` increases.
+- **Integration test:** `FleetPoolIntegrationTest` addition — end-to-end: configure a pool with target-tracking, drive fill ratio above target via concurrent acquires, verify `effectiveMaxActive` increases. Verify hard ceiling: ensure `effectiveMaxActive` never exceeds `config.maxActive()` even under sustained pressure.
 
 ### Data Flow
 
@@ -381,12 +404,13 @@ YAML config
   → ClaudonyAgentBackend startup
       → AgentPoolManagerRegistry.register(poolName, sessionManager)
   → ScalingScheduler.tick() [every 15s]
-      → manager.snapshotAndResetDemandMetrics() → DemandMetrics
+      → manager.snapshotAndResetDemandMetrics() → DemandMetrics (always, even in cooldown)
+      → if in cooldown: discard metrics, skip evaluation
       → PoolSnapshot from AgentSessionManager.status() + DemandMetrics
       → ScalingPolicy.evaluate(snapshot) → ScalingDecision
-      → if not in cooldown and decision != NONE:
-          → manager.adjustMaxActive(currentMax ± decision.count())
-      → record cooldown
+      → if decision != NONE:
+          → actualMax = manager.adjustMaxActive(currentMax ± count)
+          → if actualMax changed: record cooldown
 ```
 
 ## Scope
@@ -395,7 +419,7 @@ YAML config
 - `ScalingPolicy` SPI (interface + `NoOpScalingPolicy` default)
 - `TargetTrackingPolicy` and `StepScalingPolicy` built-in implementations
 - `PoolSnapshot` (with `fillRatio()` derived method and `DemandMetrics`), `ScalingDecision`, `ScalingDirection` records
-- `ScalingConfig` sealed hierarchy (`TargetTrackingConfig`, `StepConfig`, `NoScalingConfig`)
+- `ScalingConfig` sealed hierarchy (`TargetTrackingConfig`, `StepConfig`, `CustomScalingConfig`, `NoScalingConfig`)
 - `AgentPoolManagerRegistry` for scheduler-to-manager wiring
 - `ScalingScheduler` with per-pool cooldown tracking
 - YAML parsing and schema updates for `pool.scaling.*`
