@@ -83,37 +83,37 @@
 - Status + sessions only — simpler but incomplete ops view
 - Status + sessions + scaling — no historical data
 **Rationale:** Ops perspective needs full observability to provision and manage pools effectively
-**Trade-offs:** Requires EventStore-backed history (bounded, no aggregation — see D9 revised); more complex UI
+**Trade-offs:** Requires IoTDB for historical charts (see D9); more complex UI
 **Sources:** AgentPoolStatus, PoolSnapshot, DemandMetrics, ManagedSession, ScalingDecision
 **Exploration:** quick
 **Status:** revised (R2-01: trade-off text updated — EventStore replaces TSDB reference)
 
 ## D8: Metrics instrumentation
 
-**Choice:** Native pool metrics via EventBroadcaster for #208. Micrometer instrumentation deferred to the platform TSDB issue.
+**Choice:** Micrometer + Prometheus registry — standard Quarkus metrics instrumentation via quarkus-micrometer-registry-prometheus. Pool gauges (active, idle, max, fill_ratio), counters (acquires, evictions, exhaustions, scaling decisions), timers (acquire duration). Exposed at /q/metrics. IoTDB flat label adapter reads from Micrometer registry and writes to IoTDB.
 **Alternatives:**
-- Micrometer + Prometheus registry now — adds quarkus-micrometer-registry-prometheus dependency, /q/metrics endpoint, potential auth configuration. Correct choice when a TSDB is in place, but premature for #208 where EventStore provides history.
+- Native pool metrics via EventBroadcaster only — skips Micrometer, no /q/metrics, no external scraping. Avoids a dependency but loses standard instrumentation.
 - OpenTelemetry metrics — less mature in Quarkus for app metrics, more oriented to tracing
-**Rationale:** Pool metrics (PoolSnapshot, DemandMetrics) are captured natively by ScalingScheduler and broadcast as JSON payloads via EventBroadcaster → EventStore. No intermediate instrumentation layer needed. When a platform TSDB is adopted (separate issue), Micrometer becomes the instrumentation layer and pool metrics migrate to gauges/counters.
-**Trade-offs:** No /q/metrics endpoint for external scraping. Acceptable for #208 — pool metrics are consumed by the dashboard, not external monitoring.
-**Sources:** PoolSnapshot record, DemandMetrics record, ScalingScheduler.evaluatePool(), EventBroadcaster.broadcast()
+**Rationale:** Micrometer is the Quarkus-recommended metrics API and the industry standard for JVM metrics. Registry-agnostic — the same gauges/counters feed both IoTDB (via flat label adapter) and /q/metrics (for external Prometheus/Grafana). Adding Micrometer now avoids re-instrumenting later.
+**Trade-offs:** Adds quarkus-micrometer-registry-prometheus dependency
+**Sources:** quarkus.io/guides/telemetry-micrometer, existing quarkus-opentelemetry dep (tracing only)
 **Exploration:** quick
-**Status:** revised (R1-12, R1-04: Micrometer deferred — no TSDB in #208 scope, EventStore provides history)
+**Status:** restored (user override: IoTDB stays in #208, Micrometer is the instrumentation layer)
 
 ## D9: Time-series storage
 
-**Choice:** Pages EventStore for pool metrics history in #208. IoTDB remains the platform TSDB choice but is separated into its own issue (see D11 revised).
+**Choice:** Apache IoTDB with flat label set adapter — Java-native TSDB, Table Model for labeled metrics. Pool metrics are the first consumer, proving out IoTDB for the platform. Complements existing casehub-iot project. Single TSDB serves both application metrics and IoT telemetry.
 **Alternatives:**
-- Apache IoTDB in #208 — original choice; Java-native, one TSDB for the platform. Valid at platform level but disproportionate for pool metrics and couples infrastructure PoC to feature delivery.
-- VictoriaMetrics — Prometheus-compatible, works with existing pages PrometheusDataProvider. Valid for platform TSDB; overkill for #208.
-- In-memory ring buffer — redundant; EventStore IS a bounded ring buffer with persistence.
-- TimescaleDB — PostgreSQL extension, reuses existing Qhorus PostgreSQL, but not embeddable.
-**Rationale:** EventBroadcaster.broadcast() automatically persists events via EventStore.append(topic, payloadJson). EventStore.replay(topic, sinceSeq, limit) provides historical data. JDBC and Redis implementations already exist (casehub-pages-push-store-jdbc, casehub-pages-push-store-redis). InMemoryEventStore provides a bounded default. Zero additional infrastructure for #208.
-**Trade-offs:** EventStore is not a true TSDB — no aggregation queries, downsampling, or retention policies beyond ring buffer bounds. Sufficient for pool metrics dashboard charts; insufficient for long-term platform metrics. Platform TSDB (IoTDB or VictoriaMetrics) addresses the long-term need separately.
-**Depends on:** D10 (EventBroadcaster provides the EventStore integration)
-**Sources:** pages EventStore SPI, InMemoryEventStore, JdbcEventStore, RedisEventStore, EventBroadcaster.broadcast()
-**Exploration:** deep-analysis (original IoTDB analysis retained for platform decision; EventStore alternative surfaced in review R1-03)
-**Status:** revised (R1-03: EventStore replaces IoTDB for #208 pool metrics; IoTDB separated to platform issue)
+- VictoriaMetrics — Prometheus-compatible drop-in, works with pages' existing Prometheus DataProvider today, but Go binary (external process, not Java-native)
+- Pages EventStore only — bounded ring buffer, no aggregation/downsampling. Works for real-time push but insufficient for time-range queries and historical charts.
+- TimescaleDB — PostgreSQL extension, reuses existing Qhorus PostgreSQL, but not embeddable
+- Defer — instrument with Micrometer only, choose TSDB later (creates rework)
+**Rationale:** casehub-iot already exists; IoTDB serves both application metrics and IoT. Java-native aligns with the all-Java Quarkus platform. Table Model handles Prometheus-style labeled metrics naturally. Building the adapter with a real consumer (pool metrics) validates the approach before other components adopt it. Separating IoTDB to a later issue creates rework (instrument twice).
+**Trade-offs:** More upfront work than EventStore-only (flat label adapter + pages IoTDB DataProvider). IoTDB documentation quality is poor. GraalVM native image compat needs validation. Docker dependency for dev.
+**Depends on:** D8 (Micrometer instrumentation feeds the flat label adapter)
+**Sources:** iotdb.apache.org, casehub-iot, pages DataProvider SPI, IoTDB Table Model SQL, IoTDB Java Session API
+**Exploration:** deep-analysis
+**Status:** restored (user override: IoTDB stays in #208 — avoiding rework from separating)
 
 ## D10: Real-time push mechanism
 
@@ -127,17 +127,17 @@
 **Exploration:** quick
 **Status:** captured
 
-## D11: #208 scope — focused on pool management
+## D11: #208 scope — proves out IoTDB for the platform
 
-**Choice:** #208 delivers: REST API (`/api/pools`), dashboard Pools tab, EventBroadcaster push for real-time updates, EventStore-backed historical charts. Self-contained Claudony feature. IoTDB proof-of-concept is a separate platform issue.
+**Choice:** #208 delivers end-to-end: REST API (`/api/pools`), dashboard Pools tab, Micrometer instrumentation, IoTDB flat label adapter, pages IoTDB DataProvider, EventBroadcaster push for real-time updates, IoTDB-backed historical charts. Cross-repo: Claudony + pages. Absorbs #241 and #242.
 **Alternatives:**
-- Original: #208 proves out IoTDB end-to-end (flat label adapter + pages IoTDB DataProvider + pool instrumentation + REST + dashboard). Rejected: couples platform infrastructure PoC to feature delivery; IoTDB blockers delay pool UI.
-- VictoriaMetrics now, IoTDB later — valid for the TSDB issue, not needed for #208 (EventStore suffices).
-**Rationale:** Pool management UI and IoTDB platform integration are independent concerns with different lifecycles and risk profiles. #208 can ship with EventStore history. The IoTDB issue gets its own consumer validation (casehub-iot is the natural first consumer, not pool metrics).
-**Trade-offs:** Historical charts use EventStore replay (bounded, no aggregation) rather than TSDB queries (unbounded, with downsampling). Acceptable for pool metrics — the data volume is low (hundreds of snapshots per day per pool).
-**Sources:** EventStore SPI, casehub-iot, pages DataProvider SPI
+- Split: #208 builds REST API + dashboard + EventStore history; IoTDB adapter and pages DataProvider are separate issues. Rejected by user: creates rework (instrument with EventStore, then re-instrument with IoTDB).
+- EventStore only — bounded ring buffer, no aggregation. Works for real-time but insufficient for proper time-series queries.
+**Rationale:** Building the IoTDB integration with a real consumer (pool metrics) validates the approach before casehub-iot and other components adopt it. Separating creates rework. Cross-repo work is manageable since pages is in this slot. The integration work is straightforward Java library integration, not exotic.
+**Trade-offs:** Larger scope. IoTDB Docker dependency for dev. Flat label adapter and pages IoTDB DataProvider are platform infrastructure built within a feature issue — but they're proven by a real consumer.
+**Sources:** casehub-iot, pages DataProvider SPI, IoTDB Session API, slot 202 layout
 **Exploration:** quick
-**Status:** revised (R1-04: decoupled IoTDB from #208; pool metrics use EventStore; #241/#242 absorption confirmed)
+**Status:** restored (user override: IoTDB stays in #208)
 
 ## D12: Multi-pool REST API URL structure
 
