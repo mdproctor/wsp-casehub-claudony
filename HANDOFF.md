@@ -2,15 +2,15 @@
 
 ## Last Session
 
-Completed #235 (epic: align agent pool canonical layer with platform YAML language). Two child issues landed: #236 migrated `AgentPoolYamlParser` from manual Map extraction to `StepDefinition` + `StepValidator`, and #237 replaced `@PooledAgent`/`@AgentPool` runtime reflection with `@PoolDefinition` record + APT processor generating JSON Schema and classpath-discovery manifests. Blog entry written: "Three Things Platform Alignment Actually Buys You." Then started #238 — fleet integration test with mock Java agent. Spec and plan written, branch created, no implementation yet.
+Completed #238 (fleet integration tests — 7 tests with real tmux proving YAML→registry→session chain, I/O round-trip, suspend/resume, memory observation, concurrent acquire) and #230 (claudony-testing module — InMemorySessionOperations + TestPoolBuilder for downstream projects, 29 tests). Also closed 5 issues (#219, #231-#234) that were landed but not administratively closed on GitHub, plus epic #227. Filed #239 — pool suspend model fix: kill process not session, use tmux as persistence layer. Blog entry written: "Where Does the State Live?"
 
 ## Immediate Next Step
 
-Implement `FleetPoolIntegrationTest` — the plan at `plans/2026-09-28-fleet-integration-test.md` has all the code. Single batch: create `MockAgent.java` (tiny Java main that prints greeting + echoes stdin) and `FleetPoolIntegrationTest.java` (3 tests exercising pool definition → registry → real tmux session → observable output → lifecycle). Run `work continue` to pick up.
+Start #239 — fix pool suspend model. `TmuxSessionOperations.suspend()` should kill the process inside the tmux session (not the session itself), set `remain-on-exit on`, and use `respawn-pane` for resume. Store `@claudony_conversation_id` as a tmux session option at creation time. Add `bootstrapPool()` for server restart recovery. The `InMemorySessionOperations` in `claudony-testing` already models the correct semantics.
 
 ## References
 
-- `specs/issue-238-fleet-integration-test/` — design spec + decisions
-- `plans/2026-09-28-fleet-integration-test.md` — implementation plan with code
-- `specs/issue-235-align-pool-yaml-platform/` — completed design spec
-- `blog/2026-09-28-mdp01-three-things-platform-alignment-buys.md` — blog entry
+- `specs/issue-230-agent-pool-test-utilities/` — design spec + decisions
+- `plans/2026-09-29-agent-pool-test-utilities.md` — implementation plan
+- `blog/2026-09-29-mdp01-where-does-the-state-live.md` — diary entry
+- `specs/issue-238-fleet-integration-test/` — fleet test design spec
