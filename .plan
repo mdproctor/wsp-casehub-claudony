@@ -2,7 +2,7 @@
 
 ## State
 branch: feat/208-ops-pool-provisioning
-state: closing:promoted
+state: closing:pushed
 project-sha: 
 date: 
 issue-repo: casehubio/claudony
