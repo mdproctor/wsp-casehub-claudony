@@ -13,13 +13,13 @@ flyway-next-v:
 
 ## Queue
 - [ ] casehubio/claudony#208 — Issue #208 ← active
-  - [ ] Batch 1: Foundation
-    - [ ] Task 1: ScalingState and ScalingConfig.type()
-    - [ ] Task 2: Micrometer instrumentation
-  - [ ] Batch 2: REST API
-    - [ ] Task 3: PoolResource read endpoints
-    - [ ] Task 4: PoolResource mutation endpoints
-    - [ ] Task 5: SecurityIdentityAugmentor
+  - [x] Batch 1: Foundation
+    - [x] Task 1: ScalingState and ScalingConfig.type()
+    - [x] Task 2: Micrometer instrumentation
+  - [x] Batch 2: REST API
+    - [x] Task 3: PoolResource read endpoints
+    - [x] Task 4: PoolResource mutation endpoints
+    - [x] Task 5: SecurityIdentityAugmentor
   - [ ] Batch 3: EventBroadcaster
     - [ ] Task 6: CDI wiring and SessionSender
     - [ ] Task 7: Pool event emission
