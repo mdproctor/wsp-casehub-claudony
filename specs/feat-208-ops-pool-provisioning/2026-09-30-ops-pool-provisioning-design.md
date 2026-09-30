@@ -120,7 +120,7 @@ PATCH  /api/pools/{name}/capacity              → CapacityUpdate (200)
 
 - Read endpoints: `@Authenticated` (consistent with existing pattern)
 - Mutation endpoints: `@RolesAllowed("admin")`
-- Role infrastructure: new `SecurityIdentityAugmentor` that maps WebAuthn credentials to roles, or adopt `casehub-platform-oidc`. The augmentor reads role assignments from `~/.claudony/credentials.json` (extend the existing `CredentialStore`).
+- Role infrastructure: extend `CredentialStore` with a `roles` field in `~/.claudony/credentials.json`. Build a `SecurityIdentityAugmentor` that reads roles from the credential store and augments the `SecurityIdentity`. The first registered credential gets the `admin` role automatically. This is the simplest path for pre-release (single operator). `casehub-platform-oidc` adoption is a future concern.
 
 ### Scope
 
