@@ -26,6 +26,6 @@ flyway-next-v:
   - [x] Batch 4: IoTDB
     - [x] Task 8: Flat label adapter
     - [x] Task 9: Pages IoTDB DataProvider
-  - [ ] Batch 5: Dashboard
-    - [ ] Task 10: Pool panel component
-    - [ ] Task 11: Charts and event log
+  - [x] Batch 5: Dashboard
+    - [x] Task 10: Pool panel component
+    - [x] Task 11: Charts and event log
