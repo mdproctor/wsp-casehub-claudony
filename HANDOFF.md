@@ -2,15 +2,19 @@
 
 ## Last Session
 
-Completed #238 (fleet integration tests — 7 tests with real tmux proving YAML→registry→session chain, I/O round-trip, suspend/resume, memory observation, concurrent acquire) and #230 (claudony-testing module — InMemorySessionOperations + TestPoolBuilder for downstream projects, 29 tests). Also closed 5 issues (#219, #231-#234) that were landed but not administratively closed on GitHub, plus epic #227. Filed #239 — pool suspend model fix: kill process not session, use tmux as persistence layer. Blog entry written: "Where Does the State Live?"
+Brainstormed and began implementing #208 (ops pool provisioning). 16 design decisions captured — key ones: full CRUD REST API at `/api/pools`, Micrometer instrumentation, Apache IoTDB as platform TSDB (complements casehub-iot), pages EventBroadcaster for real-time push, list-detail dashboard layout. Completed Batch 1 (ScalingState, Micrometer) and Batch 2 (PoolResource read + mutations, SecurityIdentityAugmentor). Fixed pre-existing slot 202 compilation issues (ConflictException, PeerEntry visibility). Promoted AgentPoolDefinitionRegistry to @ApplicationScoped.
 
 ## Immediate Next Step
 
-Start #239 — fix pool suspend model. `TmuxSessionOperations.suspend()` should kill the process inside the tmux session (not the session itself), set `remain-on-exit on`, and use `respawn-pane` for resume. Store `@claudony_conversation_id` as a tmux session option at creation time. Add `bootstrapPool()` for server restart recovery. The `InMemorySessionOperations` in `claudony-testing` already models the correct semantics.
+Batch 3: EventBroadcaster CDI wiring — add `casehub-pages-push-runtime` dependency, implement `SessionSender`, wire pool event emission from ScalingScheduler and AgentSessionManager.
+
+## Cross-Module
+
+- Pages IoTDB DataProvider (Batch 4, Task 9) — new `backend/data-iotdb/` module in casehub-pages. Pages is symlinked into slot 202.
 
 ## References
 
-- `specs/issue-230-agent-pool-test-utilities/` — design spec + decisions
-- `plans/2026-09-29-agent-pool-test-utilities.md` — implementation plan
-- `blog/2026-09-29-mdp01-where-does-the-state-live.md` — diary entry
-- `specs/issue-238-fleet-integration-test/` — fleet test design spec
+- Spec: `specs/feat-208-ops-pool-provisioning/2026-09-30-ops-pool-provisioning-design.md`
+- Plan: `plans/2026-09-30-ops-pool-provisioning.md`
+- Decisions: `specs/feat-208-ops-pool-provisioning/decisions.md`
+- Build flags for app tests: `-Denforcer.skip=true -Dquinoa.build.skip=true`
