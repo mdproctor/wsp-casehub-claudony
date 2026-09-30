@@ -2,15 +2,22 @@
 
 ## Last Session
 
-Brainstormed and began implementing #208 (ops pool provisioning). 16 design decisions captured — key ones: full CRUD REST API at `/api/pools`, Micrometer instrumentation, Apache IoTDB as platform TSDB (complements casehub-iot), pages EventBroadcaster for real-time push, list-detail dashboard layout. Completed Batch 1 (ScalingState, Micrometer) and Batch 2 (PoolResource read + mutations, SecurityIdentityAugmentor). Fixed pre-existing slot 202 compilation issues (ConflictException, PeerEntry visibility). Promoted AgentPoolDefinitionRegistry to @ApplicationScoped.
+Completed all 5 batches of #208 (ops pool provisioning). Session 2 implemented Batches 3-5:
+
+- **Batch 3 (EventBroadcaster):** `PoolEventEmitter` with `Broadcaster` functional interface, wired into `ScalingScheduler` via optional `Instance<PoolEventEmitter>` injection. `ClaudonySessionSender` as standalone connection registry. `PoolEventEmitterProducer` bridges Qhorus-provided `EventBroadcaster` to `PoolEventEmitter`. Discovery: `casehub-pages-push-runtime` NOT needed — Qhorus already provides `EventBroadcaster` via `QhorusPushInfrastructure`; adding it caused CDI ambiguity.
+- **Batch 4 (IoTDB):** `IoTDBFlatLabelAdapter` reads Micrometer pool-tagged meters and produces INSERT SQL via `SqlWriter` functional interface. `IoTDBConfig` config mapping (opt-in, disabled by default). Pages `data-iotdb` module created in pages repo (`feat/208-iotdb-data-provider` branch) with `IoTDBQueryTranslator` and stub `IoTDBDataProvider`.
+- **Batch 5 (Dashboard):** `claudony-pool-panel` LitElement component — sidebar pool list with health dots, detail view with KPI cards, capacity bar, sessions table (suspend/resume/destroy), scaling status, chart/event-log placeholders. Registered as Pools tab in app.ts.
 
 ## Immediate Next Step
 
-Batch 3: EventBroadcaster CDI wiring — add `casehub-pages-push-runtime` dependency, implement `SessionSender`, wire pool event emission from ScalingScheduler and AgentSessionManager.
+All plan tasks complete. Branch ready for `work end`. Remaining work:
+- Wire IoTDB client dependency when IoTDB is deployed (currently adapter uses `SqlWriter` abstraction)
+- Replace chart/event-log placeholders with live PagesTimeseries when IoTDB DataProvider is proven end-to-end
+- Connect pool panel to EventBroadcaster WebSocket for real-time push (currently polls every 10s)
 
 ## Cross-Module
 
-- Pages IoTDB DataProvider (Batch 4, Task 9) — new `backend/data-iotdb/` module in casehub-pages. Pages is symlinked into slot 202.
+- Pages IoTDB DataProvider committed on branch `feat/208-iotdb-data-provider` in pages repo (not merged)
 
 ## References
 
