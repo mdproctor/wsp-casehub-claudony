@@ -23,9 +23,9 @@ flyway-next-v:
   - [x] Batch 3: EventBroadcaster
     - [x] Task 6: CDI wiring and SessionSender
     - [x] Task 7: Pool event emission
-  - [ ] Batch 4: IoTDB
-    - [ ] Task 8: Flat label adapter
-    - [ ] Task 9: Pages IoTDB DataProvider
+  - [x] Batch 4: IoTDB
+    - [x] Task 8: Flat label adapter
+    - [x] Task 9: Pages IoTDB DataProvider
   - [ ] Batch 5: Dashboard
     - [ ] Task 10: Pool panel component
     - [ ] Task 11: Charts and event log
