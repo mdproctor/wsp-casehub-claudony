@@ -2,7 +2,7 @@
 
 ## State
 branch: feat/208-ops-pool-provisioning
-state: active
+state: closing:review
 project-sha: 
 date: 
 issue-repo: casehubio/claudony
@@ -11,6 +11,7 @@ design-repo:
 design-section-hashes: 
 flyway-next-v: 
 
+evidence-era: true
 ## Queue
 - [ ] casehubio/claudony#208 — Issue #208 ← active
   - [x] Batch 1: Foundation
