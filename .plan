@@ -1,0 +1,15 @@
+# Work Plan — feat/240-demand-metrics-enrichment
+
+## State
+branch: feat/240-demand-metrics-enrichment
+state: scaffolded
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 240
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+## Queue
+- [ ] casehubio/claudony#240 — Issue #240 ← active
