@@ -20,9 +20,9 @@ flyway-next-v:
     - [x] Task 3: PoolResource read endpoints
     - [x] Task 4: PoolResource mutation endpoints
     - [x] Task 5: SecurityIdentityAugmentor
-  - [ ] Batch 3: EventBroadcaster
-    - [ ] Task 6: CDI wiring and SessionSender
-    - [ ] Task 7: Pool event emission
+  - [x] Batch 3: EventBroadcaster
+    - [x] Task 6: CDI wiring and SessionSender
+    - [x] Task 7: Pool event emission
   - [ ] Batch 4: IoTDB
     - [ ] Task 8: Flat label adapter
     - [ ] Task 9: Pages IoTDB DataProvider
