@@ -2,15 +2,26 @@
 
 ## Last Session
 
-Completed #238 (fleet integration tests — 7 tests with real tmux proving YAML→registry→session chain, I/O round-trip, suspend/resume, memory observation, concurrent acquire) and #230 (claudony-testing module — InMemorySessionOperations + TestPoolBuilder for downstream projects, 29 tests). Also closed 5 issues (#219, #231-#234) that were landed but not administratively closed on GitHub, plus epic #227. Filed #239 — pool suspend model fix: kill process not session, use tmux as persistence layer. Blog entry written: "Where Does the State Live?"
+Completed all 5 batches of #208 (ops pool provisioning). Session 2 implemented Batches 3-5:
+
+- **Batch 3 (EventBroadcaster):** `PoolEventEmitter` with `Broadcaster` functional interface, wired into `ScalingScheduler` via optional `Instance<PoolEventEmitter>` injection. `ClaudonySessionSender` as standalone connection registry. `PoolEventEmitterProducer` bridges Qhorus-provided `EventBroadcaster` to `PoolEventEmitter`. Discovery: `casehub-pages-push-runtime` NOT needed — Qhorus already provides `EventBroadcaster` via `QhorusPushInfrastructure`; adding it caused CDI ambiguity.
+- **Batch 4 (IoTDB):** `IoTDBFlatLabelAdapter` reads Micrometer pool-tagged meters and produces INSERT SQL via `SqlWriter` functional interface. `IoTDBConfig` config mapping (opt-in, disabled by default). Pages `data-iotdb` module created in pages repo (`feat/208-iotdb-data-provider` branch) with `IoTDBQueryTranslator` and stub `IoTDBDataProvider`.
+- **Batch 5 (Dashboard):** `claudony-pool-panel` LitElement component — sidebar pool list with health dots, detail view with KPI cards, capacity bar, sessions table (suspend/resume/destroy), scaling status, chart/event-log placeholders. Registered as Pools tab in app.ts.
 
 ## Immediate Next Step
 
-Start #239 — fix pool suspend model. `TmuxSessionOperations.suspend()` should kill the process inside the tmux session (not the session itself), set `remain-on-exit on`, and use `respawn-pane` for resume. Store `@claudony_conversation_id` as a tmux session option at creation time. Add `bootstrapPool()` for server restart recovery. The `InMemorySessionOperations` in `claudony-testing` already models the correct semantics.
+All plan tasks complete. Branch ready for `work end`. Remaining work:
+- Wire IoTDB client dependency when IoTDB is deployed (currently adapter uses `SqlWriter` abstraction)
+- Replace chart/event-log placeholders with live PagesTimeseries when IoTDB DataProvider is proven end-to-end
+- Connect pool panel to EventBroadcaster WebSocket for real-time push (currently polls every 10s)
+
+## Cross-Module
+
+- Pages IoTDB DataProvider committed on branch `feat/208-iotdb-data-provider` in pages repo (not merged)
 
 ## References
 
-- `specs/issue-230-agent-pool-test-utilities/` — design spec + decisions
-- `plans/2026-09-29-agent-pool-test-utilities.md` — implementation plan
-- `blog/2026-09-29-mdp01-where-does-the-state-live.md` — diary entry
-- `specs/issue-238-fleet-integration-test/` — fleet test design spec
+- Spec: `specs/feat-208-ops-pool-provisioning/2026-09-30-ops-pool-provisioning-design.md`
+- Plan: `plans/2026-09-30-ops-pool-provisioning.md`
+- Decisions: `specs/feat-208-ops-pool-provisioning/decisions.md`
+- Build flags for app tests: `-Denforcer.skip=true -Dquinoa.build.skip=true`
