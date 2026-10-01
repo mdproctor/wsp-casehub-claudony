@@ -1,0 +1,15 @@
+# Work Plan — feat/241-242-scaling-api-dashboard
+
+## State
+branch: feat/241-242-scaling-api-dashboard
+state: scaffolded
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 241,242
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+## Queue
+- [ ] casehubio/claudony#241 — Issue #241 ← active
