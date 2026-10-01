@@ -1,0 +1,26 @@
+# Work Plan — feat/241-242-scaling-api-dashboard
+
+## State
+branch: feat/241-242-scaling-api-dashboard
+state: closing:promoted
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 241,242
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+evidence-era: true
+## Queue
+- [ ] casehubio/claudony#241 — Issue #241 ← active
+  - [x] Batch 1: PoolService+records
+    - [x] Task 1: Create PoolService with scaling config parsing
+  - [x] Batch 2: mcpDomain+deprecation
+    - [x] Task 2: Create ClaudonyPoolApi and deprecate PoolResource
+  - [x] Batch 3: SSE streaming
+    - [x] Task 3: PoolLifecycleEvent CDI bridge + PoolEventBus + SSE endpoint
+  - [x] Batch 4: Dashboard
+    - [x] Task 4: Update pool panel with paths SSE editing and event log
+  - [x] Batch 5: CLAUDE.md
+    - [x] Task 5: Update CLAUDE.md
