@@ -176,15 +176,32 @@ The SSE endpoint lives at `/api/pool-events/{name}` — a separate path from the
 
 **File:** `app/src/main/java/io/casehub/claudony/server/fleet/PoolEventBus.java`
 
-Thin `@ApplicationScoped` wrapper that:
-1. Manages per-pool `Multi<String>` subscriptions
-2. On connect: sends initial snapshot (full pool detail JSON)
-3. Forwards events from `EventBroadcaster` topics (`pool:<name>:scaling`, `pool:<name>:session`, `pool:<name>:health`)
-4. Handles subscriber lifecycle (cleanup on disconnect)
+`@ApplicationScoped` bean following the `CaseEventBroadcaster` pattern — CDI event observation + strategy-based `Multi<String>` push. **Not** based on `EventBroadcaster` (which is WebSocket push, not SSE).
 
-Modelled on `ChannelEventBus` — same subscribe/emit/cancel pattern.
+Responsibilities:
+1. Observes CDI events fired by pool lifecycle (scaling decisions, session changes, health transitions)
+2. Manages per-pool `Multi<String>` subscriptions via a simple events-only strategy
+3. On connect: sends initial snapshot (full pool detail JSON via `snapshotFn`)
+4. On CDI event: serializes the event and pushes to all subscribers for that pool
 
-The `PoolEventEmitter` already broadcasts to the correct topics. No changes to `PoolEventEmitter` or `PoolEventEmitterProducer`.
+**CDI event bridge:** `PoolEventEmitter` currently broadcasts via `EventBroadcaster` (WebSocket push). Add a parallel CDI event fire for SSE subscribers: after each `broadcaster.broadcast()` call, also fire a `PoolLifecycleEvent` CDI event. `PoolEventBus` observes these events and pushes to SSE subscribers. This means `PoolEventEmitter` gains an `Event<PoolLifecycleEvent>` injection.
+
+```java
+public record PoolLifecycleEvent(String poolName, String payloadJson) {}
+```
+
+`PoolEventBus` observes `PoolLifecycleEvent` and fans out:
+```java
+void onPoolEvent(@Observes PoolLifecycleEvent event) {
+    emit(event.poolName(), event.payloadJson());
+}
+
+public Multi<String> subscribe(String poolName, Supplier<String> snapshotFn) {
+    // events-only strategy: initial snapshot + subsequent CDI event pushes
+}
+```
+
+This keeps the existing WebSocket push (`EventBroadcaster`) working while adding SSE as a parallel delivery channel.
 
 #### 2.3 Event format
 
@@ -346,6 +363,7 @@ Estimated ~25-30 new Java tests, ~5-8 new vitest, 3-4 new E2E assertions.
 - `app/src/main/java/io/casehub/claudony/server/fleet/ScalingStepInput.java`
 - `app/src/main/java/io/casehub/claudony/server/fleet/PoolEventsResource.java`
 - `app/src/main/java/io/casehub/claudony/server/fleet/PoolEventBus.java`
+- `app/src/main/java/io/casehub/claudony/server/fleet/PoolLifecycleEvent.java`
 - `app/src/main/java/io/casehub/claudony/server/fleet/ScalingConfigView.java`
 - `app/src/test/java/io/casehub/claudony/server/fleet/PoolServiceTest.java`
 - `app/src/test/java/io/casehub/claudony/server/api/ClaudonyPoolApiTest.java`
@@ -355,12 +373,13 @@ Estimated ~25-30 new Java tests, ~5-8 new vitest, 3-4 new E2E assertions.
 ### Modified files
 - `app/src/main/java/io/casehub/claudony/server/fleet/PoolResource.java` — add `@Deprecated`, delegate to `PoolService`
 - `app/src/main/java/io/casehub/claudony/server/fleet/PoolDetail.java` — update `ScalingView` to use typed `ScalingConfigView`
+- `casehub/src/main/java/io/casehub/claudony/casehub/fleet/PoolEventEmitter.java` — add CDI `Event<PoolLifecycleEvent>` fire alongside WebSocket broadcast
 - `app/src/main/webui/src/components/claudony-pool-panel.ts` — path migration, SSE, editing controls, event log
 - `CLAUDE.md` — update test count, add new endpoints to key URLs
 
-### Deleted files
-- `app/src/main/java/io/casehub/claudony/server/fleet/ScalingConfigUpdate.java` — replaced by `PoolUpdateRequest`
-- `app/src/main/java/io/casehub/claudony/server/fleet/CapacityUpdate.java` — replaced by `PoolUpdateRequest`
+### Deprecated files (kept while PoolResource remains)
+- `app/src/main/java/io/casehub/claudony/server/fleet/ScalingConfigUpdate.java` — superseded by `PoolUpdateRequest`; still used by deprecated `PoolResource`
+- `app/src/main/java/io/casehub/claudony/server/fleet/CapacityUpdate.java` — superseded by `PoolUpdateRequest`; still used by deprecated `PoolResource`
 
 ---
 
@@ -374,9 +393,8 @@ Estimated ~25-30 new Java tests, ~5-8 new vitest, 3-4 new E2E assertions.
 - `casehub/src/main/java/io/casehub/claudony/casehub/fleet/ScalingScheduler.java` — `invalidatePolicy()` cache invalidation flow
 - `casehub/src/main/java/io/casehub/claudony/casehub/fleet/PoolEventEmitter.java` — event broadcasting (scaling, session, health)
 - `app/src/main/java/io/casehub/claudony/server/push/PoolEventEmitterProducer.java` — `EventBroadcaster` wiring
-- `app/src/main/java/io/casehub/claudony/server/CaseEventBroadcaster.java` — SSE subscriber pattern
+- `app/src/main/java/io/casehub/claudony/server/CaseEventBroadcaster.java` — CDI event observation + strategy-based SSE pattern (the correct model for PoolEventBus)
 - `app/src/main/java/io/casehub/claudony/server/SessionResource.java:31-40` — SSE endpoint pattern (`Multi<String>`, initial snapshot)
-- `app/src/main/java/io/casehub/claudony/server/ChannelEventBus.java` — event bus pattern (subscribe/emit/cancel)
 - `app/src/main/webui/src/components/claudony-pool-panel.ts` — existing dashboard panel
 - `app/src/main/webui/src/components/worker-panel.ts:97` — EventSource usage pattern in frontend
 - Memory `feedback_mcp-domain-rest.md` — mcpDomain mandatory for REST endpoints
