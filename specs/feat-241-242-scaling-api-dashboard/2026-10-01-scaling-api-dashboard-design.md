@@ -151,14 +151,14 @@ All fields nullable — only the fields relevant to the current scaling type are
 
 ```java
 @HandWrittenEndpoint("SSE streaming — cannot be expressed as mcpDomain")
-@Path("/api/claudony/pools")
+@Path("/api/pool-events")
 @Authenticated
 public class PoolEventsResource {
     @Inject PoolEventBus poolEventBus;
     @Inject PoolService poolService;
 
     @GET
-    @Path("/{name}/events")
+    @Path("/{name}")
     @Produces("text/event-stream")
     public Multi<String> poolEvents(@PathParam("name") String name) {
         // validate pool exists, then subscribe
@@ -170,7 +170,7 @@ public class PoolEventsResource {
 
 Follows the same pattern as `SessionResource.caseEvents()`: returns `Multi<String>`, sends an initial snapshot on connect, then streams events.
 
-The SSE endpoint lives at `/api/claudony/pools/{name}/events` — same base path as the mcpDomain API, but in a separate `@HandWrittenEndpoint` class since mcpDomain can't express `Multi<String>` SSE streams.
+The SSE endpoint lives at `/api/pool-events/{name}` — a separate path from the mcpDomain API at `/api/claudony/pools` to avoid JAX-RS path conflicts with the generated mcpDomain resource class. This mirrors how `SessionResource` (`/api/sessions/{id}/case-events`) is separate from `ClaudonySessionApi` (`/api/claudony/sessions`).
 
 #### 2.2 PoolEventBus
 
@@ -228,7 +228,7 @@ Replace `setInterval` 10s polling:
 private _connectSSE() {
   if (this._eventSource) this._eventSource.close();
   this._eventSource = new EventSource(
-    `/api/claudony/pools/${this._selectedPool}/events`
+    `/api/pool-events/${this._selectedPool}`
   );
   this._eventSource.onmessage = (e) => {
     const data = JSON.parse(e.data);
