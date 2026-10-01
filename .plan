@@ -13,13 +13,13 @@ flyway-next-v:
 
 ## Queue
 - [ ] casehubio/claudony#241 — Issue #241 ← active
-  - [ ] Batch 1: PoolService+records
-    - [ ] Task 1: Create PoolService with scaling config parsing
-  - [ ] Batch 2: mcpDomain+deprecation
-    - [ ] Task 2: Create ClaudonyPoolApi and deprecate PoolResource
-  - [ ] Batch 3: SSE streaming
-    - [ ] Task 3: PoolLifecycleEvent CDI bridge + PoolEventBus + SSE endpoint
-  - [ ] Batch 4: Dashboard
-    - [ ] Task 4: Update pool panel with paths SSE editing and event log
-  - [ ] Batch 5: CLAUDE.md
-    - [ ] Task 5: Update CLAUDE.md
+  - [x] Batch 1: PoolService+records
+    - [x] Task 1: Create PoolService with scaling config parsing
+  - [x] Batch 2: mcpDomain+deprecation
+    - [x] Task 2: Create ClaudonyPoolApi and deprecate PoolResource
+  - [x] Batch 3: SSE streaming
+    - [x] Task 3: PoolLifecycleEvent CDI bridge + PoolEventBus + SSE endpoint
+  - [x] Batch 4: Dashboard
+    - [x] Task 4: Update pool panel with paths SSE editing and event log
+  - [x] Batch 5: CLAUDE.md
+    - [x] Task 5: Update CLAUDE.md
