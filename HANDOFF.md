@@ -2,41 +2,49 @@
 
 ## Last Session
 
-Completed #240 (demand metrics enrichment) end-to-end: brainstorm → spec → plan → implementation → work-end. Set up branch for #241 + #242.
+Design and planning session for declarative fleet deployment. No implementation code — filed issues and fixed a build break.
 
-### What was built (#240, landed on main as e7317b0)
+### Build fix (landed on main)
 
-Enriched `PoolSnapshot.DemandMetrics` with acquire latency tracking, a `DemandMetricsSource` SPI for external metric injection, and a built-in `DemandPressurePolicy`.
+`@HandWrittenEndpoint` annotation on 7 hand-written `@Path` resources — required by the `@McpDomain` annotation processor from #204. Removed dead `QhorusMcpTools` import/injection from 2 E2E tests (class deleted in qhorus #452). Needed `platform-api` rebuilt from source to get the annotation class. Commit `00db804`.
 
-- **DemandMetrics** gains `averageAcquireNanos`, `maxAcquireNanos`, `Map<String, Double> externalMetrics`
-- **AgentSessionManager** captures `System.nanoTime()` around `acquireSession()` including lock wait; `snapshotAndResetDemandMetrics(Map)` overload; no-arg backward compat retained; `lastDemandSnapshot()` accessor
-- **DemandMetricsSource** SPI — pull-based `collect(poolName)`, called per tick by `ScalingScheduler`, failure-isolated
-- **DemandPressurePolicy** — independent OR triggers for scale-out (exhaustions OR latency), AND for scale-in (both below 50% hysteresis band)
-- **DemandPressureConfig** — new sealed variant on `ScalingConfig`, YAML type `demand-pressure` with `exhaustion-threshold` and `latency-threshold-ms`
-- **Metrics export** — Micrometer gauges (`acquire_latency_avg_ms`, `acquire_latency_max_ms`) + IoTDB columns
-- 452 tests in casehub module (19 new), 0 failures
+### Fleet manager state assessment
 
-### Current Branch
+Reviewed what #205 delivered vs what's missing. The fleet manager is substantially complete:
+- `ClaudonyPoolApi` via `@McpDomain` — 7 operations (list, detail, sessions, update, suspend, resume, destroy)
+- `AgentPoolDefinition` + `AgentPoolYamlParser` — declarative pool definitions from YAML
+- `AgentSessionManager` — suspend/resume lifecycle with memory-weighted eviction
+- Auto-scaling (5 policy types), observability (Micrometer + IoTDB), SSE event streaming, interactive dashboard
 
-**Branch:** `feat/241-242-scaling-api-dashboard`
-**Covers:** #241 (runtime scaling config API) + #242 (dashboard scaling display)
-**State:** scaffolded — brainstorm not yet started
+**Gap identified:** no declarative path for deploying a complete fleet (agents + pools + mesh) from a single YAML script. Pools are YAML-driven but agents and channels are provisioned separately.
 
-### Key Context for Next Session
+### Issues filed
 
-1. **mcpDomain is mandatory** — REST endpoints must use mcpDomain pattern to get REST + GraphQL + MCP from a single definition. Never raw JAX-RS `@Path` only.
+- **#246** — declarative LLM fleet deployment with desiredstate reconciliation + ops provisioning. Three execution modes: ad-hoc (exists), standalone script (#247), desiredstate nodes (ops). Includes full fleet YAML example with agents, pools, and mesh channels. Cross-repo: ops (PoolNodeSpec + provisioner), claudony (script runner), platform (manifest), eidos (binding).
 
-2. **#241 scope** — expose runtime scaling config changes via mcpDomain. Key operations: update scaling type, adjust thresholds, change cooldowns. The `ScalingScheduler.invalidatePolicy(poolName)` already exists for cache invalidation after config changes. `AgentPoolDefinitionRegistry` holds definitions — need to understand if it supports runtime mutation or is read-only from YAML parse.
+- **#247** — standalone fleet script runner. Claudony-local, no ops dependency. `FleetScriptRunner` parses the same YAML as desiredstate, topo-sorts by `dependsOn`, provisions pools + channels in order. E2E testable in this repo. Ready to start now.
 
-3. **#242 scope** — dashboard tab or panel showing scaling state per pool. `ScalingScheduler.scalingState(poolName)` returns `Optional<ScalingState>` with last decision, timestamps, config. `PoolEventEmitter.emitScalingDecision()` already pushes events via SSE. The dashboard pools tab (`claudony-pools-panel.ts` or similar) needs a scaling section.
+### Slot 202
 
-4. **App module has pre-existing build failures** — missing SNAPSHOT versions for `casehub-platform-agent-api`, `casehub-platform-yaml-core`, `casehub-platform-yaml-plugin-api`. These need resolving before app module tests can run. The casehub module (452 tests) compiles and passes independently.
+Created for #205 work. All #205 implementation landed on main. Slot 202 workspace has the design artifacts (spec, decisions, plan). The slot branch is closed (`chore: branch closed`).
 
-5. **IntelliJ workspace** — project at `/Users/mdproctor/claude/casehub/slots/202/claudony` needs opening via `ide_open_workspace`. Slot 194 path in CLAUDE.md is stale (disk gone).
+## Immediate Next Step
 
-### Spec and Plan Artifacts
+Start #247 (standalone fleet script runner). All building blocks exist:
+- `AgentPoolYamlParser` — pool YAML parsing
+- `AgentPoolDefinitionRegistry` — pool registration
+- `ChannelService` — Qhorus channel CRUD (embedded)
+- `ClaudonyPoolApi` — pool management via MCP
 
-- Spec: `specs/feat-240-demand-metrics-enrichment/2026-10-01-demand-metrics-enrichment-design.md`
-- Decisions: `specs/feat-240-demand-metrics-enrichment/decisions.md`
-- Plan: `plans/2026-10-01-demand-metrics-enrichment.md`
-- All promoted to project `docs/specs/feat-240-demand-metrics-enrichment/`
+New pieces: `FleetScriptRunner`, `FleetNodeHandler` SPI (per-type handlers), variable substitution, e2e tests.
+
+## CI Status
+
+**Build and Publish** was red on main — the `@HandWrittenEndpoint` fix resolved the Java compilation error. A separate TypeScript error in `site.ts` (casehub-pages dependency, `LayoutState` type mismatch with `exactOptionalPropertyTypes`) persists — needs fixing in the pages repo, not claudony.
+
+## References
+
+- #246 — declarative fleet deployment (desiredstate + ops)
+- #247 — standalone fleet script runner (claudony, ready to start)
+- #205 — fleet manager (complete, landed on main)
+- Build flags for app tests: `-Denforcer.skip=true -Dquinoa.build.skip=true`
