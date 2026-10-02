@@ -1,13 +1,38 @@
 _branch=feat/207-qhorus-mesh-pool-routing
 report_init=done
+<<<<<<< Updated upstream
+=======
+code_review_attempt=1
+last_yielded=squash
+>>>>>>> Stashed changes
 code_review=done
 branch_audit_conformance=done
 branch_audit_coherence=done
 branch_audit_structure=done
 branch_audit_robustness=done
+<<<<<<< Updated upstream
 loose_ends=done
 forcing_function=done
 sweep_config=done
+=======
+branch_audit_robustness_produced=0
+loose_ends_attempt=1
+loose_ends=done
+loose_ends_produced=0
+forcing_function_attempt=1
+forcing_function=done
+forcing_function_produced=0
+sweep_config_attempt=1
+sweep_config=done
+sweep_selected=none
+review_pass=done
+promote=done
+report_promote=done
+promote_pass=done
+trajectory_attempt=1
+trajectory=done
+trajectory_produced=0
+>>>>>>> Stashed changes
 forage=done
 protocol=done
 update_claude_md=done
@@ -15,6 +40,7 @@ impl_doc_sync=done
 doc_freshness_gate=done
 adr=done
 write_content=done
+<<<<<<< Updated upstream
 promote=done
 report_promote=done
 trajectory=done
@@ -63,3 +89,8 @@ report_archive=done
 elevate_plan=done
 sync_pass=done
 land=done
+=======
+rebase=done
+report_rebase=done
+squash_attempt=1
+>>>>>>> Stashed changes
