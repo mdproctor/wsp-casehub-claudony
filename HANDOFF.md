@@ -1,46 +1,50 @@
-# Session Handover — 2026-10-04
+# HANDOFF — casehub-claudony
 
-## What Happened
+## Last Session
 
-Completed epic #258 (model chain fallback end-to-end) — all three child issues landed as a single squashed commit `856f64c` on main.
+Design and planning session for declarative fleet deployment. No implementation code — filed issues and fixed a build break.
 
-**#259 — CliCircuitBreaker wired into provisioner:** Replaced static `CliChainResolver.resolve()` in `ClaudonyWorkerProvisioner.setupSession()` with `CliCircuitBreaker.tryChain()`. Sessions that exit within the grace period (API auth failure, model unavailable at runtime) now automatically retry the next model in the chain. Added `paneExitCode()` helper for tmux pane dead status inspection. Default grace period is 30 seconds; per-model overrides via pool YAML `grace-period` field.
+### Build fix (landed on main)
 
-**#260 — ModelFallbackEvent observer:** Created `ModelFallbackEventObserver` — `@ApplicationScoped` CDI bean that `@Observes ModelFallbackEvent`, logs at WARN level with pool name, requested/resolved models, and fallback depth. Thread-safe counter via `AtomicInteger` for ops dashboards.
+`@HandWrittenEndpoint` annotation on 7 hand-written `@Path` resources — required by the `@McpDomain` annotation processor from #204. Removed dead `QhorusMcpTools` import/injection from 2 E2E tests (class deleted in qhorus #452). Needed `platform-api` rebuilt from source to get the annotation class. Commit `00db804`.
 
-**#261 — Pool pre-condition exception types:** Added `PoolAtCapacityException` (pool full, minActive prevents eviction) and `BudgetExceededException` (budgetLocked blocks acquisition) as subtypes of `AgentPoolExhaustedException`. Backward compatible — existing catch blocks still work.
+### Fleet manager state assessment
 
-## Key Decisions
+Reviewed what #205 delivered vs what's missing. The fleet manager is substantially complete:
+- `ClaudonyPoolApi` via `@McpDomain` — 7 operations (list, detail, sessions, update, suspend, resume, destroy)
+- `AgentPoolDefinition` + `AgentPoolYamlParser` — declarative pool definitions from YAML
+- `AgentSessionManager` — suspend/resume lifecycle with memory-weighted eviction
+- Auto-scaling (5 policy types), observability (Micrometer + IoTDB), SSE event streaming, interactive dashboard
 
-- **Circuit breaker replaces static resolver for model chain path:** The provisioner no longer calls `CliChainResolver.resolve()` when a model chain is present. The circuit breaker combines model selection + session creation + retry in one call. The static resolver class remains available for other uses.
+**Gap identified:** no declarative path for deploying a complete fleet (agents + pools + mesh) from a single YAML script. Pools are YAML-driven but agents and channels are provisioned separately.
 
-- **Package-private `circuitBreakerSleeper` field for test injection:** Rather than adding another constructor parameter (already 13), a package-private `Consumer<Duration>` field defaults to `Thread.sleep()` and is overridden to a no-op in tests. Tests also mock `tmux.sessionExists()` to return true so the alive check passes immediately.
+### Issues filed
 
-- **Exception subtypes extend the base:** `PoolAtCapacityException` and `BudgetExceededException` extend `AgentPoolExhaustedException` rather than replacing it. Existing `catch (AgentPoolExhaustedException)` blocks continue to work.
+- **#246** — declarative LLM fleet deployment with desiredstate reconciliation + ops provisioning. Three execution modes: ad-hoc (exists), standalone script (#247), desiredstate nodes (ops). Includes full fleet YAML example with agents, pools, and mesh channels. Cross-repo: ops (PoolNodeSpec + provisioner), claudony (script runner), platform (manifest), eidos (binding).
 
-## What's Next
+- **#247** — standalone fleet script runner. Claudony-local, no ops dependency. `FleetScriptRunner` parses the same YAML as desiredstate, topo-sorts by `dependsOn`, provisions pools + channels in order. E2E testable in this repo. Ready to start now.
 
-| # | Title | Scale | Complexity |
-|---|-------|-------|------------|
-| #262 | Clean up failed circuit breaker sessions on retry | S | Med |
-| #263 | Fix 3 pre-existing FleetScript test failures | S | Low |
+### Slot 202
 
-**#262** builds on #258 — the circuit breaker creates tmux sessions that may fail and retry, but failed sessions remain tracked as ACTIVE in `AgentSessionManager` with dead processes. Needs a cleanup mechanism (destroy callback or post-tryChain cleanup).
+Created for #205 work. All #205 implementation landed on main. Slot 202 workspace has the design artifacts (spec, decisions, plan). The slot branch is closed (`chore: branch closed`).
 
-**#263** is independent — `FleetScriptParserTest.throwsOnEmptyNodes`, `throwsOnMissingVariable`, and `FleetScriptRunnerTest.emptyNodesThrows` expect `IllegalArgumentException` but get `UncheckedIOException`. Pre-existing on main since #247.
+## Immediate Next Step
 
-## Files Changed
+Start #247 (standalone fleet script runner). All building blocks exist:
+- `AgentPoolYamlParser` — pool YAML parsing
+- `AgentPoolDefinitionRegistry` — pool registration
+- `ChannelService` — Qhorus channel CRUD (embedded)
+- `ClaudonyPoolApi` — pool management via MCP
 
-- `ClaudonyWorkerProvisioner.java` — circuit breaker wiring, `paneExitCode()`, `fireFallbackEvent()` (renamed from `fireFallbackEventIfNeeded`)
-- `AgentSessionManager.java` — `BudgetExceededException` and `PoolAtCapacityException` at throw sites
-- `BudgetExceededException.java` — new
-- `PoolAtCapacityException.java` — new
-- `ModelFallbackEventObserver.java` — new
-- `ModelFallbackEventObserverTest.java` — new (3 tests)
-- `ClaudonyWorkerProvisionerTest.java` — setUp adds `sessionExists` mock, model chain tests add sleeper override
-- `AgentSessionManagerTest.java` — 4 new tests for specific exception types
-- `AgentSessionManagerWithTestPoolTest.java` — updated assertion to `PoolAtCapacityException`
+New pieces: `FleetScriptRunner`, `FleetNodeHandler` SPI (per-type handlers), variable substitution, e2e tests.
 
-## Test Status
+## CI Status
 
-All tests pass except 3 pre-existing FleetScript failures (tracked as #263).
+**Build and Publish** was red on main — the `@HandWrittenEndpoint` fix resolved the Java compilation error. A separate TypeScript error in `site.ts` (casehub-pages dependency, `LayoutState` type mismatch with `exactOptionalPropertyTypes`) persists — needs fixing in the pages repo, not claudony.
+
+## References
+
+- #246 — declarative fleet deployment (desiredstate + ops)
+- #247 — standalone fleet script runner (claudony, ready to start)
+- #205 — fleet manager (complete, landed on main)
+- Build flags for app tests: `-Denforcer.skip=true -Dquinoa.build.skip=true`
