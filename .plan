@@ -1,0 +1,15 @@
+# Work Plan — issue-211-cost-budgeting-agent-pools
+
+## State
+branch: issue-211-cost-budgeting-agent-pools
+state: scaffolded
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 211
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+## Queue
+- [ ] casehubio/claudony#211 — Issue #211 ← active
