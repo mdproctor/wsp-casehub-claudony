@@ -1,42 +1,31 @@
-# HANDOFF — casehub-claudony
+# Session Handover — 2026-10-03
 
-## Last Session
+## What Happened
 
-Completed #240 (demand metrics enrichment) end-to-end: brainstorm → spec → plan → implementation → work-end. Set up branch for #241 + #242.
+Designed and implemented **model fallback chains** (#212) — ordered model preferences with automatic degradation across three trigger levels (resolution, operational, runtime). Cross-repo: platform types + router resolution in `casehub-platform`, pool YAML parsing + CLI resolver + circuit breaker in `claudony`.
 
-### What was built (#240, landed on main as e7317b0)
+Branch landed on main (3 commits after squash). Issue closed. 7 follow-up issues filed (#251–#257).
 
-Enriched `PoolSnapshot.DemandMetrics` with acquire latency tracking, a `DemandMetricsSource` SPI for external metric injection, and a built-in `DemandPressurePolicy`.
+## Key Decisions
 
-- **DemandMetrics** gains `averageAcquireNanos`, `maxAcquireNanos`, `Map<String, Double> externalMetrics`
-- **AgentSessionManager** captures `System.nanoTime()` around `acquireSession()` including lock wait; `snapshotAndResetDemandMetrics(Map)` overload; no-arg backward compat retained; `lastDemandSnapshot()` accessor
-- **DemandMetricsSource** SPI — pull-based `collect(poolName)`, called per tick by `ScalingScheduler`, failure-isolated
-- **DemandPressurePolicy** — independent OR triggers for scale-out (exhaustions OR latency), AND for scale-in (both below 50% hysteresis band)
-- **DemandPressureConfig** — new sealed variant on `ScalingConfig`, YAML type `demand-pressure` with `exhaustion-threshold` and `latency-threshold-ms`
-- **Metrics export** — Micrometer gauges (`acquire_latency_avg_ms`, `acquire_latency_max_ms`) + IoTDB columns
-- 452 tests in casehub module (19 new), 0 failures
+- **Platform-owned resolution** — `RoutingAgentProvider.resolveChain()` owns the routing logic, not Claudony. Revised after decision review caught circular reasoning.
+- **Cross-backend chains supported** — first-principles analysis showed no architectural blockers. Chain entries carry optional command overrides.
+- **CDI event for degraded provisioning** — `ModelFallbackEvent` instead of `ProvisionResult` metadata (ProvisionResult has no metadata support).
+- **Mutiny deferred() required** — `recoverWithMulti` eagerly evaluates the primary Multi during chain construction. Garden entry GE-20261003-189086.
 
-### Current Branch
+## Blockers
 
-**Branch:** `feat/241-242-scaling-api-dashboard`
-**Covers:** #241 (runtime scaling config API) + #242 (dashboard scaling display)
-**State:** scaffolded — brainstorm not yet started
+- Platform commits (4) are in slot 202 local clone only — not pushed to casehubio/platform remote (#257). Spring module needs fixing first (8-arg AgentSessionConfig constructor).
 
-### Key Context for Next Session
+## Next Action
 
-1. **mcpDomain is mandatory** — REST endpoints must use mcpDomain pattern to get REST + GraphQL + MCP from a single definition. Never raw JAX-RS `@Path` only.
+**#251** — Wire CliChainResolver into ClaudonyWorkerProvisioner.setupSession(). All building blocks exist; the provisioner integration is the last mile (~30 min).
 
-2. **#241 scope** — expose runtime scaling config changes via mcpDomain. Key operations: update scaling type, adjust thresholds, change cooldowns. The `ScalingScheduler.invalidatePolicy(poolName)` already exists for cache invalidation after config changes. `AgentPoolDefinitionRegistry` holds definitions — need to understand if it supports runtime mutation or is read-only from YAML parse.
+## References
 
-3. **#242 scope** — dashboard tab or panel showing scaling state per pool. `ScalingScheduler.scalingState(poolName)` returns `Optional<ScalingState>` with last decision, timestamps, config. `PoolEventEmitter.emitScalingDecision()` already pushes events via SSE. The dashboard pools tab (`claudony-pools-panel.ts` or similar) needs a scaling section.
-
-4. **App module has pre-existing build failures** — missing SNAPSHOT versions for `casehub-platform-agent-api`, `casehub-platform-yaml-core`, `casehub-platform-yaml-plugin-api`. These need resolving before app module tests can run. The casehub module (452 tests) compiles and passes independently.
-
-5. **IntelliJ workspace** — project at `/Users/mdproctor/claude/casehub/slots/202/claudony` needs opening via `ide_open_workspace`. Slot 194 path in CLAUDE.md is stale (disk gone).
-
-### Spec and Plan Artifacts
-
-- Spec: `specs/feat-240-demand-metrics-enrichment/2026-10-01-demand-metrics-enrichment-design.md`
-- Decisions: `specs/feat-240-demand-metrics-enrichment/decisions.md`
-- Plan: `plans/2026-10-01-demand-metrics-enrichment.md`
-- All promoted to project `docs/specs/feat-240-demand-metrics-enrichment/`
+| Artifact | Path |
+|----------|------|
+| Design spec | `specs/issue-212-model-fallback-chains/2026-10-03-model-fallback-chains-design.md` |
+| Decisions | `specs/issue-212-model-fallback-chains/decisions.md` |
+| Plan | `plans/2026-10-03-model-fallback-chains.md` |
+| Garden entry | GE-20261003-189086 (Mutiny recoverWithMulti gotcha) |
