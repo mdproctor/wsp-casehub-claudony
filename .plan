@@ -1,0 +1,19 @@
+# Work Plan — issue-212-model-fallback-chains
+
+## State
+branch: issue-212-model-fallback-chains
+state: closing:promoted
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 212
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+evidence-era: true
+## Queue
+- [ ] casehubio/claudony#212 — Issue #212 ← active
+  - [x] Batch 1: Runtime retry
+    - [x] Task 1: Programmatic invoke retry with Mutiny
+    - [x] Task 2: CLI circuit breaker with grace period
