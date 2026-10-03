@@ -77,11 +77,12 @@
 
 ## D7: Degraded provisioning notification
 
-**Choice:** Record resolved model in ProvisionResult metadata when fallback occurs
+**Choice:** Fire CDI event `ModelFallbackEvent` when fallback occurs; observers (engine integration, monitoring) react as needed
 **Alternatives:**
 - Silent fallback — simpler but engine doesn't know it got a less capable worker
-**Rationale:** Falling back from opus to haiku is a capability change. The engine should know so it can adjust expectations (simpler prompts, additional review gates, different mesh participation).
-**Trade-offs:** Minimal — ProvisionResult already supports metadata. Engine must choose whether to act on it.
-**Sources:** ProvisionResult (engine API), ClaudonyWorkerProvisioner (provisioning), decision review R1-08
+- Extend ProvisionResult with metadata — cross-repo engine-api change; ProvisionResult is a minimal record `(UUID, String)` with no metadata support
+**Rationale:** Falling back from opus to haiku is a capability change. A CDI event decouples notification from provisioning, avoids cross-repo API changes, and follows the platform's event-driven patterns.
+**Trade-offs:** Observers must be in the same CDI container. Engine integration can bridge to WorkerContext properties if needed.
+**Sources:** ProvisionResult (engine API — verified: no metadata support), ClaudonyWorkerProvisioner (provisioning), CDI Event pattern
 **Exploration:** quick
-**Status:** captured
+**Status:** revised (was: ProvisionResult metadata; revised per adversarial review R1-02 — ProvisionResult has no success()/withMetadata() API)
