@@ -13,3 +13,16 @@ flyway-next-v:
 
 ## Queue
 - [ ] casehubio/claudony#212 — Issue #212 ← active
+  - [ ] Batch 1: Platform types
+    - [ ] Task 1: ModelChain + ModelAvailabilityFilter + ChainResolutionResult
+  - [ ] Batch 2: Platform router
+    - [ ] Task 2: AgentSessionInit/Config modelChain field
+    - [ ] Task 3: RoutingAgentProvider resolveChain
+  - [ ] Batch 3: Claudony YAML
+    - [ ] Task 4: AgentPoolDefinition + YAML parser chain support
+  - [ ] Batch 4: Claudony CLI
+    - [ ] Task 5: CliChainResolver + ClaudonyProviderConfig.withModel
+  - [ ] Batch 5: Claudony events
+    - [ ] Task 6: ModelFallbackEvent CDI event
+  - [ ] Batch 6: Claudony integration
+    - [ ] Task 7: FleetPoolChainIntegrationTest
