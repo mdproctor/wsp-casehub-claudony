@@ -154,6 +154,7 @@ private ResolvedRoute resolveChain(ModelChain chain, ModelAvailabilityFilter fil
             };
 
             // Resolution succeeded — check operational availability
+            if (route.apiModelId() == null) return route;  // backend-key resolution, no filter
             var descriptor = modelRegistry.resolveById(route.apiModelId());
             if (descriptor.isPresent() && !filter.isAvailable(descriptor.get())) {
                 LOG.debugf("Chain entry %s resolved but operationally unavailable, trying next", entry);
@@ -308,33 +309,47 @@ private ModelChainParseResult parseModelChain(List<Object> chainList) {
 Implements `ModelAvailabilityFilter` — checks pool capacity and budget:
 
 ```java
-@ApplicationScoped
 public class ClaudonyModelAvailabilityFilter implements ModelAvailabilityFilter {
 
-    private final AgentPoolManagerRegistry poolRegistry;
+    private final AgentSessionManager sessionManager;
     private final BudgetTracker budgetTracker;
-    private final AgentPoolDefinitionRegistry defRegistry;
+    private final String poolName;
+
+    public ClaudonyModelAvailabilityFilter(AgentSessionManager sessionManager,
+                                           BudgetTracker budgetTracker,
+                                           String poolName) {
+        this.sessionManager = sessionManager;
+        this.budgetTracker = budgetTracker;
+        this.poolName = poolName;
+    }
 
     @Override
     public boolean isAvailable(ModelDescriptor descriptor) {
-        // Check each pool that serves this backend
-        for (var poolName : poolRegistry.poolNames()) {
-            var mgr = poolRegistry.get(poolName).orElse(null);
-            if (mgr == null) continue;
-
-            // Pool capacity check
-            if (mgr.status().active() >= mgr.status().max()) {
-                continue;  // this pool is full — model not available here
-            }
-
-            // Budget check
-            if (budgetTracker.isBudgetExceeded(poolName)) {
-                continue;  // this pool's budget is exceeded
-            }
-
-            return true;  // at least one pool can serve this model
+        // Pool capacity check
+        if (sessionManager.activeCount() >= sessionManager.status().max()) {
+            return false;
         }
-        return false;
+
+        // Budget check
+        if (budgetTracker.isBudgetExceeded(poolName)) {
+            return false;
+        }
+
+        return true;
+    }
+}
+
+// Factory — creates pool-scoped filters
+@ApplicationScoped
+public class ClaudonyModelAvailabilityFilterFactory {
+
+    private final AgentPoolManagerRegistry poolRegistry;
+    private final BudgetTracker budgetTracker;
+
+    public ModelAvailabilityFilter forPool(String poolName) {
+        var mgr = poolRegistry.get(poolName).orElse(null);
+        if (mgr == null) return ModelAvailabilityFilter.ALWAYS_AVAILABLE;
+        return new ClaudonyModelAvailabilityFilter(mgr, budgetTracker, poolName);
     }
 }
 ```
@@ -402,9 +417,12 @@ public TmuxAgentSession openWorkerSessionWithFallback(
             var session = openWorkerSession(identity, workingDir,
                     buildCommand(resolved.command(), resolved.model()));
 
-            // Watch for early exit (grace period)
-            if (waitForEarlyExit(session, GRACE_PERIOD)) {
-                LOG.warnf("Session exited within grace period (%s) with model %s, trying next",
+            // Watch for early exit (grace period + non-zero exit code)
+            // Zero exit code within grace period = fast completion (not a failure)
+            // Non-zero exit code within grace period = likely model/API failure (retry)
+            // Session survives past grace period = running normally (no retry)
+            if (waitForEarlyExit(session, GRACE_PERIOD) && exitCodeNonZero(session)) {
+                LOG.warnf("Session exited within grace period (%s) with non-zero exit and model %s, trying next",
                           GRACE_PERIOD, resolved.model());
                 sessionManager.destroySession(session.instanceId());
                 continue;
