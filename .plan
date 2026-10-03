@@ -2,7 +2,7 @@
 
 ## State
 branch: issue-212-model-fallback-chains
-state: active
+state: closing:review
 project-sha: 
 date: 
 issue-repo: casehubio/claudony
@@ -11,6 +11,7 @@ design-repo:
 design-section-hashes: 
 flyway-next-v: 
 
+evidence-era: true
 ## Queue
 - [ ] casehubio/claudony#212 — Issue #212 ← active
   - [x] Batch 1: Runtime retry
