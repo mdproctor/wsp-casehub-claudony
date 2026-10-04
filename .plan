@@ -2,7 +2,7 @@
 
 ## State
 branch: issue-258-model-chain-fallback
-state: active
+state: closing:review
 project-sha: 
 date: 
 issue-repo: casehubio/claudony
@@ -11,5 +11,6 @@ design-repo:
 design-section-hashes: 
 flyway-next-v: 
 
+evidence-era: true
 ## Queue
 - [ ] casehubio/claudony#258 — Issue #258 ← active
