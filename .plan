@@ -2,7 +2,7 @@
 
 ## State
 branch: issue-262-cleanup-failed-cb-sessions
-state: closing:stamped
+state: drained
 project-sha: 
 date: 
 issue-repo: casehubio/claudony
