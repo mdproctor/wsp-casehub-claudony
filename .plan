@@ -1,6 +1,6 @@
 ---
 branch: issue-265-test-baseline-loose-ends
-state: closing:review
+state: closing:verified
 base_branch: main
 owner_repo: casehubio/claudony
 ---
