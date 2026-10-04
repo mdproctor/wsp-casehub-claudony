@@ -2,7 +2,7 @@
 
 ## State
 branch: issue-262-cleanup-failed-cb-sessions
-state: closing:promoted
+state: closing:pushed
 project-sha: 
 date: 
 issue-repo: casehubio/claudony
