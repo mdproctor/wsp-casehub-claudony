@@ -1,10 +1,10 @@
 ---
-branch: main
-state: drained
+branch: issue-265-test-baseline-loose-ends
+state: active
 base_branch: main
 owner_repo: casehubio/claudony
 ---
 
 ## Queue
 
-- [x] casehubio/claudony#264 — fix FleetScript test failures + harden CB cleanup
+- [x] casehubio/claudony#265 — update test baseline + investigate stale loose-ends warnings
