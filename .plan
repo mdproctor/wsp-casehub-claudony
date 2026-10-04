@@ -1,16 +1,10 @@
-# Work Plan — issue-262-cleanup-failed-cb-sessions
+---
+branch: issue-264-fleet-script-tests-cb-safety
+state: active
+base_branch: main
+owner_repo: casehubio/claudony
+---
 
-## State
-branch: main
-state: drained
-project-sha: 
-date: 
-issue-repo: casehubio/claudony
-covers: 262
-design-repo: 
-design-section-hashes: 
-flyway-next-v: 
-
-evidence-era: true
 ## Queue
-- [x] casehubio/claudony#262 — Issue #262
+
+- [x] casehubio/claudony#264 — fix FleetScript test failures + harden CB cleanup
