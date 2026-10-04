@@ -1,5 +1,5 @@
 ---
-branch: issue-264-fleet-script-tests-cb-safety
+branch: main
 state: drained
 base_branch: main
 owner_repo: casehubio/claudony
