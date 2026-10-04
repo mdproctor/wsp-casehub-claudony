@@ -1,0 +1,15 @@
+# Work Plan — issue-258-model-chain-fallback
+
+## State
+branch: issue-258-model-chain-fallback
+state: scaffolded
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 258
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+## Queue
+- [ ] casehubio/claudony#258 — Issue #258 ← active
