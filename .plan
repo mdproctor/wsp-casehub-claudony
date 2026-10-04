@@ -2,7 +2,7 @@
 
 ## State
 branch: issue-262-cleanup-failed-cb-sessions
-state: scaffolded
+state: active
 project-sha: 
 date: 
 issue-repo: casehubio/claudony
@@ -12,4 +12,4 @@ design-section-hashes:
 flyway-next-v: 
 
 ## Queue
-- [ ] casehubio/claudony#262 — Issue #262 ← active
+- [x] casehubio/claudony#262 — Issue #262
