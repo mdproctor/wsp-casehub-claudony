@@ -84,3 +84,4 @@ wrap_sweep_selected=forage,protocol,update_claude_md,write_content
 arc42_scan_wrap_attempt=1
 arc42_scan_wrap=done
 handoff_write_attempt=1
+handoff_write=done
