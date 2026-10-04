@@ -14,3 +14,5 @@ evidence-era: true
 
 ## Queue
 - [x] casehubio/claudony#258 — Issue #258
+- [ ] casehubio/claudony#262 — clean-up-failed-circuit-breaker-sessions
+- [ ] casehubio/claudony#263 — fix-FleetScript-test-failures

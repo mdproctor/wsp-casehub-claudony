@@ -2,43 +2,45 @@
 
 ## What Happened
 
-Wired model chain resolution into `ClaudonyWorkerProvisioner.setupSession()` (#251) — the final integration step connecting the building blocks from #212 to the provisioning flow.
+Completed epic #258 (model chain fallback end-to-end) — all three child issues landed as a single squashed commit `856f64c` on main.
 
-`setupSession()` now looks up `AgentPoolDefinition` by role name via `AgentPoolDefinitionRegistry`, resolves the model chain through `CliChainResolver.resolve()`, and uses the result to override both the base command and the model config (`withModel()`). `ModelFallbackEvent` fires via CDI when chain resolution falls back from the primary entry.
+**#259 — CliCircuitBreaker wired into provisioner:** Replaced static `CliChainResolver.resolve()` in `ClaudonyWorkerProvisioner.setupSession()` with `CliCircuitBreaker.tryChain()`. Sessions that exit within the grace period (API auth failure, model unavailable at runtime) now automatically retry the next model in the chain. Added `paneExitCode()` helper for tmux pane dead status inspection. Default grace period is 30 seconds; per-model overrides via pool YAML `grace-period` field.
 
-Added `CLI_PASS_THROUGH` ModelRegistry to `CliChainResolver` — trusts YAML-configured model names since the CLI validates them at runtime. Queried entries return empty (need a real registry).
+**#260 — ModelFallbackEvent observer:** Created `ModelFallbackEventObserver` — `@ApplicationScoped` CDI bean that `@Observes ModelFallbackEvent`, logs at WARN level with pool name, requested/resolved models, and fallback depth. Thread-safe counter via `AtomicInteger` for ops dashboards.
 
-Branch landed as `f207024` on main. Issue #251 closed.
-
-Created epic #258 with three follow-up issues for completing the fallback story end-to-end.
+**#261 — Pool pre-condition exception types:** Added `PoolAtCapacityException` (pool full, minActive prevents eviction) and `BudgetExceededException` (budgetLocked blocks acquisition) as subtypes of `AgentPoolExhaustedException`. Backward compatible — existing catch blocks still work.
 
 ## Key Decisions
 
-- **CLI_PASS_THROUGH over NoOpModelRegistry:** The platform's `NoOpModelRegistry` (`@DefaultBean`) rejects all Named entries, which would break CLI chain resolution. Rather than fighting CDI bean priority, `CLI_PASS_THROUGH` is a static constant on `CliChainResolver` — the provisioner uses it directly. Clean, no CDI conflicts.
+- **Circuit breaker replaces static resolver for model chain path:** The provisioner no longer calls `CliChainResolver.resolve()` when a model chain is present. The circuit breaker combines model selection + session creation + retry in one call. The static resolver class remains available for other uses.
 
-- **Fallback event currently unreachable via provisioner:** With `CLI_PASS_THROUGH`, all Named entries pass validation, so the first entry always wins and `ModelFallbackEvent` never fires through the provisioner. This is by design — the event path activates when `CliCircuitBreaker` is wired in (#259) for runtime fallback.
+- **Package-private `circuitBreakerSleeper` field for test injection:** Rather than adding another constructor parameter (already 13), a package-private `Consumer<Duration>` field defaults to `Thread.sleep()` and is overridden to a no-op in tests. Tests also mock `tmux.sessionExists()` to return true so the alive check passes immediately.
 
-- **No separate capacity pre-check:** Chain resolution is lightweight (no session creation). Capacity is already enforced inside `AgentSessionManager.acquire()`. A separate pre-check would give clearer error messages but is deferred to #261.
+- **Exception subtypes extend the base:** `PoolAtCapacityException` and `BudgetExceededException` extend `AgentPoolExhaustedException` rather than replacing it. Existing `catch (AgentPoolExhaustedException)` blocks continue to work.
 
 ## What's Next
 
-**Epic #258 — complete model chain fallback end-to-end:**
+| # | Title | Scale | Complexity |
+|---|-------|-------|------------|
+| #262 | Clean up failed circuit breaker sessions on retry | S | Med |
+| #263 | Fix 3 pre-existing FleetScript test failures | S | Low |
 
-| # | Title | Scale | Priority |
-|---|-------|-------|----------|
-| #259 | Wire CliCircuitBreaker into provisioner | M | Must-do |
-| #260 | Add ModelFallbackEvent observer | S | Should-do |
-| #261 | Pool pre-condition exception types | S | Nice-to-have |
+**#262** builds on #258 — the circuit breaker creates tmux sessions that may fail and retry, but failed sessions remain tracked as ACTIVE in `AgentSessionManager` with dead processes. Needs a cleanup mechanism (destroy callback or post-tryChain cleanup).
 
-#259 is the critical one — it completes the runtime retry path so sessions that fail early (API errors, auth failures) automatically retry with the next chain entry.
+**#263** is independent — `FleetScriptParserTest.throwsOnEmptyNodes`, `throwsOnMissingVariable`, and `FleetScriptRunnerTest.emptyNodesThrows` expect `IllegalArgumentException` but get `UncheckedIOException`. Pre-existing on main since #247.
 
 ## Files Changed
 
-- `ClaudonyWorkerProvisioner.java` — chain resolution wiring, fallback event firing
-- `CliChainResolver.java` — `CLI_PASS_THROUGH` ModelRegistry constant
-- `ClaudonyWorkerProvisionerTest.java` — 5 new tests, constructor updates
-- `WorkerLifecycleSequenceTest.java` — constructor update
+- `ClaudonyWorkerProvisioner.java` — circuit breaker wiring, `paneExitCode()`, `fireFallbackEvent()` (renamed from `fireFallbackEventIfNeeded`)
+- `AgentSessionManager.java` — `BudgetExceededException` and `PoolAtCapacityException` at throw sites
+- `BudgetExceededException.java` — new
+- `PoolAtCapacityException.java` — new
+- `ModelFallbackEventObserver.java` — new
+- `ModelFallbackEventObserverTest.java` — new (3 tests)
+- `ClaudonyWorkerProvisionerTest.java` — setUp adds `sessionExists` mock, model chain tests add sleeper override
+- `AgentSessionManagerTest.java` — 4 new tests for specific exception types
+- `AgentSessionManagerWithTestPoolTest.java` — updated assertion to `PoolAtCapacityException`
 
 ## Test Status
 
-All 31 provisioner tests pass. 3 pre-existing failures in `FleetScriptParserTest`/`FleetScriptRunnerTest` (from #247, unrelated).
+All tests pass except 3 pre-existing FleetScript failures (tracked as #263).
