@@ -2,49 +2,31 @@
 
 ## Last Session
 
-Design and planning session for declarative fleet deployment. No implementation code — filed issues and fixed a build break.
+Implemented #247 (standalone fleet script runner) end-to-end: brainstorm → spec → plan → implementation → work-end. Filed follow-up epic #248 with children #249 and #250.
 
-### Build fix (landed on main)
+### What was built (#247, landed on main as 8362cf5)
 
-`@HandWrittenEndpoint` annotation on 7 hand-written `@Path` resources — required by the `@McpDomain` annotation processor from #204. Removed dead `QhorusMcpTools` import/injection from 2 E2E tests (class deleted in qhorus #452). Needed `platform-api` rebuilt from source to get the annotation class. Commit `00db804`.
+Fleet script runner — parses #246 desiredstate YAML format, topologically sorts nodes by `dependsOn`, provisions pools and channels via per-type SPI handlers. 14 new Java files, 32 tests, REST endpoint at `POST /api/claudony/fleet/execute`.
 
-### Fleet manager state assessment
+Core framework in `casehub/fleet/script/`: `FleetScript`, `FleetNode`, `FleetNodeHandler` SPI, `FleetScriptParser` (YAML + variable substitution), `FleetScriptRunner` (Kahn's topo-sort + handler dispatch), `PoolNodeHandler`, `ChannelNodeHandler`. App wiring: `FleetScriptService`, `FleetResource`.
 
-Reviewed what #205 delivered vs what's missing. The fleet manager is substantially complete:
-- `ClaudonyPoolApi` via `@McpDomain` — 7 operations (list, detail, sessions, update, suspend, resume, destroy)
-- `AgentPoolDefinition` + `AgentPoolYamlParser` — declarative pool definitions from YAML
-- `AgentSessionManager` — suspend/resume lifecycle with memory-weighted eviction
-- Auto-scaling (5 policy types), observability (Micrometer + IoTDB), SSE event streaming, interactive dashboard
+### Follow-up filed
 
-**Gap identified:** no declarative path for deploying a complete fleet (agents + pools + mesh) from a single YAML script. Pools are YAML-driven but agents and channels are provisioned separately.
+- **#248** (epic) — fleet script lifecycle: startup loading, mcpDomain tool, desiredstate
+- **#249** — startup fleet script loading from `META-INF/fleet-scripts/` (XS)
+- **#250** — mcpDomain fleet execution tool via `@McpDomain` (XS)
+- **#246** — desiredstate integration in ops repo (L, cross-repo)
 
-### Issues filed
+Recommended next: #249 + #250 together — both XS, ~30 min combined.
 
-- **#246** — declarative LLM fleet deployment with desiredstate reconciliation + ops provisioning. Three execution modes: ad-hoc (exists), standalone script (#247), desiredstate nodes (ops). Includes full fleet YAML example with agents, pools, and mesh channels. Cross-repo: ops (PoolNodeSpec + provisioner), claudony (script runner), platform (manifest), eidos (binding).
+### Pre-existing issues
 
-- **#247** — standalone fleet script runner. Claudony-local, no ops dependency. `FleetScriptRunner` parses the same YAML as desiredstate, topo-sorts by `dependsOn`, provisions pools + channels in order. E2E testable in this repo. Ready to start now.
-
-### Slot 202
-
-Created for #205 work. All #205 implementation landed on main. Slot 202 workspace has the design artifacts (spec, decisions, plan). The slot branch is closed (`chore: branch closed`).
-
-## Immediate Next Step
-
-Start #247 (standalone fleet script runner). All building blocks exist:
-- `AgentPoolYamlParser` — pool YAML parsing
-- `AgentPoolDefinitionRegistry` — pool registration
-- `ChannelService` — Qhorus channel CRUD (embedded)
-- `ClaudonyPoolApi` — pool management via MCP
-
-New pieces: `FleetScriptRunner`, `FleetNodeHandler` SPI (per-type handlers), variable substitution, e2e tests.
-
-## CI Status
-
-**Build and Publish** was red on main — the `@HandWrittenEndpoint` fix resolved the Java compilation error. A separate TypeScript error in `site.ts` (casehub-pages dependency, `LayoutState` type mismatch with `exactOptionalPropertyTypes`) persists — needs fixing in the pages repo, not claudony.
+Maven compilation in casehub module fails due to stale SNAPSHOT deps (`StepValidator` from `casehub-yaml-core`, `LedgerPersistenceUnit` from `casehub-ledger`, `panePid`/`respawnPane` from `TmuxService`). New fleet script code compiles cleanly (verified via IntelliJ diagnostics). Tests can't run via Maven until SNAPSHOTs are rebuilt from source.
 
 ## References
 
-- #246 — declarative fleet deployment (desiredstate + ops)
-- #247 — standalone fleet script runner (claudony, ready to start)
-- #205 — fleet manager (complete, landed on main)
-- Build flags for app tests: `-Denforcer.skip=true -Dquinoa.build.skip=true`
+| Artifact | Path |
+|----------|------|
+| Design spec | `docs/specs/feat/247-fleet-script-runner/2026-10-03-fleet-script-runner-design.md` |
+| Decisions | `docs/specs/feat/247-fleet-script-runner/decisions.md` |
+| Plan | `plans/2026-10-03-fleet-script-runner.md` (workspace) |
