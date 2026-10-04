@@ -1,31 +1,44 @@
-# Session Handover — 2026-10-03
+# Session Handover — 2026-10-04
 
 ## What Happened
 
-Designed and implemented **model fallback chains** (#212) — ordered model preferences with automatic degradation across three trigger levels (resolution, operational, runtime). Cross-repo: platform types + router resolution in `casehub-platform`, pool YAML parsing + CLI resolver + circuit breaker in `claudony`.
+Wired model chain resolution into `ClaudonyWorkerProvisioner.setupSession()` (#251) — the final integration step connecting the building blocks from #212 to the provisioning flow.
 
-Branch landed on main (3 commits after squash). Issue closed. 7 follow-up issues filed (#251–#257).
+`setupSession()` now looks up `AgentPoolDefinition` by role name via `AgentPoolDefinitionRegistry`, resolves the model chain through `CliChainResolver.resolve()`, and uses the result to override both the base command and the model config (`withModel()`). `ModelFallbackEvent` fires via CDI when chain resolution falls back from the primary entry.
+
+Added `CLI_PASS_THROUGH` ModelRegistry to `CliChainResolver` — trusts YAML-configured model names since the CLI validates them at runtime. Queried entries return empty (need a real registry).
+
+Branch landed as `f207024` on main. Issue #251 closed.
+
+Created epic #258 with three follow-up issues for completing the fallback story end-to-end.
 
 ## Key Decisions
 
-- **Platform-owned resolution** — `RoutingAgentProvider.resolveChain()` owns the routing logic, not Claudony. Revised after decision review caught circular reasoning.
-- **Cross-backend chains supported** — first-principles analysis showed no architectural blockers. Chain entries carry optional command overrides.
-- **CDI event for degraded provisioning** — `ModelFallbackEvent` instead of `ProvisionResult` metadata (ProvisionResult has no metadata support).
-- **Mutiny deferred() required** — `recoverWithMulti` eagerly evaluates the primary Multi during chain construction. Garden entry GE-20261003-189086.
+- **CLI_PASS_THROUGH over NoOpModelRegistry:** The platform's `NoOpModelRegistry` (`@DefaultBean`) rejects all Named entries, which would break CLI chain resolution. Rather than fighting CDI bean priority, `CLI_PASS_THROUGH` is a static constant on `CliChainResolver` — the provisioner uses it directly. Clean, no CDI conflicts.
 
-## Blockers
+- **Fallback event currently unreachable via provisioner:** With `CLI_PASS_THROUGH`, all Named entries pass validation, so the first entry always wins and `ModelFallbackEvent` never fires through the provisioner. This is by design — the event path activates when `CliCircuitBreaker` is wired in (#259) for runtime fallback.
 
-- Platform commits (4) are in slot 202 local clone only — not pushed to casehubio/platform remote (#257). Spring module needs fixing first (8-arg AgentSessionConfig constructor).
+- **No separate capacity pre-check:** Chain resolution is lightweight (no session creation). Capacity is already enforced inside `AgentSessionManager.acquire()`. A separate pre-check would give clearer error messages but is deferred to #261.
 
-## Next Action
+## What's Next
 
-**#251** — Wire CliChainResolver into ClaudonyWorkerProvisioner.setupSession(). All building blocks exist; the provisioner integration is the last mile (~30 min).
+**Epic #258 — complete model chain fallback end-to-end:**
 
-## References
+| # | Title | Scale | Priority |
+|---|-------|-------|----------|
+| #259 | Wire CliCircuitBreaker into provisioner | M | Must-do |
+| #260 | Add ModelFallbackEvent observer | S | Should-do |
+| #261 | Pool pre-condition exception types | S | Nice-to-have |
 
-| Artifact | Path |
-|----------|------|
-| Design spec | `specs/issue-212-model-fallback-chains/2026-10-03-model-fallback-chains-design.md` |
-| Decisions | `specs/issue-212-model-fallback-chains/decisions.md` |
-| Plan | `plans/2026-10-03-model-fallback-chains.md` |
-| Garden entry | GE-20261003-189086 (Mutiny recoverWithMulti gotcha) |
+#259 is the critical one — it completes the runtime retry path so sessions that fail early (API errors, auth failures) automatically retry with the next chain entry.
+
+## Files Changed
+
+- `ClaudonyWorkerProvisioner.java` — chain resolution wiring, fallback event firing
+- `CliChainResolver.java` — `CLI_PASS_THROUGH` ModelRegistry constant
+- `ClaudonyWorkerProvisionerTest.java` — 5 new tests, constructor updates
+- `WorkerLifecycleSequenceTest.java` — constructor update
+
+## Test Status
+
+All 31 provisioner tests pass. 3 pre-existing failures in `FleetScriptParserTest`/`FleetScriptRunnerTest` (from #247, unrelated).
