@@ -1,0 +1,15 @@
+# Work Plan — issue-251-wire-model-chain-provisioner
+
+## State
+branch: issue-251-wire-model-chain-provisioner
+state: scaffolded
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 251
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+## Queue
+- [ ] casehubio/claudony#251 — Issue #251 ← active
