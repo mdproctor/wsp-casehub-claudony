@@ -1,6 +1,6 @@
 ---
 branch: issue-264-fleet-script-tests-cb-safety
-state: closing:promoted
+state: closing:pushed
 base_branch: main
 owner_repo: casehubio/claudony
 ---
