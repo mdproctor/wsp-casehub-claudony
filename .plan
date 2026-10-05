@@ -1,10 +1,16 @@
----
-branch: issue-265-test-baseline-loose-ends
-state: closing:promoted
-base_branch: main
-owner_repo: casehubio/claudony
----
+# Work Plan — issue-248-fleet-script-lifecycle
 
+## State
+branch: issue-248-fleet-script-lifecycle
+state: active
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 248
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+evidence-era: true
 ## Queue
-
-- [x] casehubio/claudony#265 — update test baseline + investigate stale loose-ends warnings
+- [ ] casehubio/claudony#248 — Issue #248 ← active
