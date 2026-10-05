@@ -1,0 +1,15 @@
+# Work Plan — issue-254-fleet-cleanup-batch
+
+## State
+branch: issue-254-fleet-cleanup-batch
+state: scaffolded
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 254
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+## Queue
+- [ ] casehubio/claudony#254 — Issue #254 ← active
