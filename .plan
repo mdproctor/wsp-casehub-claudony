@@ -2,7 +2,7 @@
 
 ## State
 branch: issue-268-registry-migration
-state: closing:review
+state: closing:verified
 project-sha: 9ea38149d527fef88332fc55642787fd323abe33
 date: 2026-10-10
 issue-repo: casehubio/claudony
