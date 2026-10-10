@@ -1,1 +1,1 @@
-# Design Journal — issue-248-fleet-script-lifecycle
+# Design Journal — issue-268-registry-migration
