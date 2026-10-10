@@ -15,8 +15,8 @@ flyway-next-v: unknown
 - [ ] casehubio/claudony#268 — Issue #268 ← active
   - [x] Batch 1: Dependencies
     - [x] Task 1: Add registry-inmem dependencies
-  - [ ] Batch 2: AgentPoolDefReg
-    - [ ] Task 2: Migrate to dual-store
+  - [x] Batch 2: AgentPoolDefReg
+    - [x] Task 2: Migrate to dual-store
   - [ ] Batch 3: PeerRegistry
     - [ ] Task 3: Migrate to RegistryService delegation
   - [ ] Batch 4: PoolMeshRegistrar
