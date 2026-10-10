@@ -17,7 +17,7 @@ flyway-next-v: unknown
     - [x] Task 1: Add registry-inmem dependencies
   - [x] Batch 2: AgentPoolDefReg
     - [x] Task 2: Migrate to dual-store
-  - [ ] Batch 3: PeerRegistry
-    - [ ] Task 3: Migrate to RegistryService delegation
+  - [x] Batch 3: PeerRegistry
+    - [x] Task 3: Migrate to RegistryService delegation
   - [ ] Batch 4: PoolMeshRegistrar
     - [ ] Task 4: Migrate to RegistryService relationships
