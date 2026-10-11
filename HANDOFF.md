@@ -2,31 +2,31 @@
 
 ## Last Session
 
-Implemented #247 (standalone fleet script runner) end-to-end: brainstorm → spec → plan → implementation → work-end. Filed follow-up epic #248 with children #249 and #250.
+Implemented #269 (application registration + namespace model — Stage 3a) end-to-end: brainstorm → spec → plan → implementation → work-end.
 
-### What was built (#247, landed on main as 8362cf5)
+### What was built (#269, landed on main as 3053a96)
 
-Fleet script runner — parses #246 desiredstate YAML format, topologically sorts nodes by `dependsOn`, provisions pools and channels via per-type SPI handlers. 14 new Java files, 32 tests, REST endpoint at `POST /api/claudony/fleet/execute`.
+Application as a first-class registry entity with namespace-based isolation. 6 new Java files, 17 new tests, @McpDomain API at `/api/claudony/apps`.
 
-Core framework in `casehub/fleet/script/`: `FleetScript`, `FleetNode`, `FleetNodeHandler` SPI, `FleetScriptParser` (YAML + variable substitution), `FleetScriptRunner` (Kahn's topo-sort + handler dispatch), `PoolNodeHandler`, `ChannelNodeHandler`. App wiring: `FleetScriptService`, `FleetResource`.
+- `ApplicationRegistrationService` orchestrates registration across `RegistryService` and `AgentPoolDefinitionRegistry`
+- `ApplicationSpec`/`ApplicationInfo` records for registration request/response
+- `ClaudonyAppApi` @McpDomain — REST + MCP + GraphQL at `claudony/apps`
+- Namespace parameter on `AgentPoolDefinitionRegistry` (backward-compatible, defaults to "fleet")
+- `app:` channel prefix convention in `docs/CHANNELS.md`
+- Design spec + 6 decisions at `docs/specs/issue-269-application-registration-namespace/`
 
-### Follow-up filed
+### Key design decisions
 
-- **#248** (epic) — fleet script lifecycle: startup loading, mcpDomain tool, desiredstate
-- **#249** — startup fleet script loading from `META-INF/fleet-scripts/` (XS)
-- **#250** — mcpDomain fleet execution tool via `@McpDomain` (XS)
-- **#246** — desiredstate integration in ops repo (L, cross-repo)
+- D1: `namespace` on `RegistryEntry` = owning app identity (not coarse category)
+- D2: Namespace for discovery queries, relationships for lifecycle cascade
+- D3: Apps declare pools at registration time (declarative, not negotiated)
 
-Recommended next: #249 + #250 together — both XS, ~30 min combined.
+## Next
 
-### Pre-existing issues
+**claudony#270** — generic registry @McpDomain (`ClaudonyRegistryApi`). Issue updated to use @McpDomain, not REST-only.
 
-Maven compilation in casehub module fails due to stale SNAPSHOT deps (`StepValidator` from `casehub-yaml-core`, `LedgerPersistenceUnit` from `casehub-ledger`, `panePid`/`respawnPane` from `TmuxService`). New fleet script code compiles cleanly (verified via IntelliJ diagnostics). Tests can't run via Maven until SNAPSHOTs are rebuilt from source.
+**platform#570** — registry-client. Dependency direction needs resolution: platform is upstream of claudony, so the contract definition may belong in platform-api.
 
-## References
+## Pre-existing Issues
 
-| Artifact | Path |
-|----------|------|
-| Design spec | `docs/specs/feat/247-fleet-script-runner/2026-10-03-fleet-script-runner-design.md` |
-| Decisions | `docs/specs/feat/247-fleet-script-runner/decisions.md` |
-| Plan | `plans/2026-10-03-fleet-script-runner.md` (workspace) |
+- casehub module has compilation errors from missing upstream SNAPSHOTs (`StepValidator` from yaml-core, `panePid`/`respawnPane` from TmuxService). Not caused by #269. IntelliJ diagnostics on changed files pass clean.
