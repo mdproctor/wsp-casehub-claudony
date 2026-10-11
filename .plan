@@ -1,0 +1,15 @@
+# Work Plan — issue-269-application-registration-namespace
+
+## State
+branch: issue-269-application-registration-namespace
+state: scaffolded
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 269
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+## Queue
+- [ ] casehubio/claudony#269 — Issue #269 ← active
