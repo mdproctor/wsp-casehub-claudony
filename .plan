@@ -1,0 +1,15 @@
+# Work Plan — issue-209-eidos-agent-identity-integration
+
+## State
+branch: issue-209-eidos-agent-identity-integration
+state: scaffolded
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 209
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+## Queue
+- [ ] casehubio/claudony#209 — Issue #209 ← active
