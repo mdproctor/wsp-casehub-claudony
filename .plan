@@ -1,0 +1,24 @@
+# Work Plan — issue-271-ops-view-fleet-visibility
+
+## State
+branch: issue-271-ops-view-fleet-visibility
+state: closing:promoted
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: casehubio/claudony#271
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+evidence-era: true
+## Queue
+- [ ] casehubio/claudony#271 — Issue #271 ← active
+  - [x] Batch 1: Data model + OpsService
+    - [x] Task 1: Records and OpsService with tests
+  - [x] Batch 2: SSE event bus
+    - [x] Task 2: OpsEventBus with tests
+  - [x] Batch 3: REST and SSE endpoints
+    - [x] Task 3: ClaudonyOpsApi and OpsEventsResource with integration tests
+  - [x] Batch 4: Documentation
+    - [x] Task 4: CLAUDE.md and epic update
