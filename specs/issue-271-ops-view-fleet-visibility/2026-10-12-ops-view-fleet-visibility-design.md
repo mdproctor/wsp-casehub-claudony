@@ -108,8 +108,7 @@ record MeshOpsView(
 record ChannelOpsView(
     String name,
     String purpose,
-    long messageCount,
-    int subscriberCount     // from ChannelEventBus or QhorusDashboardService
+    long messageCount       // from QhorusDashboardService (MessageStore.countByChannel)
 )
 
 // Registry relationship edge
