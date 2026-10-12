@@ -38,39 +38,40 @@
 
 ## D4: Pool configuration source
 
-**Choice:** AgentDescriptor.extensionData() with well-known key `claudony.pool`, plus sensible defaults when absent.
+**Choice:** Eidos `ProviderConfig` (providerName="claudony") feeds into the engine's `ProvisionerConfigRegistry`, which Claudony already reads via `CompositeProviderConfigSource`. Pool sizing (minActive, maxActive) and other pool config are carried as ProviderConfig entries. Sensible defaults (min=0, max=5) when no ProviderConfig exists for "claudony".
 **Alternatives:**
-- Separate claudony-side config mapping (agentId → pool sizing in application.properties) — works but scatters configuration across two systems.
-- Eidos ProviderConfig — semantic fit but string-typed Map<String,String>, awkward for structured pool config (nested scaling, budget).
-**Rationale:** extensionData is designed for provider-specific configuration. No Eidos API changes needed. Defaults (min=0, max=5) keep things working when extensionData is absent.
-**Trade-offs:** Configuration lives in the Eidos descriptor rather than in Claudony's own config. Operators must understand where to configure pool sizing.
-**Sources:** AgentDescriptor.extensionData(), AgentPoolDefinition.PoolConfig
+- AgentDescriptor.extensionData() with well-known key — creates a parallel config channel that bypasses the existing ProvisionerConfigRegistry path. Untyped bag with no schema validation.
+- Separate claudony-side config mapping (agentId → pool sizing in application.properties) — scatters configuration across two systems.
+**Rationale:** Claudony already has `CompositeProviderConfigSource` calling `registry.configFor("claudony", agentId)`. The infrastructure path exists — this decision uses it rather than creating a parallel channel. Eidos `ProviderConfig` has `providerName` + `Map<String,String> config`, which maps cleanly to pool sizing keys.
+**Trade-offs:** String-typed config values require parsing (e.g. "minActive" → int). The mapping is simple and bounded.
+**Sources:** ProviderConfig (eidos-api), ProvisionerConfigRegistry (engine-api), CompositeProviderConfigSource (claudony-casehub), decision review R1-02/R1-12
 **Exploration:** quick
-**Status:** captured
+**Status:** revised (review R1-02, R1-12)
 
 ## D5: Bridge lifecycle
 
-**Choice:** CDI events for immediate reaction to AgentDescriptor changes, plus 30s polling reconciliation loop for drift safety.
+**Choice:** Startup read + 30s polling reconciliation. No CDI events — `AgentRegistry` has no event mechanism and adding one is out of scope.
 **Alternatives:**
 - Startup only — read once, require restart for changes. Too rigid for a reactive system.
-- Polling only — eventually consistent but up to 30s lag on every change. Wasteful without events.
-- CDI events only — immediate but can miss events (CDI async delivery, transient failures).
-**Rationale:** Belt-and-suspenders: events handle the happy path instantly, reconciliation catches anything events miss. 30s matches the existing case-worker-heartbeat-ms=30000 pattern.
-**Trade-offs:** Slightly more complex than either approach alone. Reconciliation must be idempotent.
-**Sources:** AgentPoolDefinitionRegistry, existing @Scheduled patterns in Claudony
+- CDI events + polling — the ideal, but AgentRegistry doesn't fire events today. Would require eidos-api changes.
+**Rationale:** AgentRegistry is a plain interface (register/findById/find) with no event infrastructure. Polling reconciliation at 30s provides eventual consistency without requiring Eidos API changes. The bridge reads the registry at startup, then reconciles every 30s. Reconciliation is idempotent — it compares current registry state to current pool state and applies the diff.
+**Trade-offs:** Up to 30s delay for descriptor changes to propagate to pools. Acceptable — pool topology changes are infrequent.
+**Sources:** AgentRegistry interface (eidos-api, no event methods), AgentPoolDefinitionRegistry, decision review R1-04
 **Exploration:** quick
-**Status:** captured
+**Status:** revised (review R1-04)
+**Depends on:** D4
 
 ## D6: Eidos dependency model
 
-**Choice:** Optional — guard with @DefaultBean / Instance.isResolvable() pattern. Claudony works without Eidos; bridge activates only when casehub-eidos-api is on the classpath.
+**Choice:** Config-driven activation via `claudony.eidos.pool-bridge.enabled=false` (default off). The bridge bean is guarded by `@IfBuildProperty`. `casehub-eidos-api` is an optional compile dependency — present on classpath but bridge only activates when explicitly enabled.
 **Alternatives:**
-- Required dependency — simpler code but couples all Claudony deployments to Eidos.
-**Rationale:** Claudony is deployed in contexts where Eidos may not be present (standalone terminal management, simple fleet setups). The bridge is an enhancement, not a prerequisite.
-**Trade-offs:** Conditional activation code adds some complexity. Must be tested in both with-Eidos and without-Eidos configurations.
-**Sources:** Existing @DefaultBean patterns (NoOpAgentProvider, EmptyCaseLineageQuery), fleet-script decisions.md (D2: "Eidos isn't on Claudony's classpath")
+- @DefaultBean / Instance.isResolvable() — won't work: `NoOpAgentRegistry` from engine-runtime-core is always resolvable, so the bridge would always activate even without real Eidos data.
+- Required dependency — couples all Claudony deployments to Eidos.
+**Rationale:** `NoOpAgentRegistry` is always on the classpath (engine-runtime-core provides it). Classpath detection and Instance.isResolvable() both give false positives. A config property is explicit, testable, and matches how other optional features are gated (e.g. `claudony.casehub.enabled`).
+**Trade-offs:** Operators must set a config property. But this is consistent with `claudony.casehub.enabled=true` — the bridge is an integration feature, not a default.
+**Sources:** NoOpAgentRegistry (engine-runtime-core), claudony.casehub.enabled pattern, decision review R1-06
 **Exploration:** quick
-**Status:** captured
+**Status:** revised (review R1-06)
 
 ## D7: Session identity stamping
 
