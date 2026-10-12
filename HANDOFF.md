@@ -2,24 +2,31 @@
 
 ## Last Session
 
-Implemented #270 (registry REST endpoints — Stage 3b): `ClaudonyRegistryApi` @McpDomain with 8 operations and 8 integration tests. Fixed 32 CDI deployment errors from upstream SNAPSHOT drift. Aligned `domainFilter` for all 8 @McpDomain classes (apps, registry, fleet were missing). Created issues #271–#274 for remaining epic stages.
+Implemented #271 (ops view — Stage 3c of epic #267): fleet-wide operational visibility API. `OpsService` aggregates from 5 backing services (RegistryService, PoolService, PeerRegistry, ApplicationRegistrationService, QhorusDashboardService) into a typed `OpsSnapshot`. `ClaudonyOpsApi` @McpDomain exposes `/snapshot` and `/health` REST endpoints. `OpsEventBus` observes `RegistryEvent` CDI events and pushes live topology updates via SSE at `/api/ops/events`. 13 new tests (4 unit OpsServiceTest, 5 unit OpsEventBusTest, 3 integration ClaudonyOpsApiTest, 1 integration OpsEventsResourceTest). Landed as `364d0dc` on main. Epic #267 Stage 3c marked Done.
+
+Key discovery: `domainFilter` in `app/pom.xml` compiler args must include any new @McpDomain domain — without it, the GraphQLResolverProcessor won't generate the REST resource class, causing 404s.
+
+Pre-existing issue: `CaseLineageQueryIntegrationTest` and `ClaudonyLedgerEventCaptureTest` fail to compile — `io.casehub.ledger.model.CaseLedgerEntry` is missing from the installed `casehub-ledger-core` SNAPSHOT. Workaround: temporarily move the two files to `/tmp/` before running tests, restore after. Not caused by this session's work.
+
+## Next Issue
+
+**#272 — feat: module decomposition — fleet/pool/mesh as independent services (Stage 3d)**
+
+Depends on #271 (done). Decomposes Claudony's fleet/pool/mesh capabilities into independently deployable services. This is architectural restructuring, not feature addition — different mode of work from #271.
+
+Also available: **platform#575** (XS/Low) — add `registry-client` to `spring-parity-exceptions.txt`. Quick win to start with.
 
 ## How to Continue
 
-Run `work start #271` or `work next` to pick up the next item. The `.plan` queue is ordered by dependency — follow it sequentially.
+Run `work start #272` to begin the next epic stage. The `.plan` will be scaffolded by work-start. Consider brainstorming first — module decomposition has significant design decisions around service boundaries and API contracts.
 
-### Recommended work order
+## Branch State
 
-1. **#271 (Stage 3c) — ops view** — aggregates the registry/pool/mesh APIs into a topology query that scaffold can consume. Start here — it defines the data contract that downstream stages need.
-2. **#272 (Stage 3d) — module decomposition** — extract fleet/pool/mesh into deployable services. Depends on the ops view API shape from #271.
-3. **#273 (Stage 3e) — UI extraction** — extract LitElement panels to `@casehubio/blocks-ui-fleet`. Depends on the ops view API (#271). Can run parallel with #272.
-4. **#274 (Stage 4) — durable cascade** — wire `CascadeEngine` rules for the Claudony entity topology. Depends on #272 (service boundaries determine cascade topology).
+- **main**: clean, up to date with origin
+- **issue-271-ops-view-fleet-visibility**: stamped as closed (backup at `backup/pre-squash-issue-271-ops-view-fleet-visibility-20261012`)
+- Workspace branch `issue-271-ops-view-fleet-visibility` has unpushed spec/plan commits (workspace artifacts, not source)
 
-### Quick wins (can interleave)
-
-- **#255** (ModelSelection sealed type) and **#256** (per-model rate limiting) are small fleet ops refactors that don't depend on the epic stages. Good for short sessions or context breaks.
-
-## Epic #267 — Modular Fleet Architecture
+## Epic #267 Progress
 
 | Stage | Issue | Status |
 |-------|-------|--------|
@@ -27,45 +34,7 @@ Run `work start #271` or `work next` to pick up the next item. The `.plan` queue
 | 2. Migration | #268 | Done |
 | 3a. App registration | #269 | Done |
 | 3b. Registry REST | #270 | Done |
-| 3c. Ops view | #271 | **Open — next** |
-| 3d. Module decomposition | #272 | Open |
+| 3c. Ops view | #271 | Done |
+| 3d. Module decomposition | #272 | Open — next |
 | 3e. UI extraction | #273 | Open |
 | 4. Durable cascade | #274 | Open |
-
-## All Open Issues
-
-### In queue (.plan — sequential)
-
-| # | Title | Scale | Complexity | Blocked by |
-|---|-------|-------|------------|------------|
-| 271 | Ops view — fleet-wide visibility (Stage 3c) | M | Med | — |
-| 272 | Module decomposition — services (Stage 3d) | L | High | #271 |
-| 273 | UI extraction — blocks-ui panels (Stage 3e) | M | Med | #271 |
-| 274 | Durable cascade lifecycle (Stage 4) | M | High | #272 |
-
-### Related to epic (parallel / adjacent)
-
-| # | Title | Scale | Complexity | Blocked by |
-|---|-------|-------|------------|------------|
-| 246 | Declarative LLM fleet deployment | L | High | #272 (service topology) |
-| 210 | Cross-machine agent pool distribution | M | Med | #272 (service decomposition) |
-| 244 | Push terminal UI from trellis | M | Med | #273 (UI extraction pattern) |
-| 255 | ModelSelection sealed type | S | Low | — |
-| 256 | Per-model rate limit tracking | S | Med | — |
-
-### Standalone (no epic)
-
-| # | Title | Scale | Complexity | Notes |
-|---|-------|-------|------------|-------|
-| 158 | Debate channel integration | M | Med | Qhorus channel binding |
-| 194 | Swipe gestures for responsive layout | S | Low | PWA/mobile |
-| 195 | Offline/PWA enhancements | S | Low | PWA/mobile |
-| 209 | Eidos agent identity integration | M | Med | Agent identity |
-| 218 | Engine AgentConverter convergence | S | Med | Engine SPI alignment |
-
-## Build Notes
-
-- **Upstream SNAPSHOTs are fragile** — engine, ledger, qhorus, platform-yaml all have API drift. `yaml-core` must be installed from `slots/194/platform` (main platform moved `StepParameter` etc.).
-- **`domainFilter`** in `app/pom.xml` must be updated when adding new `@McpDomain` classes.
-- **`@McpDomain` tri-channel** — REST generated by `GraphQLResolverProcessor`, MCP native via `quarkus-mcp-server-http`, GraphQL disabled (`-AgenerateGraphQL=false`).
-- **CDI exclude-types** — see `app/src/test/resources/application.properties` for the full list. Strategy: `LedgerCoreProducer` no-op is sole `LedgerEntryRepository` provider in tests; engine.runtime.** excluded (neocortex deps); problem producer methods disabled by excluding their product types.
