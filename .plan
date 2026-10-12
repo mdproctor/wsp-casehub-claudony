@@ -13,9 +13,9 @@ flyway-next-v:
 
 ## Queue
 - [ ] casehubio/claudony#209 — Issue #209 ← active
-  - [ ] Batch 1: Foundation
-    - [ ] Task 1: Add eidosAgentId to AgentConfig
-    - [ ] Task 2: Create EidosPoolConverter
-  - [ ] Batch 2: Bridge
-    - [ ] Task 3: Create EidosPoolBridge bean
-    - [ ] Task 4: Config wiring and integration test
+  - [x] Batch 1: Foundation
+    - [x] Task 1: Add eidosAgentId to AgentConfig
+    - [x] Task 2: Create EidosPoolConverter
+  - [x] Batch 2: Bridge
+    - [x] Task 3: Create EidosPoolBridge bean
+    - [x] Task 4: Config wiring and integration test
