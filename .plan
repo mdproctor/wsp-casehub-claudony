@@ -13,3 +13,11 @@ flyway-next-v:
 
 ## Queue
 - [ ] casehubio/claudony#271 — Issue #271 ← active
+  - [ ] Batch 1: Data model + OpsService
+    - [ ] Task 1: Records and OpsService with tests
+  - [ ] Batch 2: SSE event bus
+    - [ ] Task 2: OpsEventBus with tests
+  - [ ] Batch 3: REST and SSE endpoints
+    - [ ] Task 3: ClaudonyOpsApi and OpsEventsResource with integration tests
+  - [ ] Batch 4: Documentation
+    - [ ] Task 4: CLAUDE.md and epic update
