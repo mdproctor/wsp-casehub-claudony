@@ -2,39 +2,37 @@
 
 ## Last Session
 
-Implemented #271 (ops view — Stage 3c of epic #267): fleet-wide operational visibility API. `OpsService` aggregates from 5 backing services (RegistryService, PoolService, PeerRegistry, ApplicationRegistrationService, QhorusDashboardService) into a typed `OpsSnapshot`. `ClaudonyOpsApi` @McpDomain exposes `/snapshot` and `/health` REST endpoints. `OpsEventBus` observes `RegistryEvent` CDI events and pushes live topology updates via SSE at `/api/ops/events`. 13 new tests (4 unit OpsServiceTest, 5 unit OpsEventBusTest, 3 integration ClaudonyOpsApiTest, 1 integration OpsEventsResourceTest). Landed as `364d0dc` on main. Epic #267 Stage 3c marked Done.
+Implemented #209 (Eidos agent identity integration for agent pools). Built `EidosPoolBridge` — an `@ApplicationScoped` bean guarded by `@IfBuildProperty` that reads `AgentDescriptor`s from the Eidos `AgentRegistry` at startup + 30s reconciliation and creates `AgentPoolDefinition`s for agents with a "claudony" `ProviderConfig`. Pure conversion in `EidosPoolConverter`. Added `eidosAgentId` nullable field to `AgentConfig` (source-compatible — existing constructors preserved as delegating constructors). `casehub-eidos-api` added as optional dependency. 17 new tests. Landed as `7b984a1` on main. Also fixed pre-existing yaml-core API rename (`StepParameter` → `Parameter`) as `ff66aac`.
 
-Key discovery: `domainFilter` in `app/pom.xml` compiler args must include any new @McpDomain domain — without it, the GraphQLResolverProcessor won't generate the REST resource class, causing 404s.
+Design review (light, on decisions) caught 3 important issues that revised the design: D4 moved pool config from `extensionData` to the established `ProvisionerConfigRegistry` path, D5 dropped CDI events (they don't exist in the API) in favor of polling-only, D6 switched from classpath detection to config-driven activation (NoOpAgentRegistry always present).
 
-Pre-existing issue: `CaseLineageQueryIntegrationTest` and `ClaudonyLedgerEventCaptureTest` fail to compile — `io.casehub.ledger.model.CaseLedgerEntry` is missing from the installed `casehub-ledger-core` SNAPSHOT. Workaround: temporarily move the two files to `/tmp/` before running tests, restore after. Not caused by this session's work.
+Filed epic #275 with 6 children (#276–#281) for follow-up hardening.
 
-## Next Issue
+## Next Work
 
-**#272 — feat: module decomposition — fleet/pool/mesh as independent services (Stage 3d)**
+**Epic #275 — Eidos pool bridge hardening.** Recommended start:
 
-Depends on #271 (done). Decomposes Claudony's fleet/pool/mesh capabilities into independently deployable services. This is architectural restructuring, not feature addition — different mode of work from #271.
+| # | Title | Scale | Cplx | Blocked by |
+|---|-------|-------|------|------------|
+| #276 | stamp tmux sessions with eidosAgentId | S | Low | — |
+| #277 | reconciliation for changed descriptors | S | Med | — |
+| #278 | Eidos-driven system prompt injection | M | Med | #276 |
+| #279 | ModelRegistry resolution for ModelQuery | S | Med | — |
+| #280 | multi-tenant pool isolation | M | Med | — |
+| #281 | CDI events for reactive bridge | S | Low | eidos-api |
 
-Also available: **platform#575** (XS/Low) — add `registry-client` to `spring-parity-exceptions.txt`. Quick win to start with.
+Start #276 and #277 in parallel (both small, no dependencies), then #278 which depends on #276.
 
-## How to Continue
+## Pre-existing Issues
 
-Run `work start #272` to begin the next epic stage. The `.plan` will be scaffolded by work-start. Consider brainstorming first — module decomposition has significant design decisions around service boundaries and API contracts.
+- `CaseBrowserServiceTest` and `AgentPoolYamlParserTest` have 1 error each — upstream SNAPSHOT changes, not caused by this session.
+- `CaseLineageQueryIntegrationTest` and `ClaudonyLedgerEventCaptureTest` fail to compile — missing `casehub-ledger-core` SNAPSHOT. Pre-existing.
+- App module `@QuarkusTest` classes fail with CDI deployment error (unsatisfied `CbrCaseMemoryStore`). Pre-existing.
 
-## Branch State
+## Key Files
 
-- **main**: clean, up to date with origin
-- **issue-271-ops-view-fleet-visibility**: stamped as closed (backup at `backup/pre-squash-issue-271-ops-view-fleet-visibility-20261012`)
-- Workspace branch `issue-271-ops-view-fleet-visibility` has unpushed spec/plan commits (workspace artifacts, not source)
-
-## Epic #267 Progress
-
-| Stage | Issue | Status |
-|-------|-------|--------|
-| 1. Registry core | platform#557 | Done |
-| 2. Migration | #268 | Done |
-| 3a. App registration | #269 | Done |
-| 3b. Registry REST | #270 | Done |
-| 3c. Ops view | #271 | Done |
-| 3d. Module decomposition | #272 | Open — next |
-| 3e. UI extraction | #273 | Open |
-| 4. Durable cascade | #274 | Open |
+- `casehub/src/main/java/io/casehub/claudony/casehub/fleet/EidosPoolBridge.java` — startup + reconciliation bean
+- `casehub/src/main/java/io/casehub/claudony/casehub/fleet/EidosPoolConverter.java` — pure conversion
+- `casehub/src/main/java/io/casehub/claudony/casehub/fleet/EidosPoolBridgeConfig.java` — defaults record
+- `casehub/src/main/java/io/casehub/claudony/casehub/fleet/AgentPoolDefinition.java` — `AgentConfig.eidosAgentId` field added
+- Config: `claudony.eidos.pool-bridge.enabled=false` (default off)
