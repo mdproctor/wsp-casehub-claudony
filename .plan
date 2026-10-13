@@ -1,0 +1,22 @@
+# Work Plan — issue-209-eidos-agent-identity-integration
+
+## State
+branch: issue-209-eidos-agent-identity-integration
+state: closing:promoted
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 209
+design-repo: 
+design-section-hashes: 
+flyway-next-v: 
+
+evidence-era: true
+## Queue
+- [ ] casehubio/claudony#209 — Issue #209 ← active
+  - [x] Batch 1: Foundation
+    - [x] Task 1: Add eidosAgentId to AgentConfig
+    - [x] Task 2: Create EidosPoolConverter
+  - [x] Batch 2: Bridge
+    - [x] Task 3: Create EidosPoolBridge bean
+    - [x] Task 4: Config wiring and integration test
