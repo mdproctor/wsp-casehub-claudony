@@ -1,0 +1,15 @@
+# Work Plan — issue-275-eidos-pool-bridge-hardening
+
+## State
+branch: issue-275-eidos-pool-bridge-hardening
+state: scaffolded
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 275
+design-repo: 
+design-section-hashes: 
+flyway-next-v: none
+
+## Queue
+- [ ] casehubio/claudony#275 — Issue #275 ← active
