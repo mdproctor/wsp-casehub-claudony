@@ -1,27 +1,15 @@
-# Work Plan — issue-275-eidos-pool-bridge-hardening
+# Work Plan — issue-282-ops-desiredstate-app-lifecycle
 
 ## State
-branch: issue-275-eidos-pool-bridge-hardening
-state: closing:promoted
+branch: issue-282-ops-desiredstate-app-lifecycle
+state: scaffolded
 project-sha: 
 date: 
 issue-repo: casehubio/claudony
-covers: 275
+covers: 282
 design-repo: 
 design-section-hashes: 
-flyway-next-v: none
+flyway-next-v: 
 
-evidence-era: true
 ## Queue
-- [ ] casehubio/claudony#275 — Issue #275 ← active
-  - [x] Batch 1: Session stamping + Reconciliation
-    - [x] Task 1: Stamp tmux sessions with eidosAgentId (#276)
-    - [x] Task 2: Reconciliation for changed descriptors (#277)
-  - [x] Batch 2: System Prompt Injection
-    - [x] Task 3: Eidos-driven system prompt injection (#278)
-  - [x] Batch 3: Model Resolution
-    - [x] Task 4: ModelRegistry resolution (#279)
-  - [x] Batch 4: Multi-Tenant Isolation
-    - [x] Task 5: Multi-tenant pool isolation (#280)
-  - [x] Batch 5: CDI Events
-    - [x] Task 6: CDI events for descriptor changes (#281)
+- [ ] casehubio/claudony#282 — Issue #282 ← active
