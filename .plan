@@ -2,7 +2,7 @@
 
 ## State
 branch: issue-282-ops-desiredstate-app-lifecycle
-state: active
+state: closing:review
 project-sha: 
 date: 
 issue-repo: casehubio/claudony
@@ -11,6 +11,7 @@ design-repo:
 design-section-hashes: 
 flyway-next-v: 
 
+evidence-era: true
 ## Queue
 - [ ] casehubio/claudony#282 — Issue #282 ← active
   - [x] Batch 1: Namespace
