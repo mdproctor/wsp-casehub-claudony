@@ -22,5 +22,5 @@ flyway-next-v: none
     - [x] Task 4: ModelRegistry resolution (#279)
   - [x] Batch 4: Multi-Tenant Isolation
     - [x] Task 5: Multi-tenant pool isolation (#280)
-  - [ ] Batch 5: CDI Events
-    - [ ] Task 6: CDI events for descriptor changes (#281)
+  - [x] Batch 5: CDI Events
+    - [x] Task 6: CDI events for descriptor changes (#281)
