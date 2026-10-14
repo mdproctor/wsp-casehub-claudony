@@ -16,8 +16,8 @@ flyway-next-v: none
   - [x] Batch 1: Session stamping + Reconciliation
     - [x] Task 1: Stamp tmux sessions with eidosAgentId (#276)
     - [x] Task 2: Reconciliation for changed descriptors (#277)
-  - [ ] Batch 2: System Prompt Injection
-    - [ ] Task 3: Eidos-driven system prompt injection (#278)
+  - [x] Batch 2: System Prompt Injection
+    - [x] Task 3: Eidos-driven system prompt injection (#278)
   - [ ] Batch 3: Model Resolution
     - [ ] Task 4: ModelRegistry resolution (#279)
   - [ ] Batch 4: Multi-Tenant Isolation
