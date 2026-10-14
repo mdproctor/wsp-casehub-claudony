@@ -13,3 +13,13 @@ flyway-next-v:
 
 ## Queue
 - [ ] casehubio/claudony#282 — Issue #282 ← active
+  - [ ] Batch 1: Namespace
+    - [ ] Task 1: Add namespace to ApplicationSpec and ApplicationInfo
+  - [ ] Batch 2: updateApp
+    - [ ] Task 2: Add update method to ApplicationRegistrationService
+  - [ ] Batch 3: Suspend/Resume
+    - [ ] Task 3: Add suspend and resume to ApplicationRegistrationService
+  - [ ] Batch 4: Deployment artifact
+    - [ ] Task 4: Add image and config to ApplicationSpec
+  - [ ] Batch 5: Docs
+    - [ ] Task 5: Update CLAUDE.md and close sub-issues
