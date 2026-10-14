@@ -18,8 +18,8 @@ flyway-next-v: none
     - [x] Task 2: Reconciliation for changed descriptors (#277)
   - [x] Batch 2: System Prompt Injection
     - [x] Task 3: Eidos-driven system prompt injection (#278)
-  - [ ] Batch 3: Model Resolution
-    - [ ] Task 4: ModelRegistry resolution (#279)
+  - [x] Batch 3: Model Resolution
+    - [x] Task 4: ModelRegistry resolution (#279)
   - [ ] Batch 4: Multi-Tenant Isolation
     - [ ] Task 5: Multi-tenant pool isolation (#280)
   - [ ] Batch 5: CDI Events
