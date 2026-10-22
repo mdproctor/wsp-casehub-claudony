@@ -18,7 +18,7 @@ flyway-next-v: unknown
     - [x] Task 2: ConversationWorkbench component
     - [x] Task 3: ConversationWorkbench tests
     - [x] Task 4: Build and install SNAPSHOT
-  - [ ] Batch 2: Claudony
-    - [ ] Task 5: claudony-chat-panel
-    - [ ] Task 6: Wire Chat tab
-    - [ ] Task 7: E2E test
+  - [x] Batch 2: Claudony
+    - [x] Task 5: claudony-chat-panel
+    - [x] Task 6: Wire Chat tab
+    - [x] Task 7: E2E test
