@@ -13,3 +13,12 @@ flyway-next-v: unknown
 
 ## Queue
 - [ ] casehubio/claudony#288 — Issue #288 ← active
+  - [ ] Batch 1: Mosaic
+    - [ ] Task 1: SwipeController and responsive
+    - [ ] Task 2: ConversationWorkbench component
+    - [ ] Task 3: ConversationWorkbench tests
+    - [ ] Task 4: Build and install SNAPSHOT
+  - [ ] Batch 2: Claudony
+    - [ ] Task 5: claudony-chat-panel
+    - [ ] Task 6: Wire Chat tab
+    - [ ] Task 7: E2E test
