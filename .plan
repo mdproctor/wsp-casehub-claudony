@@ -1,0 +1,15 @@
+# Work Plan — issue-288-chat-view
+
+## State
+branch: issue-288-chat-view
+state: scaffolded
+project-sha: 51a8b0a786659c9ae7a58dad7a68211381f76131
+date: 2026-10-22
+issue-repo: casehubio/claudony
+covers: 288
+design-repo: project
+design-section-hashes: 
+flyway-next-v: unknown
+
+## Queue
+- [ ] casehubio/claudony#288 — Issue #288 ← active
