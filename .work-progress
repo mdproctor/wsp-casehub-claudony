@@ -86,3 +86,7 @@ notes=skipped
 handoff_write_attempt=1
 handoff_write=done
 handoff_write_produced=1
+_exec_ok:wip_commit=yes
+wip_commit=done
+_exec_ok:wip_commit_project=yes
+wip_commit_project=done
