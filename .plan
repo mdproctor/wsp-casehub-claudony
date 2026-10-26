@@ -2,7 +2,7 @@
 
 ## State
 branch: issue-294-config-validation-fix
-state: active
+state: closing:review
 project-sha: 
 date: 
 issue-repo: casehubio/claudony
@@ -11,5 +11,6 @@ design-repo: project
 design-section-hashes: 
 flyway-next-v: unknown
 
+evidence-era: true
 ## Queue
 - [ ] casehubio/claudony#294 — Issue #294 ← active
