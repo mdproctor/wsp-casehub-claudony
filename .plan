@@ -13,3 +13,10 @@ flyway-next-v: unknown
 
 ## Queue
 - [ ] casehubio/claudony#204 — Issue #204 ← active
+  - [x] Batch 1: Deprecated cleanup
+    - [x] Task 1: Delete PoolResource + supporting types
+    - [x] Task 2: Delete AgentPoolResource
+  - [x] Batch 2: Fleet conflict
+    - [x] Task 3: Resolve FleetResource path conflict
+  - [x] Batch 3: Docs
+    - [x] Task 4: Update CLAUDE.md and file follow-ups
