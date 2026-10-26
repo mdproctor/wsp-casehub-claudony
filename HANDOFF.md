@@ -2,41 +2,50 @@
 
 ## Last Session
 
-Resumed claudony#288 to fix two frontend bugs preventing Chat and Mesh tabs from working. Both bugs fixed and committed.
+Resumed claudony#288. Fixed two original bugs (stale API paths, channel backend prefix filter) plus discovered and fixed several additional issues across three repos during Playwright-driven testing.
 
 ## Branch State
 
-`issue-288-chat-view` on claudony + workspace. **Both bugs fixed** — ready for work-end.
+`issue-288-chat-view` on claudony + workspace. **Paused** — layout UX not yet verified.
 
 ## What's Done
 
-### Bug 1: Stale API paths after MeshResource removal (commit 8d2c7e7)
-- `claudony-mesh-panel.ts`: `/api/mesh/config` → `/api/claudony/mesh/config`, `/api/mesh/instances` → `/api/claudony/mesh/instances`
-- `claudony-mesh-panel.ts`, `channel-panel.ts`, `claudony-workbench.ts`: `/api/mesh/channels/{name}/messages` → `/api/channels/{name}/messages`
-- `MeshResourceTest.java`, `MeshResourceInterjectionTest.java`, `ChannelPanelE2ETest.java`, `MeshPanelE2ETest.java`: paths updated to match
-- `CLAUDE.md`: updated stale endpoint documentation
-- Added vitest test file for mesh panel (tests blocked by pre-existing casehub-packages PnP resolution issue)
+### Claudony (issue-288-chat-view, 7 commits)
+1. **Stale API paths** — `/api/mesh/*` corrected to `/api/claudony/mesh/*` and `/api/channels/*` across 5 frontend + 4 test files + CLAUDE.md
+2. **Compilation fixes** — `SessionResponse` (eidosAgentId), `ApplicationInfo` (namespace, image, config) constructor mismatches
+3. **Channel backend filter** — removed `case-` prefix from `ClaudonyChannelBackend.onChannelInitialised()` so all channels get WebSocket push
+4. **Sender field** — added `sender` to message POST in mesh-panel (from config actorId), channel-panel and workbench (`'human'`)
+5. **Type uppercase** — `.toUpperCase()` on MessageType in all message POST paths
+6. **Viewport layout** — CSS flex chain from body through `#app > [data-component-type=tabs] > [data-slot] > [data-component-type=host-panel]` so chat fills viewport (NOT YET VISUALLY VERIFIED)
 
-### Bug 2: Channel backend prefix filter blocked WebSocket push (commit 7e9d3cc)
-- `ClaudonyChannelBackend`: removed `case-` prefix filter from `onChannelInitialised()` — now registers for ALL channels
-- Added `onChannelInitialised_registersNonCaseChannels` test — 8/8 pass
-- Chat tab's WebSocket push (`/ws/push` via qhorus-push) now receives real-time messages for all channel types (team/, life/, issue/, etc.)
+### Qhorus (main, 2 commits)
+1. `@ServerExceptionMapper` methods made `public` for dev-mode classloader compatibility
+2. `actorType` defaults to `HUMAN` when not provided in `ChannelCore.postMessage`
 
-### Compilation fixes (commit 5de702b)
-- `ClaudonyMcpToolsTest.java`: 8 `SessionResponse` constructors updated (eidosAgentId field)
-- `SessionFederationTest.java`: 1 `SessionResponse` constructor updated
-- `OpsServiceTest.java`: 1 `ApplicationInfo` constructor updated (namespace, image, config fields)
+### casehub-mosaic (main, 3 commits)
+1. `restBase` resolved lazily via getter in `ReactionController` and `MessagingController`
+2. Emoji picker popover on react button (was directly firing REACT with no emoji)
+3. Emoji picker uses `position: fixed` with JS viewport clamping
 
-## Test State
+## What Remains
 
-- `ClaudonyChannelBackendTest`: 8/8 pass
-- casehub module: 667/669 pass (2 pre-existing failures: `CaseBrowserServiceTest.getCaseDetail_notFound` NPE, `AgentPoolYamlParserTest.emptyYamlProducesEmptyList` parser)
-- app module `@QuarkusTest` classes: CDI deployment error (pre-existing `CbrCaseMemoryStore` unsatisfied — casehub-neocortex SNAPSHOT)
-- Frontend vitest: infrastructure broken (pre-existing `@casehubio/pages-tsconfig` PnP resolution)
-- Frontend build: passes
+### Layout UX (not verified)
+- CSS flex chain committed but not tested in Playwright (session was paused before verification)
+- Emoji picker positioning committed but not verified at full viewport size
+- Chat view should fill entire browser viewport and resize with it
+
+### Cross-repo pushes needed
+- Qhorus: 2 commits on main, not pushed
+- casehub-mosaic: 3 commits on main, not pushed
+
+### Pre-existing issues (not #288)
+- 2 casehub module test failures (CaseBrowserServiceTest NPE, AgentPoolYamlParserTest parser)
+- CDI deployment error in `@QuarkusTest` classes (CbrCaseMemoryStore unsatisfied)
+- Vitest infrastructure broken (pages-tsconfig PnP resolution)
 
 ## Resume
 
-Ready for work-end on claudony#288. Both handover bugs resolved. The Chat and Mesh tabs should now be functional at runtime — Mesh tab polls correct API paths, Chat tab receives WebSocket push for all channels.
-
-Pre-existing issues (not #288): 2 casehub test failures, CDI deployment error in QuarkusTest, vitest infrastructure.
+1. Verify viewport layout fix in Playwright (resize to 1280x800, check chat fills)
+2. Verify emoji picker positioning at full viewport
+3. Push qhorus and mosaic commits
+4. Then work-end on #288
