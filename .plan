@@ -2,7 +2,7 @@
 
 ## State
 branch: issue-204-mcp-domain-migration
-state: active
+state: closing:review
 project-sha: 
 date: 
 issue-repo: casehubio/claudony
@@ -11,6 +11,7 @@ design-repo: project
 design-section-hashes: 
 flyway-next-v: unknown
 
+evidence-era: true
 ## Queue
 - [ ] casehubio/claudony#204 — Issue #204 ← active
   - [x] Batch 1: Deprecated cleanup
