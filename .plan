@@ -1,0 +1,15 @@
+# Work Plan — issue-204-mcp-domain-migration
+
+## State
+branch: issue-204-mcp-domain-migration
+state: scaffolded
+project-sha: 
+date: 
+issue-repo: casehubio/claudony
+covers: 204
+design-repo: project
+design-section-hashes: 
+flyway-next-v: unknown
+
+## Queue
+- [ ] casehubio/claudony#204 — Issue #204 ← active
