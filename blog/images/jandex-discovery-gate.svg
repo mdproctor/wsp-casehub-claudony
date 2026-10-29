@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 280" font-family="system-ui, -apple-system, sans-serif" font-size="13">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#94a3b8"/>
+    </marker>
+    <marker id="arr-g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#22c55e"/>
+    </marker>
+    <marker id="arr-r" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#ef4444"/>
+    </marker>
+  </defs>
+
+  <rect width="700" height="280" rx="8" fill="#0f172a"/>
+
+  <text x="350" y="28" text-anchor="middle" fill="#e2e8f0" font-size="15" font-weight="600">Quarkus CDI Bean Discovery: The Jandex Gate</text>
+
+  <!-- JAR on classpath -->
+  <rect x="40" y="55" width="180" height="50" rx="6" fill="#1e293b" stroke="#334155"/>
+  <text x="130" y="77" text-anchor="middle" fill="#e2e8f0" font-size="12">registry-inmem.jar</text>
+  <text x="130" y="93" text-anchor="middle" fill="#64748b" font-size="10">on classpath ✓</text>
+
+  <!-- Decision diamond -->
+  <polygon points="350,70 420,105 350,140 280,105" fill="#1e293b" stroke="#f59e0b"/>
+  <text x="350" y="102" text-anchor="middle" fill="#fbbf24" font-size="11">Jandex index?</text>
+  <text x="350" y="115" text-anchor="middle" fill="#fbbf24" font-size="11">beans.xml?</text>
+
+  <line x1="220" y1="80" x2="278" y2="100" stroke="#94a3b8" marker-end="url(#arr)"/>
+
+  <!-- NO path -->
+  <line x1="350" y1="140" x2="350" y2="175" stroke="#ef4444" marker-end="url(#arr-r)"/>
+  <text x="365" y="160" fill="#fca5a5" font-size="11">Neither</text>
+
+  <rect x="260" y="180" width="180" height="40" rx="6" fill="#2a1e1e" stroke="#ef4444"/>
+  <text x="350" y="197" text-anchor="middle" fill="#fca5a5" font-size="11">Beans invisible to CDI</text>
+  <text x="350" y="212" text-anchor="middle" fill="#fca5a5" font-size="11">@DefaultBean wins</text>
+
+  <!-- YES path -->
+  <line x1="420" y1="105" x2="480" y2="105" stroke="#22c55e" marker-end="url(#arr-g)"/>
+  <text x="450" y="98" fill="#86efac" font-size="11">Yes</text>
+
+  <rect x="482" y="82" width="180" height="46" rx="6" fill="#1e3a2a" stroke="#22c55e"/>
+  <text x="572" y="102" text-anchor="middle" fill="#86efac" font-size="11">@Alternative @Priority(50)</text>
+  <text x="572" y="118" text-anchor="middle" fill="#86efac" font-size="11">displaces @DefaultBean</text>
+
+  <!-- Fix -->
+  <rect x="260" y="235" width="400" height="34" rx="6" fill="#172554" stroke="#3b82f6"/>
+  <text x="460" y="256" text-anchor="middle" fill="#93c5fd" font-size="11">Fix: quarkus.index-dependency.registry-inmem.artifact-id=casehub-platform-registry-inmem</text>
+</svg>

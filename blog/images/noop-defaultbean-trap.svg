@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 340" font-family="system-ui, -apple-system, sans-serif" font-size="13">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#94a3b8"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#ef4444"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="720" height="340" rx="8" fill="#0f172a"/>
+
+  <!-- Title -->
+  <text x="360" y="30" text-anchor="middle" fill="#e2e8f0" font-size="15" font-weight="600">The @DefaultBean Trap: Silent Data Loss</text>
+
+  <!-- Left side: What you expect -->
+  <text x="180" y="60" text-anchor="middle" fill="#86efac" font-size="12" font-weight="600">What you expect</text>
+
+  <rect x="60" y="75" width="240" height="40" rx="6" fill="#1e293b" stroke="#334155"/>
+  <text x="180" y="100" text-anchor="middle" fill="#e2e8f0" font-size="12">ClaudonyAppApi.register(spec)</text>
+
+  <line x1="180" y1="115" x2="180" y2="140" stroke="#94a3b8" marker-end="url(#arrow)"/>
+
+  <rect x="60" y="145" width="240" height="40" rx="6" fill="#1e3a2a" stroke="#22c55e"/>
+  <text x="180" y="170" text-anchor="middle" fill="#86efac" font-size="12">InMemoryRegistryService</text>
+
+  <line x1="180" y1="185" x2="180" y2="210" stroke="#94a3b8" marker-end="url(#arrow)"/>
+
+  <rect x="60" y="215" width="240" height="40" rx="6" fill="#1e293b" stroke="#334155"/>
+  <text x="180" y="240" text-anchor="middle" fill="#e2e8f0" font-size="12">ConcurrentHashMap.put()</text>
+
+  <line x1="180" y1="255" x2="180" y2="280" stroke="#94a3b8" marker-end="url(#arrow)"/>
+
+  <rect x="60" y="285" width="240" height="36" rx="6" fill="#1e3a2a" stroke="#22c55e"/>
+  <text x="180" y="308" text-anchor="middle" fill="#86efac" font-size="12">✓ resolve() → data present</text>
+
+  <!-- Right side: What actually happens -->
+  <text x="540" y="60" text-anchor="middle" fill="#fca5a5" font-size="12" font-weight="600">What actually happens</text>
+
+  <rect x="420" y="75" width="240" height="40" rx="6" fill="#1e293b" stroke="#334155"/>
+  <text x="540" y="100" text-anchor="middle" fill="#e2e8f0" font-size="12">ClaudonyAppApi.register(spec)</text>
+
+  <line x1="540" y1="115" x2="540" y2="140" stroke="#ef4444" marker-end="url(#arrow-red)"/>
+
+  <rect x="420" y="145" width="240" height="40" rx="6" fill="#2a1e1e" stroke="#ef4444"/>
+  <text x="540" y="170" text-anchor="middle" fill="#fca5a5" font-size="12">NoOpRegistryService</text>
+
+  <line x1="540" y1="185" x2="540" y2="210" stroke="#ef4444" marker-end="url(#arrow-red)"/>
+
+  <rect x="420" y="215" width="240" height="40" rx="6" fill="#2a1e1e" stroke="#ef4444" stroke-dasharray="4,4"/>
+  <text x="540" y="237" text-anchor="middle" fill="#fca5a5" font-size="11">register() { /* empty */ }</text>
+
+  <line x1="540" y1="255" x2="540" y2="280" stroke="#ef4444" marker-end="url(#arrow-red)"/>
+
+  <rect x="420" y="285" width="240" height="36" rx="6" fill="#2a1e1e" stroke="#ef4444"/>
+  <text x="540" y="308" text-anchor="middle" fill="#fca5a5" font-size="12">✗ resolve() → Optional.empty()</text>
+</svg>
