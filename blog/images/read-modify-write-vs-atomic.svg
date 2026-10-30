@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 320" font-family="system-ui, -apple-system, sans-serif" font-size="13">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#94a3b8"/>
+    </marker>
+    <marker id="arr-r" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#ef4444"/>
+    </marker>
+    <marker id="arr-g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#22c55e"/>
+    </marker>
+  </defs>
+
+  <rect width="720" height="320" rx="8" fill="#0f172a"/>
+  <text x="360" y="28" text-anchor="middle" fill="#e2e8f0" font-size="15" font-weight="600">Pool Mutation: Read-Modify-Write vs Atomic</text>
+
+  <!-- Left: RMW pattern -->
+  <text x="180" y="55" text-anchor="middle" fill="#fca5a5" font-size="12" font-weight="600">Before: read-modify-write</text>
+
+  <rect x="50" y="68" width="260" height="32" rx="5" fill="#1e293b" stroke="#334155"/>
+  <text x="180" y="89" text-anchor="middle" fill="#e2e8f0" font-size="11">GET /apps/myapp → full spec + pools</text>
+
+  <line x1="180" y1="100" x2="180" y2="118" stroke="#94a3b8" marker-end="url(#arr)"/>
+
+  <rect x="50" y="122" width="260" height="32" rx="5" fill="#2a1e1e" stroke="#ef4444" stroke-dasharray="4,4"/>
+  <text x="180" y="143" text-anchor="middle" fill="#fca5a5" font-size="11">⚠ another client mutates pools here</text>
+
+  <line x1="180" y1="154" x2="180" y2="172" stroke="#94a3b8" marker-end="url(#arr)"/>
+
+  <rect x="50" y="176" width="260" height="32" rx="5" fill="#1e293b" stroke="#334155"/>
+  <text x="180" y="197" text-anchor="middle" fill="#e2e8f0" font-size="11">modify local copy: add pool "reviewer"</text>
+
+  <line x1="180" y1="208" x2="180" y2="226" stroke="#ef4444" marker-end="url(#arr-r)"/>
+
+  <rect x="50" y="230" width="260" height="32" rx="5" fill="#2a1e1e" stroke="#ef4444"/>
+  <text x="180" y="251" text-anchor="middle" fill="#fca5a5" font-size="11">PUT /apps/myapp → overwrites other changes</text>
+
+  <rect x="50" y="275" width="260" height="30" rx="5" fill="#2a1e1e" stroke="#ef4444"/>
+  <text x="180" y="295" text-anchor="middle" fill="#fca5a5" font-size="11">3 round-trips, race condition, data loss</text>
+
+  <!-- Right: Atomic pattern -->
+  <text x="540" y="55" text-anchor="middle" fill="#86efac" font-size="12" font-weight="600">After: atomic pool mutation</text>
+
+  <rect x="410" y="68" width="260" height="32" rx="5" fill="#1e3a2a" stroke="#22c55e"/>
+  <text x="540" y="89" text-anchor="middle" fill="#86efac" font-size="11">POST /apps/myapp/pools</text>
+
+  <line x1="540" y1="100" x2="540" y2="118" stroke="#22c55e" marker-end="url(#arr-g)"/>
+
+  <rect x="410" y="122" width="260" height="32" rx="5" fill="#1e3a2a" stroke="#22c55e"/>
+  <text x="540" y="143" text-anchor="middle" fill="#86efac" font-size="11">{"agentId": "reviewer", "maxActive": 3}</text>
+
+  <line x1="540" y1="154" x2="540" y2="172" stroke="#22c55e" marker-end="url(#arr-g)"/>
+
+  <rect x="410" y="176" width="260" height="32" rx="5" fill="#1e3a2a" stroke="#22c55e"/>
+  <text x="540" y="197" text-anchor="middle" fill="#86efac" font-size="11">✓ pool added — no read, no overwrite</text>
+
+  <rect x="410" y="230" width="260" height="32" rx="5" fill="#172554" stroke="#3b82f6"/>
+  <text x="540" y="251" text-anchor="middle" fill="#93c5fd" font-size="11">PUT + version check → 409 on conflict</text>
+
+  <rect x="410" y="275" width="260" height="30" rx="5" fill="#1e3a2a" stroke="#22c55e"/>
+  <text x="540" y="295" text-anchor="middle" fill="#86efac" font-size="11">1 round-trip, no race, conflict detection</text>
+</svg>
