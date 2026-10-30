@@ -1,0 +1,8 @@
+---
+branch: issue-301-ledgerbeans-cdi-fix
+base: main
+repo: casehubio/claudony
+state: active
+---
+
+- casehubio/claudony#301 exclude LedgerBeans from production CDI [active]
