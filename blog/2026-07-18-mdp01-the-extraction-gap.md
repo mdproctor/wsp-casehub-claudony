@@ -18,7 +18,7 @@ tags: [playwright, shadow-dom, lit, e2e]
 
 ## What I was trying to achieve: make the E2E tests match the new DOM
 
-Issue #170 moved claudony's channel-panel from a vanilla HTMLElement to a LitElement backed by `@casehubio/blocks-ui-channel-activity` components. Every E2E test that queried channel-panel DOM was broken. The issue description said "only selector updates" — and that turned out to be wrong in an interesting way.
+Issue #170 moved claudony's channel-panel from a vanilla HTMLElement to a LitElement backed by `@casehubio/agency-ui-channel-activity` components. Every E2E test that queried channel-panel DOM was broken. The issue description said "only selector updates" — and that turned out to be wrong in an interesting way.
 
 ## What we believed going in: Playwright handles Shadow DOM transparently
 
