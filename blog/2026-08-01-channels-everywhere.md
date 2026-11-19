@@ -2,6 +2,9 @@
 title: "Channels Everywhere — From Case-Scoped to Universal"
 date: 2026-08-01
 tags: [claudony, qhorus, channels, conversation, architecture]
+entry_type: note
+subtype: diary
+projects: [casehubio/claudony]
 ---
 
 Claudony started with a simple channel model: the CaseHub engine spins up a case, the case opens channels, agents talk on them. Three channels per case — work, observe, oversight. Clean, purposeful, and completely closed. If you weren't a case, you didn't get channels.
